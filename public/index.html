@@ -322,7 +322,7 @@ function drawTable(revealAll=false) {
     const pos=cardPos(p.seatIndex??i,n);
     const isMe=p.id===myId;
     const isHidden=p.card==='hidden';
-    const show=revealAll||(!isHidden&&((isMe&&myTurn)||p.card?.rank==='K'));
+    const show=revealAll||(!isHidden&&(isMe||p.card?.rank==='K'));
     const faceUp=show&&!isHidden;
     if (p.id===currentPlayerId&&!revealAll) {
       ctx.save(); ctx.shadowColor='#00e5ff'; ctx.shadowBlur=18;
