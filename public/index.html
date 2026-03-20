@@ -329,7 +329,7 @@ function drawCardFallback(ctx, card, cx, cy, w, h, faceUp) {
   ctx.restore();
 }
 
-function seatAngle(i,n){return(-90+i*360/n)*Math.PI/180;}
+function seatAngle(i,n){return(90+i*360/n)*Math.PI/180;}
 function cardPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*RX,y:CY+Math.sin(a)*RY};}
 function hudPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*(RX+68),y:CY+Math.sin(a)*(RY+52)};}
 
