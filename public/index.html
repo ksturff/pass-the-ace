@@ -198,6 +198,7 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+// ── Constants ──────────────────────────────────────────
 const SUITS = ['S','H','D','C'];
 const RANKS = [2,3,4,5,6,7,8,9,10,'J','Q','K','A'];
 const RANK_VALUE = {2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,J:11,Q:12,K:13,A:1};
@@ -217,14 +218,18 @@ const AVATAR_COLORS = [
   'linear-gradient(135deg,#c0392b,#e91e63)',
 ];
 
+// ── State ──────────────────────────────────────────────
 let socket, myId=null, myRoomCode=null, isHost=false, isSolo=false;
 let players=[], currentPlayerId=null, myTurn=false;
 let selectedSeats=6, selectedSeatsLobby=6;
 let cardImages={}, bgImage=new Image(), assetsReady=false;
 let canvas, ctx, scale=1;
 let toastTimer=null, kingToastTimer=null;
+
+// Solo-only state
 let soloPlayers=[], soloDealerIndex=0, soloCurrentIndex=0, soloTurnsTaken=0;
 
+// ── Utils ──────────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -244,12 +249,13 @@ function cardKey(card) {
   return `${r}_of_${SUIT_NAME[card.suit]}`;
 }
 
+// ── Canvas ─────────────────────────────────────────────
 function setupCanvas() {
   canvas=document.getElementById('canvas'); ctx=canvas.getContext('2d');
   const dpr=window.devicePixelRatio||1;
-canvas.width=CW*dpr; canvas.height=CH*dpr;
-ctx.scale(dpr,dpr);
-resizeCanvas();
+  canvas.width=CW*dpr; canvas.height=CH*dpr;
+  ctx.scale(dpr,dpr);
+  resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
 }
 function resizeCanvas() {
@@ -273,6 +279,7 @@ function loadAssets() {
   });
 }
 
+// ── Card drawing ───────────────────────────────────────
 function drawCardFallback(ctx, card, cx, cy, w, h, faceUp) {
   const x=cx-w/2, y=cy-h/2;
   ctx.save();
@@ -292,10 +299,12 @@ function drawCardFallback(ctx, card, cx, cy, w, h, faceUp) {
   ctx.restore();
 }
 
+// ── Positions ──────────────────────────────────────────
 function seatAngle(i,n){return(-90+i*360/n)*Math.PI/180;}
 function cardPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*RX,y:CY+Math.sin(a)*RY};}
 function hudPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*(RX+68),y:CY+Math.sin(a)*(RY+52)};}
 
+// ── Render ─────────────────────────────────────────────
 function drawTable(revealAll=false) {
   if (!ctx) return;
   ctx.clearRect(0,0,CW,CH);
@@ -328,21 +337,19 @@ function drawTable(revealAll=false) {
   });
 }
 
+// ── HUD ────────────────────────────────────────────────
 function buildHUDs() {
   const hud=document.getElementById('hud'); hud.innerHTML='';
   const list=isSolo?soloPlayers:players;
+  const n=list.length;
   list.forEach((p,i)=>{
     const div=document.createElement('div'); div.className='p-hud'; div.id=`hud-${p.id}`;
     const nameEl=document.createElement('div'); nameEl.className='p-name'; nameEl.textContent=p.name;
     const avatarEl=document.createElement('div'); avatarEl.className='p-avatar'; avatarEl.id=`avatar-${p.id}`;
-    avatarEl.style.background=AVATAR_COLORS[i%AVATAR_COLORS.length];
-    const avatarImg=document.createElement('img');
-avatarImg.src=`assets/avatars/avatar${(i%10)+1}.png`;
-avatarImg.style.cssText='width:100%;height:100%;border-radius:50%;object-fit:cover;';
-avatarImg.onerror=()=>{avatarEl.textContent=p.name.charAt(0).toUpperCase();};
-avatarEl.appendChild(avatarImg);
+    avatarEl.style.cssText=`width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;background:${AVATAR_COLORS[i%AVATAR_COLORS.length]};border:1.5px solid rgba(0,229,255,0.4);box-shadow:0 0 8px rgba(0,229,255,0.25);text-shadow:0 0 6px rgba(0,229,255,0.5);font-family:'Orbitron',sans-serif;`;
+    avatarEl.textContent=p.name.charAt(0).toUpperCase();
     const chipsEl=document.createElement('div'); chipsEl.className='p-chips'; chipsEl.id=`chips-${p.id}`;
-    chipsEl.textContent='●'.repeat(Math.max(0,p.chips));
+    chipsEl.innerHTML=Array.from({length:Math.max(0,p.chips)},()=>`<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ffd700;box-shadow:0 0 4px #ffd700;margin:0 1px;"></span>`).join('');
     div.appendChild(nameEl); div.appendChild(avatarEl); div.appendChild(chipsEl);
     hud.appendChild(div);
   });
@@ -372,13 +379,17 @@ function updateHUDs() {
     const isCur=p.id===currentPlayerId;
     hudEl.classList.toggle('active-turn',isCur&&!p.eliminated);
     if(avatar){avatar.classList.toggle('glow',isCur&&!p.eliminated);avatar.classList.toggle('eliminated',p.eliminated);}
-    if(chipsEl){chipsEl.textContent=p.eliminated?'☠':'●'.repeat(Math.max(0,p.chips));chipsEl.style.color=p.chips<=1&&!p.eliminated?'#ff4d4f':'#ffd700';}
+    if(chipsEl){
+      if(p.eliminated){chipsEl.innerHTML='<span style="color:#555">☠</span>';}
+      else{chipsEl.innerHTML=Array.from({length:Math.max(0,p.chips)},()=>`<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${p.chips<=1?'#ff4d4f':'#ffd700'};box-shadow:0 0 4px ${p.chips<=1?'#ff4d4f':'#ffd700'};margin:0 1px;"></span>`).join('');}
+    }
     hudEl.style.opacity=p.eliminated?'0.3':'1';
   });
   const me=list.find(p=>p.id===myId);
   if(me){document.getElementById('my-chips').textContent=me.chips;document.getElementById('chip-counter').style.display='block';}
 }
 
+// ── Round result ───────────────────────────────────────
 function showRoundResult(data) {
   document.getElementById('action-bar').classList.remove('visible');
   const losers=data.losers||[];
@@ -405,12 +416,14 @@ function showRoundResult(data) {
   document.getElementById('round-result').classList.add('show');
 }
 
+// ── Waiting room ───────────────────────────────────────
 function updateWaitingRoom(list) {
   const ul=document.getElementById('waiting-players');
   ul.innerHTML=list.map(p=>`<li><span class="player-dot"></span>${p.name}${p.id===myId?' (you)':''}</li>`).join('');
   document.getElementById('btn-start-game').style.display=isHost?'block':'none';
 }
 
+// ── Lobby ──────────────────────────────────────────────
 function renderLobbyRooms(rooms) {
   const list=document.getElementById('room-list');
   const open=rooms.filter(r=>!r.inProgress);
@@ -428,6 +441,7 @@ function renderLobbyRooms(rooms) {
   });
 }
 
+// ── Socket ─────────────────────────────────────────────
 function initSocket() {
   socket=io();
   socket.on('connect',()=>{myId=socket.id;});
@@ -453,9 +467,9 @@ function initSocket() {
   });
   socket.on('kingBlocked',()=>showKingToast());
   socket.on('roundEnded',data=>{
-    data.players.forEach(updated=>{
-      const p=players.find(p=>p.id===updated.id);
-      if(p){p.chips=updated.chips;p.eliminated=updated.eliminated;}
+    data.players.forEach(updated => {
+      const p = players.find(p => p.id === updated.id);
+      if (p) { p.chips = updated.chips; p.eliminated = updated.eliminated; }
     });
     updateHUDs();
     showRoundResult(data);
@@ -485,6 +499,7 @@ function applyGameState(state) {
   }
 }
 
+// ── Solo mode ──────────────────────────────────────────
 function soloCardValue(card){return RANK_VALUE[card?.rank]??99;}
 function soloAlive(){return soloPlayers.filter(p=>!p.eliminated&&p.chips>0);}
 function soloNextAlive(from,step=1){
@@ -572,9 +587,11 @@ function soloContinue() {
   players=soloPlayers; soloStartRound();
 }
 
+// ── Boot ───────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
   setupCanvas(); initSocket();
 
+  // seat buttons
   document.querySelectorAll('#seat-row .seat-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{document.querySelectorAll('#seat-row .seat-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');selectedSeats=Number(btn.dataset.seats);});
   });
@@ -582,6 +599,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     btn.addEventListener('click',()=>{document.querySelectorAll('#seat-row-lobby .seat-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');selectedSeatsLobby=Number(btn.dataset.seats);});
   });
 
+  // splash
   document.getElementById('btn-solo').addEventListener('click',()=>{
     const name=document.getElementById('inp-name').value.trim()||'You';
     startSolo(name,selectedSeats);
@@ -593,6 +611,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   document.getElementById('inp-name').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-solo').click();});
 
+  // lobby
   document.getElementById('btn-back').addEventListener('click',()=>showScreen('screen-splash'));
   document.getElementById('btn-create-room').addEventListener('click',()=>{
     const name=document.getElementById('inp-name-lobby').value.trim();
@@ -608,9 +627,11 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   document.getElementById('inp-room-code').addEventListener('input',function(){this.value=this.value.toUpperCase();});
 
+  // waiting room
   document.getElementById('btn-start-game').addEventListener('click',()=>socket.emit('startGame'));
   document.getElementById('btn-leave-room').addEventListener('click',()=>{myRoomCode=null;isHost=false;showScreen('screen-lobby');});
 
+  // in-game
   document.getElementById('btn-keep').addEventListener('click',()=>{
     if(!myTurn) return;
     myTurn=false; drawTable();
@@ -622,11 +643,14 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(isSolo) soloPass(); else socket.emit('pass');
   });
 
+  // round result
   document.getElementById('btn-continue').addEventListener('click',()=>{
     document.getElementById('round-result').classList.remove('show');
     if(isSolo) soloContinue();
+    // multiplayer: server drives next round automatically
   });
 
+  // game over
   document.getElementById('btn-again').addEventListener('click',()=>{
     document.getElementById('game-over').classList.remove('show');
     if(isSolo){soloPlayers.forEach(p=>{p.chips=3;p.eliminated=false;p.card=null;});players=soloPlayers;buildHUDs();soloStartRound();}
@@ -640,5 +664,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 });
 </script>
+</body>
+</html>
 </body>
 </html>
