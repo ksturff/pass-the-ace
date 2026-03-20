@@ -73,23 +73,11 @@
       background:linear-gradient(to top, #060809 60%, transparent 100%);
       border-top:1px solid rgba(0,229,255,0.12);
       display:none; align-items:center; justify-content:center;
-      gap:20px; z-index:20; padding:0 24px;
+      gap:24px; z-index:20; padding:0 24px;
     }
     #hand-area.visible { display:flex; }
 
-    /* chips column on the left */
-    #my-chips-col {
-      display:flex; flex-direction:column; align-items:center;
-      gap:6px; min-width:32px;
-    }
-    .chip-dot {
-      width:10px; height:10px; border-radius:50%;
-      background:var(--gold); box-shadow:0 0 6px var(--gold);
-    }
-    .chip-dot.danger { background:#ff4d4f; box-shadow:0 0 6px #ff4d4f; }
-
-    /* card in middle */
-    #my-card-display { flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:6px; }
+    #my-card-display { flex-shrink:0; }
     #my-card-canvas {
       border-radius:6px; display:block;
       box-shadow:0 0 16px rgba(0,0,0,0.7);
@@ -98,12 +86,15 @@
     #my-card-display.glow #my-card-canvas {
       box-shadow:0 0 28px rgba(0,229,255,0.45), 0 4px 20px rgba(0,0,0,0.7);
     }
-    #my-name-label { font-size:10px; color:var(--accent); letter-spacing:1.5px; text-shadow:0 0 8px rgba(0,229,255,0.4); }
 
-    /* buttons on the right */
-    #hand-buttons { display:flex; flex-direction:column; gap:10px; min-width:140px; }
+    #my-info { display:flex; flex-direction:column; gap:7px; min-width:90px; }
+    #my-name-label { font-size:10px; color:var(--accent); letter-spacing:1.5px; text-shadow:0 0 8px rgba(0,229,255,0.4); }
+    #my-chips-dots { display:flex; gap:4px; align-items:center; min-height:14px; }
+    #waiting-label { font-size:10px; color:var(--muted); font-family:sans-serif; letter-spacing:.3px; }
+
+    #hand-buttons { display:flex; flex-direction:column; gap:10px; min-width:130px; }
     .hand-btn {
-      padding:12px 18px; border-radius:12px; border:0; cursor:pointer;
+      padding:11px 18px; border-radius:12px; border:0; cursor:pointer;
       font-weight:700; font-size:13px; font-family:'Orbitron',sans-serif;
       transition:opacity .2s, transform .1s, box-shadow .2s; text-align:center;
     }
@@ -201,10 +192,13 @@
   <div id="turn-banner">—</div>
   <div id="king-toast">👑 King blocks the pass!</div>
   <div id="hand-area">
-    <div id="my-chips-col"></div>
     <div id="my-card-display">
       <canvas id="my-card-canvas" width="70" height="100"></canvas>
+    </div>
+    <div id="my-info">
       <div id="my-name-label">YOU</div>
+      <div id="my-chips-dots"></div>
+      <div id="waiting-label"></div>
     </div>
     <div id="hand-buttons">
       <button class="hand-btn" id="btn-keep">KEEP</button>
@@ -245,7 +239,7 @@ const RANKS = [2,3,4,5,6,7,8,9,10,'J','Q','K','A'];
 const RANK_VALUE = {2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,J:11,Q:12,K:13,A:1};
 const SUIT_NAME  = {S:'spades',H:'hearts',D:'diamonds',C:'clubs'};
 const RANK_NAME  = {J:'jack',Q:'queen',K:'king',A:'ace'};
-const CW=800, CH=520, CX=400, CY=230, RX=270, RY=155;
+const CW=800, CH=520, CX=400, CY=260, RX=270, RY=170;
 const AVATAR_COLORS = [
   'linear-gradient(135deg,#1765ff,#00e5ff)',
   'linear-gradient(135deg,#c0392b,#e74c3c)',
@@ -335,7 +329,7 @@ function drawCardFallback(ctx, card, cx, cy, w, h, faceUp) {
   ctx.restore();
 }
 
-function seatAngle(i,n){return(90+i*360/n)*Math.PI/180;}
+function seatAngle(i,n){return(-90+i*360/n)*Math.PI/180;}
 function cardPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*RX,y:CY+Math.sin(a)*RY};}
 function hudPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*(RX+68),y:CY+Math.sin(a)*(RY+52)};}
 
@@ -349,13 +343,13 @@ function drawTable(revealAll=false) {
     ctx.fillStyle='#215c2e'; ctx.beginPath(); ctx.ellipse(CX,CY,RX+40,RY+30,0,0,Math.PI*2); ctx.fill();
   }
   const list=isSolo?soloPlayers:players;
-  const opponents=list.filter(p=>p.id!==myId);
-  const totalSeats=list.length;
+  const n=list.length;
   const CARD_W=40, CARD_H=58;
-  opponents.forEach((p,i) => {
+  list.forEach((p,i) => {
     if (p.eliminated||!p.card) return;
-    const seatIdx=i+1;
-    const pos=cardPos(seatIdx,totalSeats);
+    // human player's card is shown in the hand area
+    if (p.id===myId) return;
+    const pos=cardPos(p.seatIndex??i,n);
     const isHidden=p.card==='hidden';
     const show=revealAll||(!isHidden&&p.card?.rank==='K');
     const faceUp=show&&!isHidden;
@@ -393,18 +387,15 @@ function buildHUDs() {
 function repositionHUDs() {
   const list=isSolo?soloPlayers:players;
   if (!list.length) return;
-  const opponents=list.filter(p=>p.id!==myId);
-  const n=opponents.length;
-  const totalSeats=list.length;
+  const n=list.length;
   const wrap=document.getElementById('canvas-wrap');
   const rect=wrap.getBoundingClientRect();
   const cl=rect.left+(rect.width-CW*scale)/2;
   const ct=rect.top+(rect.height-CH*scale)/2;
-  opponents.forEach((p,i)=>{
+  list.forEach((p,i)=>{
+    if (p.id===myId) return;
     const el=document.getElementById(`hud-${p.id}`); if(!el) return;
-    // spread opponents in seats 1..totalSeats-1 (skip seat 0 = top = human)
-    const seatIdx=i+1;
-    const pos=hudPos(seatIdx,totalSeats);
+    const pos=hudPos(p.seatIndex??i,n);
     el.style.left=(cl+pos.x*scale)+'px'; el.style.top=(ct+pos.y*scale)+'px';
   });
 }
