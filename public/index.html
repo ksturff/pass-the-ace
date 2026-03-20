@@ -246,7 +246,10 @@ function cardKey(card) {
 
 function setupCanvas() {
   canvas=document.getElementById('canvas'); ctx=canvas.getContext('2d');
-  canvas.width=CW; canvas.height=CH; resizeCanvas();
+  const dpr=window.devicePixelRatio||1;
+canvas.width=CW*dpr; canvas.height=CH*dpr;
+ctx.scale(dpr,dpr);
+resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
 }
 function resizeCanvas() {
@@ -310,7 +313,7 @@ function drawTable(revealAll=false) {
     const pos=cardPos(p.seatIndex??i,n);
     const isMe=p.id===myId;
     const isHidden=p.card==='hidden';
-    const show=revealAll||(!isHidden&&(isMe||p.card?.rank==='K'));
+    const show=revealAll||(!isHidden&&((isMe&&myTurn)||p.card?.rank==='K'));
     const faceUp=show&&!isHidden;
     if (p.id===currentPlayerId&&!revealAll) {
       ctx.save(); ctx.shadowColor='#00e5ff'; ctx.shadowBlur=18;
@@ -333,7 +336,11 @@ function buildHUDs() {
     const nameEl=document.createElement('div'); nameEl.className='p-name'; nameEl.textContent=p.name;
     const avatarEl=document.createElement('div'); avatarEl.className='p-avatar'; avatarEl.id=`avatar-${p.id}`;
     avatarEl.style.background=AVATAR_COLORS[i%AVATAR_COLORS.length];
-    avatarEl.textContent=p.name.charAt(0).toUpperCase();
+    const avatarImg=document.createElement('img');
+avatarImg.src=`assets/avatars/avatar${(i%10)+1}.png`;
+avatarImg.style.cssText='width:100%;height:100%;border-radius:50%;object-fit:cover;';
+avatarImg.onerror=()=>{avatarEl.textContent=p.name.charAt(0).toUpperCase();};
+avatarEl.appendChild(avatarImg);
     const chipsEl=document.createElement('div'); chipsEl.className='p-chips'; chipsEl.id=`chips-${p.id}`;
     chipsEl.textContent='●'.repeat(Math.max(0,p.chips));
     div.appendChild(nameEl); div.appendChild(avatarEl); div.appendChild(chipsEl);
