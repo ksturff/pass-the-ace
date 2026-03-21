@@ -518,11 +518,23 @@
     #table-area {
       flex:1; position:relative; min-height:0;
       display:flex; align-items:center; justify-content:center;
-      padding:12px; overflow:visible;
+      padding:8px 0; overflow:visible;
     }
     #game-table {
-      position:relative; height:100%; max-height:100%;
-      aspect-ratio:1.75; max-width:100%; overflow:visible;
+      position:relative; overflow:visible;
+      /* Portrait phone: width-driven, taller ratio */
+      width: 92vw;
+      height: calc(92vw / 1.45);
+      max-height: calc(100vh - 220px);
+    }
+    @media (min-aspect-ratio: 4/3) {
+      /* Landscape / desktop: height-driven */
+      #game-table {
+        width: auto;
+        height: 100%;
+        aspect-ratio: 1.75;
+        max-height: 100%;
+      }
     }
     #table-bg { position:absolute; inset:0; width:100%; height:100%; }
 
@@ -536,10 +548,10 @@
     .player-slot.eliminated { opacity:0.25; filter:grayscale(1); }
 
     .p-hud-inner {
-      display:flex; align-items:center; gap:6px;
+      display:flex; align-items:center; gap:5px;
       background:linear-gradient(135deg,rgba(18,24,34,0.97) 0%,rgba(12,16,24,0.97) 100%);
       border:1px solid rgba(255,255,255,0.08);
-      border-radius:40px; padding:4px 10px 4px 4px;
+      border-radius:40px; padding:3px 8px 3px 3px;
       box-shadow:0 4px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
       transition:border-color .3s, box-shadow .3s; white-space:nowrap;
     }
@@ -548,15 +560,15 @@
       box-shadow:0 4px 16px rgba(0,0,0,0.6), 0 0 0 2px rgba(0,229,255,0.15), inset 0 1px 0 rgba(255,255,255,0.05);
     }
     .p-avatar {
-      width:clamp(26px,3.8vw,34px); height:clamp(26px,3.8vw,34px);
+      width:clamp(22px,5vw,34px); height:clamp(22px,5vw,34px);
       border-radius:50%; border:1.5px solid rgba(255,255,255,0.1);
       display:flex; align-items:center; justify-content:center;
-      font-size:clamp(13px,2vw,18px); background:#1a2030; flex-shrink:0;
+      font-size:clamp(11px,3vw,18px); background:#1a2030; flex-shrink:0;
       transition:border-color .3s, box-shadow .3s;
     }
     .player-slot.active-turn .p-avatar { border-color:var(--accent); box-shadow:0 0 0 2px rgba(0,229,255,0.2), 0 0 8px rgba(0,229,255,0.4); }
     .p-info { display:flex; flex-direction:column; gap:2px; }
-    .p-name { color:rgba(232,244,255,0.85); font-size:clamp(7px,1vw,9px); letter-spacing:0.6px; text-transform:uppercase; white-space:nowrap; max-width:clamp(50px,7vw,75px); overflow:hidden; text-overflow:ellipsis; }
+    .p-name { color:rgba(232,244,255,0.85); font-size:clamp(6px,1.8vw,9px); letter-spacing:0.4px; text-transform:uppercase; white-space:nowrap; max-width:clamp(40px,12vw,75px); overflow:hidden; text-overflow:ellipsis; }
     .p-chips { display:flex; align-items:center; gap:3px; }
     .p-chip-dot { width:clamp(5px,0.8vw,7px); height:clamp(5px,0.8vw,7px); border-radius:50%; background:var(--gold); box-shadow:0 0 4px rgba(255,215,0,0.5); }
     .p-chip-dot.danger { background:#ff4d4f; box-shadow:0 0 4px rgba(255,77,79,0.5); }
@@ -1437,12 +1449,19 @@ function loadAssets(){
 
 function drawCardFallback(ctx,card,cx,cy,w,h,faceUp){
   const x=cx-w/2,y=cy-h/2;ctx.save();
-  ctx.fillStyle=faceUp?'#fff':'#1a3a8a';ctx.strokeStyle='#444';ctx.lineWidth=0.5;
+  ctx.fillStyle=faceUp?'#fff':'#0d1f3c';ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=0.5;
   ctx.beginPath();ctx.roundRect(x,y,w,h,3);ctx.fill();ctx.stroke();
   if(!faceUp){
-    // Draw ace motif on card back
-    ctx.fillStyle='rgba(0,180,220,0.3)';
-    ctx.font=`bold ${w*0.55}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+    // Dark blue card back with subtle diamond pattern
+    ctx.strokeStyle='rgba(0,180,220,0.2)';ctx.lineWidth=0.5;
+    const spacing=w*0.25;
+    for(let dx=-w;dx<w*2;dx+=spacing){
+      ctx.beginPath();ctx.moveTo(x+dx,y);ctx.lineTo(x+dx+h,y+h);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x+dx+h,y);ctx.lineTo(x+dx,y+h);ctx.stroke();
+    }
+    // Center spade
+    ctx.fillStyle='rgba(0,200,255,0.35)';
+    ctx.font=`bold ${w*0.45}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText('♠',cx,cy);
     ctx.restore();return;
   }
@@ -1458,11 +1477,15 @@ function drawCardFallback(ctx,card,cx,cy,w,h,faceUp){
 // ── Seat positions: two ellipses ──
 function getSeatPositions(n){
   const positions=[];
+  // On narrow screens, keep everything tighter
+  const isMobile=window.innerWidth<600;
+  const hudRx=isMobile?44:50;
+  const hudRy=isMobile?46:48;
+  const cardRx=isMobile?30:33;
+  const cardRy=isMobile?24:26;
   for(let i=0;i<n;i++){
     const angle=(90+i*360/n)*Math.PI/180;
     const cx=50,cy=50;
-    const hudRx=50,hudRy=48;
-    const cardRx=33,cardRy=26;
     positions.push({
       hud:{left:cx+Math.cos(angle)*hudRx,top:cy+Math.sin(angle)*hudRy},
       card:{left:cx+Math.cos(angle)*cardRx,top:cy+Math.sin(angle)*cardRy},
