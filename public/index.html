@@ -66,6 +66,7 @@
     ───────────────────────────────────── */
     #screen-game {
       background: var(--bg);
+      height: 100%;
     }
 
     /* Table area fills available space above hand panel */
@@ -77,15 +78,17 @@
       align-items: center;
       justify-content: center;
       padding: 12px;
+      overflow: hidden;
     }
 
-    /* The table itself — SVG background, scales with viewport */
+    /* The table itself — sized to fit the available area */
     #game-table {
       position: relative;
-      width: 100%;
-      max-width: min(700px, 95vw);
-      /* Maintain aspect ratio */
+      /* Fill height, constrain width by aspect ratio */
+      height: 100%;
+      max-height: 100%;
       aspect-ratio: 1.75;
+      max-width: 100%;
     }
 
     #table-bg {
