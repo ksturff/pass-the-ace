@@ -1151,7 +1151,7 @@ function renderLobbyRooms(rooms){
 function initSocket(){
   socket=io();
   socket.on('connect',()=>{myId=socket.id;});
-  socket.on('tournamentList',list=>{renderTournamentList(list);});
+  socket.on('tournamentList',list=>{currentTournamentList=list||[];if(document.getElementById('screen-lobby').classList.contains('active'))renderTournamentList(list);});
   socket.on('lobbyUpdate',rooms=>{renderLobbyRooms(rooms);});
   socket.on('registeredTournament',data=>{
     myTournamentId=data.tournamentId;
@@ -1286,12 +1286,13 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('btn-tournaments').addEventListener('click',()=>{
     const name=document.getElementById('inp-name').value.trim();
     if(!name){showToast('Enter your name first','#ff4d4f');return;}
-    // Show tournaments tab
     showScreen('screen-lobby');
     document.querySelectorAll('.lobby-tab').forEach(t=>t.classList.remove('active'));
     document.querySelector('[data-tab="tournaments"]').classList.add('active');
     document.getElementById('tab-tournaments').style.display='block';
     document.getElementById('tab-tables').style.display='none';
+    document.getElementById('lobby-filterbar').style.display='flex';
+    renderTournamentList(currentTournamentList);
   });
   document.getElementById('btn-private-room').addEventListener('click',()=>{
     const name=document.getElementById('inp-name').value.trim();
