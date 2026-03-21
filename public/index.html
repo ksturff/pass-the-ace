@@ -63,10 +63,11 @@
     body.mobile-game #screen-game { padding-top: 32px; }
     body.mobile-game #table-area { padding: 4px 0; }
     body.mobile-game #game-table {
-      width: 94vw;
-      height: calc(94vw / 1.75);
+      width: 54vw;
+      height: calc(54vw / 1.6);
       max-height: calc(100vh - 32px - 100px);
       aspect-ratio: unset;
+      margin: 0 auto;
     }
     body.mobile-game #hand-area {
       height: 100px !important;
@@ -80,8 +81,7 @@
     body.mobile-game #waiting-label { font-size: 8px !important; }
     body.mobile-game .hand-btn { padding: 7px 10px !important; font-size: 10px !important; border-radius: 8px !important; }
     body.mobile-game #hand-buttons { min-width: 88px !important; gap: 5px !important; }
-    body.mobile-game .player-card-slot { width: 22px !important; height: 32px !important; }
-    body.mobile-game .p-card-wrap { width: 22px !important; height: 32px !important; }
+    /* card sizes set by JS via canvas dimensions */
     body.mobile-game .p-hud-inner {
       padding: 3px 6px 3px 3px !important;
       gap: 4px !important;
@@ -638,9 +638,9 @@
     .p-chip-dot.danger { background:#ff4d4f; box-shadow:0 0 4px rgba(255,77,79,0.5); }
     .p-chip-dot.empty { background:#1e2530; border:1px solid rgba(255,255,255,0.07); box-shadow:none; }
 
-    .player-card-slot { position:absolute; transform:translate(-50%,-50%); z-index:4; pointer-events:none; width:38px; height:54px; }
-    .p-card-wrap { width:38px; height:54px; overflow:hidden; position:relative; border-radius:3px; }
-    .p-card-wrap canvas { position:absolute; top:0; left:0; display:block; border-radius:3px; box-shadow:0 2px 8px rgba(0,0,0,0.6); }
+    .player-card-slot { position:absolute; transform:translate(-50%,-50%); z-index:4; pointer-events:none; }
+    .p-card-wrap { overflow:hidden; position:relative; border-radius:3px; }
+    .p-card-wrap canvas { display:block; border-radius:3px; box-shadow:0 2px 8px rgba(0,0,0,0.6); }
     .p-card-wrap.active-glow canvas { box-shadow:0 0 0 2px var(--accent), 0 0 12px rgba(0,229,255,0.5); }
 
     #hand-area {
@@ -1514,6 +1514,10 @@ function loadAssets(){
     const back=new Image();back.src='assets/back.png';cardImages['back']=back;
     ps.push(new Promise(r=>{back.onload=r;back.onerror=r;}));
     Promise.all(ps).then(()=>{assetsReady=true;resolve();});
+    // Also redraw cards as individual images load
+    Object.values(cardImages).forEach(img=>{
+      if(!img.complete){img.addEventListener('load',()=>{if(assetsReady)updateTable();});}
+    });
   });
 }
 
@@ -1522,16 +1526,13 @@ function drawCardFallback(ctx,card,cx,cy,w,h,faceUp){
   ctx.fillStyle=faceUp?'#fff':'#0d1f3c';ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=0.5;
   ctx.beginPath();ctx.roundRect(x,y,w,h,3);ctx.fill();ctx.stroke();
   if(!faceUp){
-    // Dark blue card back with subtle diamond pattern
-    ctx.strokeStyle='rgba(0,180,220,0.2)';ctx.lineWidth=0.5;
-    const spacing=w*0.25;
-    for(let dx=-w;dx<w*2;dx+=spacing){
-      ctx.beginPath();ctx.moveTo(x+dx,y);ctx.lineTo(x+dx+h,y+h);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(x+dx+h,y);ctx.lineTo(x+dx,y+h);ctx.stroke();
-    }
-    // Center spade
-    ctx.fillStyle='rgba(0,200,255,0.35)';
-    ctx.font=`bold ${w*0.45}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+    // Card back - dark navy with border and spade
+    ctx.fillStyle='#162040';
+    ctx.beginPath();ctx.roundRect(x+1,y+1,w-2,h-2,2);ctx.fill();
+    ctx.strokeStyle='rgba(0,150,220,0.4)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(x+2,y+2,w-4,h-4,2);ctx.stroke();
+    ctx.fillStyle='rgba(0,180,255,0.25)';
+    ctx.font=`bold ${w*0.5}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText('♠',cx,cy);
     ctx.restore();return;
   }
@@ -1557,10 +1558,10 @@ function applyMobileGameLayout(){
 function getSeatPositions(n){
   const positions=[];
   const mobile=isMobileDevice();
-  const hudRx=mobile?46:50;
-  const hudRy=mobile?43:48;
-  const cardRx=mobile?33:33;
-  const cardRy=mobile?25:26;
+  const hudRx=mobile?50:50;
+  const hudRy=mobile?47:48;
+  const cardRx=mobile?34:33;
+  const cardRy=mobile?28:26;
   for(let i=0;i<n;i++){
     const angle=(90+i*360/n)*Math.PI/180;
     const cx=50,cy=50;
@@ -1588,17 +1589,24 @@ function buildTable(){
     const isLeft=pos.angle*180/Math.PI>=135&&pos.angle*180/Math.PI<=225;
 
     // Card slot
+    const mobile=isMobileDevice();
+    const cw=mobile?22:38;const ch=mobile?32:54;
     const cardSlot=document.createElement('div');
     cardSlot.className='player-card-slot';
     cardSlot.id=`cardslot-${p.id}`;
     cardSlot.style.left=pos.card.left+'%';
     cardSlot.style.top=pos.card.top+'%';
+    cardSlot.style.width=cw+'px';
+    cardSlot.style.height=ch+'px';
     const cardWrap=document.createElement('div');
     cardWrap.className='p-card-wrap';
     cardWrap.id=`cardwrap-${p.id}`;
+    cardWrap.style.width=cw+'px';
+    cardWrap.style.height=ch+'px';
     const cardCanvas=document.createElement('canvas');
     cardCanvas.id=`card-${p.id}`;
-    cardCanvas.width=38;cardCanvas.height=54;
+    cardCanvas.width=cw;cardCanvas.height=ch;
+    cardCanvas.style.width=cw+'px';cardCanvas.style.height=ch+'px';
     cardWrap.appendChild(cardCanvas);
     cardSlot.appendChild(cardWrap);
     table.appendChild(cardSlot);
@@ -1654,8 +1662,9 @@ function updateTable(revealAll=false){
         const faceUp=revealAll||(!isHidden&&p.card?.rank==='K');
         const key=faceUp?cardKey(p.card):'back';
         const img=cardImages[key];
-        if(img&&img.complete&&img.naturalWidth>0)cctx.drawImage(img,0,0,38,54);
-        else drawCardFallback(cctx,isHidden?null:p.card,19,27,38,54,faceUp);
+        const cw=cardCanvas.width,ch=cardCanvas.height;
+        if(img&&img.complete&&img.naturalWidth>0)cctx.drawImage(img,0,0,cw,ch);
+        else drawCardFallback(cctx,isHidden?null:p.card,cw/2,ch/2,cw,ch,faceUp);
       }
     }
     if(chipsEl)chipsEl.innerHTML=p.eliminated?'<span style="color:#333;font-size:9px;letter-spacing:1px;">OUT</span>':premiumChips(p.chips,p.chips<=1);
@@ -1679,6 +1688,8 @@ function updateHandArea(){
   handCtx.clearRect(0,0,70,100);
   if(me.card&&me.card!=='hidden'){
     const key=cardKey(me.card);const img=cardImages[key];
+    const hcw=isMobileDevice()?50:70;const hch=isMobileDevice()?72:100;
+    handCanvas.style.width=hcw+'px';handCanvas.style.height=hch+'px';
     if(img&&img.complete&&img.naturalWidth>0)handCtx.drawImage(img,0,0,70,100);
     else drawCardFallback(handCtx,me.card,35,50,70,100,true);
     cardDisp.classList.toggle('glow',myTurn);
