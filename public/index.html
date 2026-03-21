@@ -61,9 +61,9 @@
     .player-dot { width:8px; height:8px; border-radius:50%; background:var(--ok); flex-shrink:0; }
     #btn-start-game { display:none; }
 
-    #canvas-wrap { position:fixed; left:0; right:0; top:48px; bottom:160px; display:flex; align-items:center; justify-content:center; overflow:visible; }
+    #canvas-wrap { position:fixed; left:0; right:0; top:80px; bottom:160px; display:flex; align-items:center; justify-content:center; overflow:visible; }
     canvas { display:block; }
-    #hud { position:fixed; left:0; right:0; top:48px; bottom:160px; pointer-events:none; z-index:5; overflow:visible; }
+    #hud { position:fixed; left:0; right:0; top:80px; bottom:160px; pointer-events:none; z-index:5; overflow:visible; }
 
     /* ── Premium Player HUD ── */
     .p-hud {
@@ -373,7 +373,7 @@ function drawCardFallback(ctx,card,cx,cy,w,h,faceUp){
 
 function seatAngle(i,n){return(90+i*360/n)*Math.PI/180;}
 function cardPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*RX,y:CY+Math.sin(a)*RY};}
-function hudPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*(RX+90),y:CY+Math.sin(a)*(RY+72)};}
+function hudPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*(RX+110),y:CY+Math.sin(a)*(RY+95)};}
 
 function drawTable(revealAll=false){
   if(!ctx)return;
