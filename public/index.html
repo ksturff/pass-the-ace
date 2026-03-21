@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Pass the Ace</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet"/>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -29,12 +36,72 @@
     .btn-ghost:hover { border-color:rgba(0,229,255,0.3); color:var(--text); }
     .divider { text-align:center; color:var(--muted); font-size:11px; margin:12px 0; }
 
+    /* ── LOGIN SCREEN ── */
+    #screen-login {
+      background: radial-gradient(ellipse 120% 60% at 50% -5%, #0d1e2e 0%, #0b0d10 55%);
+      align-items: center; justify-content: center;
+    }
+    .login-wrap { width: min(380px, 92vw); display: flex; flex-direction: column; align-items: center; gap: 0; }
+    .login-logo { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 36px; }
+    .login-title { font-size: clamp(22px,5vw,32px); letter-spacing: 4px; background: linear-gradient(90deg,var(--accent2),var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .login-sub { font-family: sans-serif; font-size: 12px; color: var(--muted); letter-spacing: 1px; }
+    .login-card { width: 100%; background: linear-gradient(135deg,#111820,#0d1318); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 12px; }
+    .login-divider { display: flex; align-items: center; gap: 12px; margin: 4px 0; }
+    .login-divider span { font-family: sans-serif; font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .login-divider::before, .login-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.08); }
+    .btn-google {
+      width: 100%; padding: 13px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      color: var(--text); font-size: 13px; font-family: sans-serif;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: all .2s;
+    }
+    .btn-google:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+    .btn-google svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .login-switch { font-family: sans-serif; font-size: 12px; color: var(--muted); text-align: center; }
+    .login-switch a { color: var(--accent); cursor: pointer; text-decoration: none; }
+    .login-switch a:hover { text-decoration: underline; }
+    .login-error { font-family: sans-serif; font-size: 12px; color: var(--danger); text-align: center; min-height: 16px; }
+
+    /* ── PROFILE SETUP ── */
+    #screen-profile-setup {
+      background: radial-gradient(ellipse 120% 60% at 50% -5%, #0d1e2e 0%, #0b0d10 55%);
+      align-items: center; justify-content: center;
+    }
+    .profile-setup-wrap { width: min(380px, 92vw); }
+    .profile-setup-title { font-size: 16px; letter-spacing: 2px; color: var(--accent); text-align: center; margin-bottom: 6px; }
+    .profile-setup-sub { font-family: sans-serif; font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 24px; }
+
+    /* ── TOP NAV (logged in) ── */
+    #top-nav {
+      position: fixed; top: 0; left: 0; right: 0; height: 44px;
+      background: rgba(10,13,17,0.95); border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: none; align-items: center; padding: 0 16px; gap: 12px; z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+    #top-nav.visible { display: flex; }
+    .nav-logo { font-size: 11px; letter-spacing: 2px; font-weight: 700; background: linear-gradient(90deg,var(--accent2),var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-spacer { flex: 1; }
+    .nav-profile {
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
+      padding: 4px 10px; border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      transition: all .2s;
+    }
+    .nav-profile:hover { background: rgba(255,255,255,0.07); }
+    .nav-avatar { font-size: 18px; }
+    .nav-name { font-size: 11px; color: var(--text); letter-spacing: 0.5px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .nav-signout { font-size: 10px; color: var(--muted); font-family: sans-serif; cursor: pointer; padding: 4px 8px; border-radius: 6px; border: 1px solid transparent; transition: all .2s; }
+    .nav-signout:hover { color: var(--danger); border-color: rgba(255,77,79,0.3); }
+
     /* ── HOME SCREEN ── */
     #screen-home {
       background: radial-gradient(ellipse 120% 60% at 50% -5%, #0d1e2e 0%, #0b0d10 55%);
       align-items: center;
       justify-content: center;
-      padding: 24px 16px;
+      padding: 60px 16px 24px;
     }
     .home-wrap { width: min(400px, 96vw); display:flex; flex-direction:column; align-items:center; }
 
@@ -474,8 +541,82 @@
 </head>
 <body>
 
+<!-- ── TOP NAV ── -->
+<div id="top-nav">
+  <div class="nav-logo">PASS THE ACE</div>
+  <div class="nav-spacer"></div>
+  <div class="nav-profile" id="nav-profile-btn">
+    <span class="nav-avatar" id="nav-avatar">🎭</span>
+    <span class="nav-name" id="nav-username">Player</span>
+  </div>
+  <span class="nav-signout" id="btn-signout">Sign out</span>
+</div>
+
+<!-- ── LOGIN ── -->
+<div id="screen-login" class="screen active">
+  <div class="login-wrap">
+    <div class="login-logo">
+      <div class="logo-icon">
+        <svg width="72" height="72" viewBox="0 0 72 72">
+          <defs>
+            <linearGradient id="lg2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1765ff"/>
+              <stop offset="100%" stop-color="#00e5ff"/>
+            </linearGradient>
+          </defs>
+          <text x="36" y="52" text-anchor="middle" font-size="48" font-family="serif" fill="url(#lg2)" opacity="0.9">♠</text>
+          <text x="10" y="18" font-size="11" font-family="Orbitron,sans-serif" font-weight="700" fill="rgba(0,229,255,0.6)">A</text>
+          <text x="62" y="64" font-size="11" font-family="Orbitron,sans-serif" font-weight="700" fill="rgba(0,229,255,0.6)" text-anchor="end">A</text>
+        </svg>
+      </div>
+      <div class="login-title">PASS THE ACE</div>
+      <div class="login-sub">Sign in to play</div>
+    </div>
+
+    <div class="login-card" id="login-card-signin">
+      <button class="btn-google" id="btn-google-signin">
+        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <div class="login-divider"><span>or</span></div>
+      <input id="inp-email" class="inp" type="email" placeholder="Email address" style="margin-bottom:0;"/>
+      <input id="inp-password" class="inp" type="password" placeholder="Password" style="margin-bottom:0;"/>
+      <div class="login-error" id="login-error"></div>
+      <button class="btn-primary" id="btn-email-signin">Sign In</button>
+      <div class="login-switch">Don't have an account? <a id="btn-show-signup">Sign up</a></div>
+    </div>
+
+    <div class="login-card" id="login-card-signup" style="display:none;">
+      <button class="btn-google" id="btn-google-signup">
+        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Sign up with Google
+      </button>
+      <div class="login-divider"><span>or</span></div>
+      <input id="inp-signup-email" class="inp" type="email" placeholder="Email address" style="margin-bottom:0;"/>
+      <input id="inp-signup-password" class="inp" type="password" placeholder="Password (min 6 chars)" style="margin-bottom:0;"/>
+      <div class="login-error" id="signup-error"></div>
+      <button class="btn-primary" id="btn-email-signup">Create Account</button>
+      <div class="login-switch">Already have an account? <a id="btn-show-signin">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PROFILE SETUP (first login) ── -->
+<div id="screen-profile-setup" class="screen">
+  <div class="profile-setup-wrap">
+    <div class="profile-setup-title">SET UP YOUR PROFILE</div>
+    <div class="profile-setup-sub">Choose how you appear at the table</div>
+    <div class="login-card">
+      <input id="inp-display-name" class="inp" placeholder="Display name…" maxlength="14" style="margin-bottom:0;"/>
+      <div class="avatar-label" style="margin-top:8px;">CHOOSE YOUR AVATAR</div>
+      <div class="avatar-grid" id="avatar-grid-setup"></div>
+      <button class="btn-primary" id="btn-save-profile">Let's Play</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── HOME ── -->
-<div id="screen-home" class="screen active">
+<div id="screen-home" class="screen">
   <div class="home-wrap">
     <div class="home-logo">
       <div class="logo-icon">
@@ -768,6 +909,162 @@
 <div id="toast"></div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script>
+// ── Firebase init ──
+const firebaseConfig = {
+  apiKey: "AIzaSyD6Jh5tPgW6yfbVxgb4LZKEaVy6ZFK-X7M",
+  authDomain: "pass-the-ace-69d35.firebaseapp.com",
+  projectId: "pass-the-ace-69d35",
+  storageBucket: "pass-the-ace-69d35.firebasestorage.app",
+  messagingSenderId: "322595717586",
+  appId: "1:322595717586:web:e73890f0a4f6f2b5c7880b"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUser = null;
+let userProfile = null;
+
+async function loadUserProfile(uid) {
+  const doc = await db.collection('users').doc(uid).get();
+  if (doc.exists) {
+    userProfile = doc.data();
+    return userProfile;
+  }
+  return null;
+}
+
+async function saveUserProfile(uid, data) {
+  await db.collection('users').doc(uid).set(data, { merge: true });
+  userProfile = { ...userProfile, ...data };
+}
+
+function updateNavBar() {
+  if (!userProfile) return;
+  document.getElementById('nav-avatar').textContent = userProfile.avatar || '🎭';
+  document.getElementById('nav-username').textContent = userProfile.displayName || 'Player';
+  document.getElementById('top-nav').classList.add('visible');
+}
+
+// ── Auth state listener ──
+auth.onAuthStateChanged(async user => {
+  if (user) {
+    currentUser = user;
+    const profile = await loadUserProfile(user.uid);
+    if (!profile || !profile.displayName) {
+      // First time — show profile setup
+      const suggestedName = user.displayName?.split(' ')[0] || '';
+      document.getElementById('inp-display-name').value = suggestedName;
+      showScreen('screen-profile-setup');
+    } else {
+      userProfile = profile;
+      updateNavBar();
+      // Pre-fill name for game
+      myAvatar = profile.avatar || AVATARS[0];
+      showScreen('screen-home');
+    }
+  } else {
+    currentUser = null;
+    userProfile = null;
+    document.getElementById('top-nav').classList.remove('visible');
+    showScreen('screen-login');
+  }
+});
+
+function showAuthError(elId, msg) {
+  const el = document.getElementById(elId);
+  if (el) { el.textContent = msg; setTimeout(() => el.textContent = '', 4000); }
+}
+
+function initAuth() {
+  const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+  // Google sign in
+  document.getElementById('btn-google-signin').addEventListener('click', async () => {
+    try { await auth.signInWithPopup(googleProvider); }
+    catch(e) { showAuthError('login-error', e.message); }
+  });
+  document.getElementById('btn-google-signup').addEventListener('click', async () => {
+    try { await auth.signInWithPopup(googleProvider); }
+    catch(e) { showAuthError('signup-error', e.message); }
+  });
+
+  // Email sign in
+  document.getElementById('btn-email-signin').addEventListener('click', async () => {
+    const email = document.getElementById('inp-email').value.trim();
+    const pass = document.getElementById('inp-password').value;
+    if (!email || !pass) { showAuthError('login-error', 'Please fill in all fields.'); return; }
+    try { await auth.signInWithEmailAndPassword(email, pass); }
+    catch(e) { showAuthError('login-error', e.message.replace('Firebase: ', '')); }
+  });
+
+  // Email sign up
+  document.getElementById('btn-email-signup').addEventListener('click', async () => {
+    const email = document.getElementById('inp-signup-email').value.trim();
+    const pass = document.getElementById('inp-signup-password').value;
+    if (!email || !pass) { showAuthError('signup-error', 'Please fill in all fields.'); return; }
+    try { await auth.createUserWithEmailAndPassword(email, pass); }
+    catch(e) { showAuthError('signup-error', e.message.replace('Firebase: ', '')); }
+  });
+
+  // Toggle signin/signup
+  document.getElementById('btn-show-signup').addEventListener('click', () => {
+    document.getElementById('login-card-signin').style.display = 'none';
+    document.getElementById('login-card-signup').style.display = 'flex';
+  });
+  document.getElementById('btn-show-signin').addEventListener('click', () => {
+    document.getElementById('login-card-signup').style.display = 'none';
+    document.getElementById('login-card-signin').style.display = 'flex';
+  });
+
+  // Sign out
+  document.getElementById('btn-signout').addEventListener('click', async () => {
+    await auth.signOut();
+  });
+
+  // Profile setup
+  document.getElementById('btn-save-profile').addEventListener('click', async () => {
+    const name = document.getElementById('inp-display-name').value.trim();
+    if (!name) { showToast('Enter a display name', '#ff4d4f'); return; }
+    const selectedAv = document.querySelector('#avatar-grid-setup .av-opt.selected');
+    const avatar = selectedAv ? selectedAv.textContent : AVATARS[0];
+    await saveUserProfile(currentUser.uid, {
+      displayName: name,
+      avatar,
+      uid: currentUser.uid,
+      email: currentUser.email,
+      gamesPlayed: 0,
+      wins: 0,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    myAvatar = avatar;
+    updateNavBar();
+    showScreen('screen-home');
+  });
+
+  // Enter key on login
+  document.getElementById('inp-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btn-email-signin').click();
+  });
+}
+
+// Build avatar picker for profile setup
+function buildSetupAvatarPicker() {
+  const grid = document.getElementById('avatar-grid-setup');
+  if (!grid) return;
+  AVATARS.forEach((em, i) => {
+    const btn = document.createElement('div');
+    btn.className = 'av-opt' + (i === 0 ? ' selected' : '');
+    btn.textContent = em;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#avatar-grid-setup .av-opt').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+    grid.appendChild(btn);
+  });
+}
+</script>
 <script>
 const SUITS=['S','H','D','C'];
 const RANKS=[2,3,4,5,6,7,8,9,10,'J','Q','K','A'];
@@ -1283,7 +1580,7 @@ function initLobbyTabs(){
 
 // ── Boot ──
 document.addEventListener('DOMContentLoaded',()=>{
-  buildAvatarPicker();initSocket();initLobbyTabs();
+  buildAvatarPicker();buildSetupAvatarPicker();initAuth();initSocket();initLobbyTabs();
 
   // Home buttons
   document.getElementById('btn-tournaments').addEventListener('click',()=>{
@@ -1310,7 +1607,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('tab-tables').style.display='block';
   });
   document.getElementById('btn-quick-play').addEventListener('click',()=>{
-    const name=document.getElementById('inp-name').value.trim()||'You';
+    const name=userProfile?.displayName||document.getElementById('inp-name').value.trim()||'You';
+    myAvatar=userProfile?.avatar||myAvatar;
     startSolo(name,10);
   });
   document.getElementById('btn-how-to-play').addEventListener('click',()=>showScreen('screen-howto'));
