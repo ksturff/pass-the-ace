@@ -61,10 +61,10 @@
     /* ── MOBILE GAME CLASS (applied via JS) ── */
     body.mobile-game #top-nav { height: 32px; }
     body.mobile-game #screen-game { padding-top: 32px; }
-    body.mobile-game #table-area { padding: 4px 0; }
+    body.mobile-game #table-area { padding: 2px 0 0 0; align-items: flex-start; padding-top: 8px; }
     body.mobile-game #game-table {
-      width: 54vw;
-      height: calc(54vw / 1.6);
+      width: 46vw;
+      height: calc(46vw / 1.6);
       max-height: calc(100vh - 32px - 100px);
       aspect-ratio: unset;
       margin: 0 auto;
@@ -1688,10 +1688,10 @@ function updateHandArea(){
   handCtx.clearRect(0,0,70,100);
   if(me.card&&me.card!=='hidden'){
     const key=cardKey(me.card);const img=cardImages[key];
-    const hcw=isMobileDevice()?50:70;const hch=isMobileDevice()?72:100;
+    const hcw=isMobileDevice()?38:70;const hch=isMobileDevice()?54:100;
     handCanvas.style.width=hcw+'px';handCanvas.style.height=hch+'px';
-    if(img&&img.complete&&img.naturalWidth>0)handCtx.drawImage(img,0,0,70,100);
-    else drawCardFallback(handCtx,me.card,35,50,70,100,true);
+    if(img&&img.complete&&img.naturalWidth>0)handCtx.drawImage(img,0,0,hcw,hch);
+    else drawCardFallback(handCtx,me.card,hcw/2,hch/2,hcw,hch,true);
     cardDisp.classList.toggle('glow',myTurn);
   }else{
     drawCardFallback(handCtx,null,35,50,70,100,false);
