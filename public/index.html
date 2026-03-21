@@ -61,9 +61,9 @@
     .player-dot { width:8px; height:8px; border-radius:50%; background:var(--ok); flex-shrink:0; }
     #btn-start-game { display:none; }
 
-    #canvas-wrap { position:fixed; left:0; right:0; top:80px; bottom:160px; display:flex; align-items:center; justify-content:center; overflow:visible; }
+    #canvas-wrap { position:fixed; left:0; right:0; top:0; bottom:160px; display:flex; align-items:center; justify-content:center; overflow:visible; }
     canvas { display:block; }
-    #hud { position:fixed; left:0; right:0; top:80px; bottom:160px; pointer-events:none; z-index:5; overflow:visible; }
+    #hud { position:fixed; left:0; right:0; top:0; bottom:160px; pointer-events:none; z-index:5; overflow:visible; }
 
     /* ── Premium Player HUD ── */
     .p-hud {
@@ -291,7 +291,7 @@ const RANKS=[2,3,4,5,6,7,8,9,10,'J','Q','K','A'];
 const RANK_VALUE={2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,J:11,Q:12,K:13,A:1};
 const SUIT_NAME={S:'spades',H:'hearts',D:'diamonds',C:'clubs'};
 const RANK_NAME={J:'jack',Q:'queen',K:'king',A:'ace'};
-const CW=800,CH=520,CX=400,CY=230,RX=270,RY=155;
+const CW=800,CH=560,CX=400,CY=270,RX=270,RY=155;
 
 const AVATARS=['🦊','🐺','🦁','🐯','🦅','🐉','🦈','👾','🤖','🎭','💀','🦂','🔱','⚡','🃏'];
 const BOT_AVATARS=['🐺','🦁','🐯','🦅','🐉','🦈','👾','🤖','💀','🦂','⚡','🔱','🃏','🎪','🌀'];
@@ -373,7 +373,7 @@ function drawCardFallback(ctx,card,cx,cy,w,h,faceUp){
 
 function seatAngle(i,n){return(90+i*360/n)*Math.PI/180;}
 function cardPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*RX,y:CY+Math.sin(a)*RY};}
-function hudPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*(RX+110),y:CY+Math.sin(a)*(RY+95)};}
+function hudPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*(RX+55),y:CY+Math.sin(a)*(RY+50)};}
 
 function drawTable(revealAll=false){
   if(!ctx)return;
