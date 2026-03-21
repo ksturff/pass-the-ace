@@ -36,6 +36,82 @@
     .btn-ghost:hover { border-color:rgba(0,229,255,0.3); color:var(--text); }
     .divider { text-align:center; color:var(--muted); font-size:11px; margin:12px 0; }
 
+    /* ── PROFILE SCREEN ── */
+    #screen-profile {
+      background: var(--bg);
+      align-items: center; justify-content: flex-start;
+      overflow-y: auto; padding: 60px 16px 24px;
+    }
+    .profile-wrap { width: min(480px, 96vw); margin: 0 auto; }
+    .profile-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; }
+    .profile-big-avatar {
+      width:72px; height:72px; border-radius:50%;
+      background:linear-gradient(135deg,#0d2030,#091520);
+      border:2px solid rgba(0,229,255,0.3);
+      display:flex; align-items:center; justify-content:center;
+      font-size:36px;
+      box-shadow: 0 0 20px rgba(0,229,255,0.15);
+      flex-shrink:0; cursor:pointer;
+    }
+    .profile-header-info { flex:1; }
+    .profile-display-name { font-size:20px; font-weight:700; letter-spacing:1px; margin-bottom:4px; }
+    .profile-email { font-family:sans-serif; font-size:12px; color:var(--muted); }
+    .btn-edit-profile { padding:6px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--muted); font-size:10px; font-family:'Orbitron',sans-serif; cursor:pointer; transition:all .2s; letter-spacing:0.5px; }
+    .btn-edit-profile:hover { border-color:var(--accent); color:var(--accent); }
+
+    .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:24px; }
+    .stat-card {
+      background:linear-gradient(135deg,#111820,#0d1318);
+      border:1px solid rgba(255,255,255,0.07);
+      border-radius:12px; padding:16px 12px; text-align:center;
+    }
+    .stat-value { font-size:28px; font-weight:700; color:var(--text); line-height:1; margin-bottom:6px; }
+    .stat-value.gold { background:linear-gradient(90deg,#ffd700,#ffaa00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .stat-value.cyan { background:linear-gradient(90deg,var(--accent2),var(--accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .stat-label { font-size:9px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; font-family:sans-serif; }
+
+    .profile-section-title { font-size:10px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; font-family:sans-serif; }
+
+    /* Edit profile modal */
+    .edit-modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:200; display:none; place-items:center; }
+    .edit-modal-bg.show { display:grid; }
+    .edit-modal { background:linear-gradient(135deg,#111820,#0d1318); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:24px; width:min(360px,92vw); display:flex; flex-direction:column; gap:12px; }
+    .edit-modal-title { font-size:13px; letter-spacing:1px; margin-bottom:4px; }
+
+    /* ── LEADERBOARD SCREEN ── */
+    #screen-leaderboard {
+      background: var(--bg);
+      align-items: center; justify-content: flex-start;
+      overflow-y: auto; padding: 60px 16px 24px;
+    }
+    .lb-wrap { width: min(480px, 96vw); margin: 0 auto; }
+    .lb-title { font-size:16px; letter-spacing:2px; color:var(--accent); margin-bottom:20px; text-align:center; }
+
+    .lb-tabs { display:flex; gap:4px; background:#0e1216; border-radius:10px; padding:4px; margin-bottom:16px; }
+    .lb-tab { flex:1; padding:8px; border-radius:7px; border:none; background:transparent; color:var(--muted); font-size:10px; font-family:'Orbitron',sans-serif; cursor:pointer; letter-spacing:0.5px; transition:all .2s; }
+    .lb-tab.active { background:linear-gradient(135deg,#131e2a,#0e1620); color:var(--accent); border:1px solid rgba(0,229,255,0.2); }
+
+    .lb-row {
+      display:flex; align-items:center; gap:12px;
+      padding:10px 14px; border-radius:10px;
+      background:linear-gradient(135deg,#111820,#0d1318);
+      border:1px solid rgba(255,255,255,0.06);
+      margin-bottom:6px; transition:all .2s;
+    }
+    .lb-row:hover { border-color:rgba(0,229,255,0.15); }
+    .lb-row.me { border-color:rgba(0,229,255,0.3); background:linear-gradient(135deg,#0d2030,#091520); }
+    .lb-rank { font-size:14px; font-weight:700; min-width:28px; text-align:center; }
+    .lb-rank.gold { color:#ffd700; }
+    .lb-rank.silver { color:#c0c0c0; }
+    .lb-rank.bronze { color:#cd7f32; }
+    .lb-avatar { font-size:24px; }
+    .lb-info { flex:1; }
+    .lb-name { font-size:13px; font-weight:700; letter-spacing:0.5px; }
+    .lb-sub { font-size:11px; color:var(--muted); font-family:sans-serif; margin-top:2px; }
+    .lb-score { text-align:right; }
+    .lb-score-val { font-size:16px; font-weight:700; color:var(--accent); }
+    .lb-score-label { font-size:9px; color:var(--muted); font-family:sans-serif; letter-spacing:1px; }
+
     /* ── LOGIN SCREEN ── */
     #screen-login {
       background: radial-gradient(ellipse 120% 60% at 50% -5%, #0d1e2e 0%, #0b0d10 55%);
@@ -552,6 +628,66 @@
   <span class="nav-signout" id="btn-signout">Sign out</span>
 </div>
 
+<!-- ── PROFILE ── -->
+<div id="screen-profile" class="screen">
+  <div class="profile-wrap">
+    <div class="profile-header">
+      <div class="profile-big-avatar" id="profile-big-avatar">🎭</div>
+      <div class="profile-header-info">
+        <div class="profile-display-name" id="profile-display-name">—</div>
+        <div class="profile-email" id="profile-email">—</div>
+      </div>
+      <button class="btn-edit-profile" id="btn-edit-profile">Edit</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value gold" id="stat-wins">0</div>
+        <div class="stat-label">Wins</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-games">0</div>
+        <div class="stat-label">Games</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value cyan" id="stat-winrate">0%</div>
+        <div class="stat-label">Win Rate</div>
+      </div>
+    </div>
+
+    <div class="profile-section-title">Recent Activity</div>
+    <div id="profile-recent" style="color:var(--muted);font-family:sans-serif;font-size:13px;text-align:center;padding:20px 0;">No games played yet</div>
+
+    <button class="btn-ghost" id="btn-profile-back" style="margin-top:20px;">← Back</button>
+  </div>
+</div>
+
+<!-- Edit profile modal -->
+<div class="edit-modal-bg" id="edit-modal">
+  <div class="edit-modal">
+    <div class="edit-modal-title">EDIT PROFILE</div>
+    <input id="inp-edit-name" class="inp" placeholder="Display name…" maxlength="14" style="margin-bottom:0;"/>
+    <div class="avatar-label" style="margin-top:8px;">AVATAR</div>
+    <div class="avatar-grid" id="avatar-grid-edit"></div>
+    <button class="btn-primary" id="btn-save-edit">Save Changes</button>
+    <button class="btn-ghost" id="btn-cancel-edit">Cancel</button>
+  </div>
+</div>
+
+<!-- ── LEADERBOARD ── -->
+<div id="screen-leaderboard" class="screen">
+  <div class="lb-wrap">
+    <div class="lb-title">LEADERBOARD</div>
+    <div class="lb-tabs">
+      <button class="lb-tab active" data-lb="wins">Most Wins</button>
+      <button class="lb-tab" data-lb="games">Most Games</button>
+      <button class="lb-tab" data-lb="winrate">Win Rate</button>
+    </div>
+    <div id="lb-list"></div>
+    <button class="btn-ghost" id="btn-lb-back" style="margin-top:20px;">← Back</button>
+  </div>
+</div>
+
 <!-- ── LOGIN ── -->
 <div id="screen-login" class="screen active">
   <div class="login-wrap">
@@ -672,6 +808,14 @@
         <div class="mode-info">
           <div class="mode-name">QUICK PLAY</div>
           <div class="mode-desc">Solo practice against bots</div>
+        </div>
+        <div class="mode-arrow">›</div>
+      </button>
+      <button class="mode-card" id="btn-leaderboard">
+        <div class="mode-icon">🏅</div>
+        <div class="mode-info">
+          <div class="mode-name">LEADERBOARD</div>
+          <div class="mode-desc">Top players ranked by wins</div>
         </div>
         <div class="mode-arrow">›</div>
       </button>
@@ -1047,6 +1191,168 @@ function initAuth() {
   document.getElementById('inp-password').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('btn-email-signin').click();
   });
+}
+
+// ── Stats tracking ──
+async function recordGameResult(won) {
+  if (!currentUser) return;
+  try {
+    await db.collection('users').doc(currentUser.uid).update({
+      gamesPlayed: firebase.firestore.FieldValue.increment(1),
+      wins: firebase.firestore.FieldValue.increment(won ? 1 : 0),
+      lastPlayed: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // Refresh local profile
+    await loadUserProfile(currentUser.uid);
+  } catch(e) { console.error('stat update failed', e); }
+}
+
+// ── Profile screen ──
+function openProfile() {
+  if (!userProfile) return;
+  document.getElementById('profile-big-avatar').textContent = userProfile.avatar || '🎭';
+  document.getElementById('profile-display-name').textContent = userProfile.displayName || '—';
+  document.getElementById('profile-email').textContent = currentUser?.email || '—';
+  const wins = userProfile.wins || 0;
+  const games = userProfile.gamesPlayed || 0;
+  const rate = games > 0 ? Math.round((wins / games) * 100) : 0;
+  document.getElementById('stat-wins').textContent = wins;
+  document.getElementById('stat-games').textContent = games;
+  document.getElementById('stat-winrate').textContent = rate + '%';
+  showScreen('screen-profile');
+}
+
+function initProfile() {
+  // Nav profile click
+  document.getElementById('nav-profile-btn').addEventListener('click', openProfile);
+
+  document.getElementById('btn-profile-back').addEventListener('click', () => showScreen('screen-home'));
+
+  // Edit profile
+  document.getElementById('btn-edit-profile').addEventListener('click', () => {
+    document.getElementById('inp-edit-name').value = userProfile?.displayName || '';
+    // Set current avatar selected
+    document.querySelectorAll('#avatar-grid-edit .av-opt').forEach(b => {
+      b.classList.toggle('selected', b.textContent === (userProfile?.avatar || AVATARS[0]));
+    });
+    document.getElementById('edit-modal').classList.add('show');
+  });
+
+  document.getElementById('btn-cancel-edit').addEventListener('click', () => {
+    document.getElementById('edit-modal').classList.remove('show');
+  });
+
+  document.getElementById('btn-save-edit').addEventListener('click', async () => {
+    const name = document.getElementById('inp-edit-name').value.trim();
+    if (!name) { showToast('Enter a display name', '#ff4d4f'); return; }
+    const selectedAv = document.querySelector('#avatar-grid-edit .av-opt.selected');
+    const avatar = selectedAv ? selectedAv.textContent : (userProfile?.avatar || AVATARS[0]);
+    await saveUserProfile(currentUser.uid, { displayName: name, avatar });
+    myAvatar = avatar;
+    updateNavBar();
+    document.getElementById('edit-modal').classList.remove('show');
+    openProfile();
+    showToast('Profile updated!', '#00e5ff');
+  });
+}
+
+function buildEditAvatarPicker() {
+  const grid = document.getElementById('avatar-grid-edit');
+  if (!grid || grid.children.length > 0) return;
+  AVATARS.forEach((em, i) => {
+    const btn = document.createElement('div');
+    btn.className = 'av-opt' + (i === 0 ? ' selected' : '');
+    btn.textContent = em;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#avatar-grid-edit .av-opt').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+    grid.appendChild(btn);
+  });
+}
+
+// ── Leaderboard ──
+let currentLbTab = 'wins';
+
+async function openLeaderboard() {
+  showScreen('screen-leaderboard');
+  loadLeaderboard(currentLbTab);
+}
+
+async function loadLeaderboard(tab) {
+  currentLbTab = tab;
+  const el = document.getElementById('lb-list');
+  el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-family:sans-serif;">Loading…</div>';
+
+  try {
+    let field = tab === 'wins' ? 'wins' : tab === 'games' ? 'gamesPlayed' : 'wins';
+    const snap = await db.collection('users')
+      .orderBy('gamesPlayed', 'desc')
+      .limit(50)
+      .get();
+
+    let players = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Sort by selected tab
+    if (tab === 'wins') players.sort((a,b) => (b.wins||0) - (a.wins||0));
+    else if (tab === 'games') players.sort((a,b) => (b.gamesPlayed||0) - (a.gamesPlayed||0));
+    else if (tab === 'winrate') {
+      players = players.filter(p => (p.gamesPlayed||0) >= 3);
+      players.sort((a,b) => {
+        const ra = a.gamesPlayed > 0 ? a.wins/a.gamesPlayed : 0;
+        const rb = b.gamesPlayed > 0 ? b.wins/b.gamesPlayed : 0;
+        return rb - ra;
+      });
+    }
+
+    if (!players.length) {
+      el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-family:sans-serif;">No data yet — play some games!</div>';
+      return;
+    }
+
+    el.innerHTML = '';
+    players.slice(0, 20).forEach((p, i) => {
+      const rank = i + 1;
+      const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+      const rankDisplay = rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : rank;
+      const isMe = p.id === currentUser?.uid;
+      const wins = p.wins || 0;
+      const games = p.gamesPlayed || 0;
+      const rate = games > 0 ? Math.round((wins/games)*100) : 0;
+      let scoreVal, scoreLabel;
+      if (tab === 'wins') { scoreVal = wins; scoreLabel = 'WINS'; }
+      else if (tab === 'games') { scoreVal = games; scoreLabel = 'GAMES'; }
+      else { scoreVal = rate + '%'; scoreLabel = 'WIN RATE'; }
+
+      const row = document.createElement('div');
+      row.className = 'lb-row' + (isMe ? ' me' : '');
+      row.innerHTML = `
+        <div class="lb-rank ${rankClass}">${rankDisplay}</div>
+        <div class="lb-avatar">${p.avatar || '🎭'}</div>
+        <div class="lb-info">
+          <div class="lb-name">${p.displayName || 'Player'}${isMe ? ' <span style="color:var(--accent);font-size:9px;">YOU</span>' : ''}</div>
+          <div class="lb-sub">${games} games played</div>
+        </div>
+        <div class="lb-score">
+          <div class="lb-score-val">${scoreVal}</div>
+          <div class="lb-score-label">${scoreLabel}</div>
+        </div>`;
+      el.appendChild(row);
+    });
+  } catch(e) {
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-family:sans-serif;">Failed to load: ${e.message}</div>`;
+  }
+}
+
+function initLeaderboard() {
+  document.querySelectorAll('.lb-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      loadLeaderboard(tab.dataset.lb);
+    });
+  });
+  document.getElementById('btn-lb-back').addEventListener('click', () => showScreen('screen-home'));
 }
 
 // Build avatar picker for profile setup
@@ -1484,6 +1790,9 @@ function initSocket(){
     document.getElementById('over-winner').textContent=data.winner.name;
     document.getElementById('game-over').classList.add('show');
     if(data.isTournament)myTournamentId=null;
+    // Track stats
+    const iWon=data.winner.name===(userProfile?.displayName||'');
+    recordGameResult(iWon);
   });
   socket.on('roomCreated',data=>{myRoomCode=data.code;isHost=true;document.getElementById('waiting-code').textContent=data.code;updateWaitingRoom(data.players);showScreen('screen-waiting');});
   socket.on('joinedRoom',data=>{myRoomCode=data.code;isHost=false;document.getElementById('waiting-code').textContent=data.code;updateWaitingRoom(data.players);showScreen('screen-waiting');});
@@ -1544,6 +1853,13 @@ function soloEndRound(){
   const losers=alive.filter(p=>soloCardValue(p.card)===minVal);
   losers.forEach(p=>{p.chips--;if(p.chips<=0)p.eliminated=true;});
   myTurn=false;updateTable(true);
+  // Check if game is over
+  const stillAlive=soloAlive();
+  if(stillAlive.length<=1){
+    const winner=stillAlive[0];
+    const iWon=winner?.id==='human';
+    recordGameResult(iWon);
+  }
   showRoundResult({players:soloPlayers,losers:losers.map(p=>({name:p.name,card:p.card}))});
 }
 function soloContinue(){
@@ -1580,7 +1896,7 @@ function initLobbyTabs(){
 
 // ── Boot ──
 document.addEventListener('DOMContentLoaded',()=>{
-  buildAvatarPicker();buildSetupAvatarPicker();initAuth();initSocket();initLobbyTabs();
+  buildAvatarPicker();buildSetupAvatarPicker();buildEditAvatarPicker();initAuth();initProfile();initLeaderboard();initSocket();initLobbyTabs();
 
   // Home buttons
   document.getElementById('btn-tournaments').addEventListener('click',()=>{
@@ -1611,6 +1927,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     myAvatar=userProfile?.avatar||myAvatar;
     startSolo(name,10);
   });
+  document.getElementById('btn-leaderboard').addEventListener('click',()=>openLeaderboard());
   document.getElementById('btn-how-to-play').addEventListener('click',()=>showScreen('screen-howto'));
   document.getElementById('btn-back-howto').addEventListener('click',()=>showScreen('screen-home'));
   document.getElementById('btn-lobby-back').addEventListener('click',()=>showScreen('screen-home'));
