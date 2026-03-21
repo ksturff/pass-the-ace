@@ -159,18 +159,6 @@ function advanceTurn(room) {
   }
 
   gs.currentIndex = nextAliveIndex(room, gs.currentIndex, 1);
-
-  // auto-skip players holding a King
-  const cur = room.players[gs.currentIndex];
-  if (cur?.card?.rank === 'K') {
-    gs.turnsTaken++;
-    if (gs.turnsTaken >= alivePlayers(room).length) {
-      endRound(room);
-      return;
-    }
-    gs.currentIndex = nextAliveIndex(room, gs.currentIndex, 1);
-  }
-
   broadcastState(room);
   scheduleIfBot(room);
 }
@@ -303,14 +291,15 @@ io.on('connection', socket => {
   socket.emit('lobbyUpdate', getLobbyRooms());
 
   // ── Create room
-  socket.on('createRoom', ({ name, seats, mode }) => {
+  socket.on('createRoom', ({ name, seats, mode, avatar }) => {
     const code = Math.random().toString(36).slice(2,8).toUpperCase();
     const room = makeRoom(code, { seats: seats || 6, mode: mode || 'Classic' });
     rooms.set(code, room);
 
     const player = {
       id: socket.id, name, chips: CHIPS_START,
-      eliminated: false, card: null, seatIndex: 0, isBot: false
+      eliminated: false, card: null, seatIndex: 0, isBot: false,
+      avatar: avatar || '🎭'
     };
     room.players.push(player);
     socket.join(code);
@@ -321,7 +310,7 @@ io.on('connection', socket => {
   });
 
   // ── Join room
-  socket.on('joinRoom', ({ name, code }) => {
+  socket.on('joinRoom', ({ name, code, avatar }) => {
     const room = getRoom(code);
     if (!room) { socket.emit('error', 'Room not found.'); return; }
     if (room.gameState) { socket.emit('error', 'Game already in progress.'); return; }
@@ -330,7 +319,8 @@ io.on('connection', socket => {
     const player = {
       id: socket.id, name, chips: CHIPS_START,
       eliminated: false, card: null,
-      seatIndex: room.players.length, isBot: false
+      seatIndex: room.players.length, isBot: false,
+      avatar: avatar || '🎭'
     };
     room.players.push(player);
     socket.join(code);
