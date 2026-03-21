@@ -82,26 +82,169 @@
     .mode-desc { font-family:sans-serif; font-size:11px; color:var(--muted); }
     .mode-arrow { margin-left:auto; color:var(--muted); font-size:16px; flex-shrink:0; }
 
-    /* ── LOBBY SCREEN (Tournaments + Tables) ── */
-    #screen-lobby {
-      background: var(--bg);
-      display:none;
-    }
+    /* ── LOBBY SCREEN ── */
+    #screen-lobby { background:#0d1117; display:none; }
     #screen-lobby.active { display:flex; flex-direction:column; }
 
-    .lobby-header {
+    /* App header bar */
+    .lobby-topbar {
       flex-shrink:0;
-      padding: 16px 20px 0;
-      display:flex; flex-direction:column; gap:12px;
+      background: #0a0d11;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 0 16px;
+      display: flex; align-items: center; gap: 12px;
+      height: 48px;
     }
-    .lobby-back { display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--muted); font-size:11px; letter-spacing:1px; background:none; border:none; font-family:'Orbitron',sans-serif; padding:0; }
-    .lobby-back:hover { color:var(--accent); }
+    .lobby-back {
+      display:flex; align-items:center; gap:6px;
+      cursor:pointer; color:var(--muted); font-size:10px; letter-spacing:1px;
+      background:none; border:none; font-family:'Orbitron',sans-serif; padding:4px 8px;
+      border-radius:6px; transition:all .2s;
+    }
+    .lobby-back:hover { color:var(--accent); background:rgba(0,229,255,0.06); }
+    .lobby-topbar-title { font-size:13px; letter-spacing:2px; color:var(--text); font-weight:700; }
+    .lobby-topbar-time { margin-left:auto; font-size:12px; color:var(--muted); font-family:sans-serif; }
 
-    .lobby-tabs { display:flex; gap:4px; background:#0e1216; border-radius:12px; padding:4px; }
-    .lobby-tab { flex:1; padding:10px; border-radius:9px; border:none; background:transparent; color:var(--muted); font-size:11px; font-family:'Orbitron',sans-serif; cursor:pointer; letter-spacing:0.5px; transition:all .2s; }
-    .lobby-tab.active { background:linear-gradient(135deg,#131e2a,#0e1620); color:var(--accent); border:1px solid rgba(0,229,255,0.2); }
+    /* Tab nav — like PokerStars game type tabs */
+    .lobby-tabs {
+      flex-shrink:0;
+      background: #090c10;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex; align-items: flex-end;
+      padding: 0 16px;
+      gap: 2px;
+      overflow-x: auto;
+    }
+    .lobby-tab {
+      padding: 10px 16px 9px;
+      border: none; border-bottom: 2px solid transparent;
+      background: transparent; color: var(--muted);
+      font-size: 11px; font-family: 'Orbitron', sans-serif;
+      cursor: pointer; letter-spacing: 0.5px; white-space: nowrap;
+      transition: all .15s;
+    }
+    .lobby-tab:hover { color: var(--text); }
+    .lobby-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-    .lobby-content { flex:1; overflow-y:auto; padding:12px 0 20px; }
+    /* Filter bar */
+    .lobby-filterbar {
+      flex-shrink:0;
+      background: #0d1117;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 8px 16px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .filter-select {
+      padding: 6px 10px; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #0a0d11; color: var(--muted);
+      font-size: 11px; font-family: sans-serif;
+      outline: none; cursor: pointer;
+    }
+    .filter-label { font-size: 10px; color: var(--muted); font-family: sans-serif; }
+    .filter-spacer { flex:1; }
+    .filter-count { font-size: 10px; color: var(--muted); font-family: sans-serif; white-space: nowrap; }
+
+    /* Grid table */
+    .lobby-content { flex:1; overflow-y:auto; padding: 0; }
+
+    .t-grid-wrap { width:100%; }
+    .t-grid {
+      width: 100%; border-collapse: collapse;
+      font-family: sans-serif; font-size: 12px;
+    }
+    .t-grid thead {
+      position: sticky; top: 0; z-index: 2;
+      background: #0a0d11;
+    }
+    .t-grid thead tr {
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .t-grid thead th {
+      padding: 7px 12px;
+      text-align: left;
+      font-size: 10px; font-family: sans-serif;
+      color: var(--muted); font-weight: 600;
+      white-space: nowrap; cursor: pointer; user-select: none;
+      letter-spacing: 0.3px;
+    }
+    .t-grid thead th:hover { color: var(--text); }
+    .t-grid thead th.sorted { color: var(--accent); }
+    .t-grid tbody tr {
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      cursor: pointer; transition: background .1s;
+    }
+    .t-grid tbody tr:nth-child(odd) { background: rgba(255,255,255,0.012); }
+    .t-grid tbody tr:nth-child(even) { background: transparent; }
+    .t-grid tbody tr:hover { background: rgba(0,229,255,0.06) !important; }
+    .t-grid tbody tr.row-registered { background: rgba(0,229,255,0.07) !important; border-left: 2px solid var(--accent); }
+    .t-grid tbody tr.row-live { opacity: 0.55; cursor: default; }
+    .t-grid tbody tr.row-selected { background: rgba(23,101,255,0.15) !important; }
+    .t-grid tbody td {
+      padding: 7px 12px; color: var(--text);
+      vertical-align: middle; white-space: nowrap;
+    }
+    .t-grid .col-start { color: var(--accent); font-weight: 600; font-size: 11px; }
+    .t-grid .col-buyin { color: #52c41a; font-weight: 600; }
+    .t-grid .col-name { color: var(--text); }
+    .t-grid .col-prize { color: var(--gold); font-weight: 600; }
+    .t-grid .col-registered { color: var(--muted); font-size: 11px; }
+    .t-grid .col-action { text-align: right; padding-right: 16px; }
+
+    .t-badge {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.8px; padding: 2px 7px;
+      border-radius: 4px; font-family: sans-serif; white-space: nowrap; display:inline-block;
+    }
+    .t-badge.open { background:rgba(82,196,26,0.15); color:#52c41a; }
+    .t-badge.full { background:rgba(255,77,79,0.15); color:#ff4d4f; }
+    .t-badge.live { background:rgba(255,215,0,0.15); color:var(--gold); }
+    .t-badge.registered { background:rgba(0,229,255,0.15); color:var(--accent); }
+    .t-badge.starting { background:rgba(255,165,0,0.15); color:orange; }
+
+    .btn-register {
+      padding: 4px 12px; border-radius: 5px;
+      border: 1px solid rgba(0,229,255,0.35);
+      background: rgba(0,229,255,0.1); color: var(--accent);
+      font-size: 10px; font-weight: 700; font-family: sans-serif;
+      cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .btn-register:hover { background: rgba(0,229,255,0.22); }
+    .btn-register.unregister { border-color:rgba(255,77,79,0.35); background:rgba(255,77,79,0.1); color:#ff4d4f; }
+    .btn-register.unregister:hover { background:rgba(255,77,79,0.22); }
+
+    /* Selected tournament detail panel */
+    .t-detail-panel {
+      flex-shrink: 0;
+      background: #0a0d11;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      padding: 14px 16px;
+      display: none;
+    }
+    .t-detail-panel.visible { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+    .t-detail-name { font-size: 14px; font-weight: 700; letter-spacing: 1px; flex:1; }
+    .t-detail-meta { display:flex; gap:20px; flex-wrap:wrap; }
+    .t-detail-item { display:flex; flex-direction:column; gap:2px; }
+    .t-detail-label { font-size:9px; color:var(--muted); font-family:sans-serif; letter-spacing:1px; text-transform:uppercase; }
+    .t-detail-val { font-size:13px; font-weight:600; }
+    .t-detail-actions { display:flex; gap:8px; margin-left:auto; }
+    .btn-play-now { padding:8px 20px; border-radius:8px; border:0; background:linear-gradient(90deg,var(--accent2),var(--accent)); color:#001018; font-weight:700; font-size:12px; font-family:'Orbitron',sans-serif; cursor:pointer; }
+    .btn-observe { padding:8px 16px; border-radius:8px; border:1px solid var(--stroke); background:transparent; color:var(--muted); font-size:12px; font-family:'Orbitron',sans-serif; cursor:pointer; }
+    .btn-observe:hover { color:var(--text); }
+
+    /* Private tables */
+    .room-card { display:flex; align-items:center; gap:12px; padding:8px 12px; border-bottom:1px solid rgba(255,255,255,0.04); cursor:pointer; transition:background .1s; }
+    .room-card:hover { background:rgba(0,229,255,0.05); }
+    .room-icon { font-size:18px; flex-shrink:0; }
+    .room-info { flex:1; }
+    .room-code-text { font-size:13px; font-weight:700; color:var(--accent); letter-spacing:2px; }
+    .room-meta { font-family:sans-serif; font-size:11px; color:var(--muted); }
+    .btn-join-room { padding:5px 12px; border-radius:5px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.05); color:var(--text); font-size:10px; font-family:sans-serif; cursor:pointer; transition:all .15s; }
+    .btn-join-room:hover { background:rgba(255,255,255,0.1); }
+    .no-items { text-align:center; color:var(--muted); font-family:sans-serif; font-size:13px; padding:32px 0; }
+    .create-room-section { padding:16px; border-top:1px solid var(--stroke); margin-top:4px; }
+    .seat-row { display:flex; gap:6px; margin:8px 0; }
+    .seat-btn { flex:1; padding:7px 0; border-radius:7px; border:1px solid var(--stroke); background:#1a1f24; color:var(--muted); font-size:11px; font-family:'Orbitron',sans-serif; cursor:pointer; transition:all .2s; }
+    .seat-btn.selected { background:linear-gradient(90deg,var(--accent2),var(--accent)); color:#001018; border-color:transparent; font-weight:700; }
 
     .section-label { font-size:9px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; }
 
@@ -401,27 +544,56 @@
 
 <!-- ── LOBBY ── -->
 <div id="screen-lobby" class="screen">
-  <div class="lobby-header">
-    <button class="lobby-back" id="btn-lobby-back">← BACK</button>
-    <div class="lobby-tabs">
-      <button class="lobby-tab active" data-tab="tournaments">Tournaments</button>
-      <button class="lobby-tab" data-tab="tables">Private Tables</button>
-    </div>
+
+  <!-- Top bar -->
+  <div class="lobby-topbar">
+    <button class="lobby-back" id="btn-lobby-back">← HOME</button>
+    <div class="lobby-topbar-title">PASS THE ACE</div>
+    <div class="lobby-topbar-time" id="lobby-clock"></div>
   </div>
-  <div class="lobby-content">
-    <!-- Tournaments tab -->
-    <div id="tab-tournaments" style="padding:0 16px;">
-      <div class="section-label">Upcoming Tournaments</div>
-      <div id="tournament-list"></div>
+
+  <!-- Tab nav -->
+  <div class="lobby-tabs">
+    <button class="lobby-tab active" data-tab="tournaments">Tournaments</button>
+    <button class="lobby-tab" data-tab="tables">Private Tables</button>
+  </div>
+
+  <!-- Filter bar (tournaments) -->
+  <div class="lobby-filterbar" id="lobby-filterbar">
+    <span class="filter-label">State</span>
+    <select class="filter-select" id="filter-state">
+      <option value="all">All</option>
+      <option value="registering">Registering</option>
+      <option value="inProgress">Live</option>
+    </select>
+    <div class="filter-spacer"></div>
+    <div class="filter-count" id="filter-count">— tournaments</div>
+  </div>
+
+  <!-- Grid content -->
+  <div class="lobby-content" id="lobby-content">
+    <div id="tab-tournaments">
+      <div class="t-grid-wrap">
+        <table class="t-grid" id="tournament-grid">
+          <thead><tr>
+            <th class="sorted">START ▲</th>
+            <th>BUY-IN</th>
+            <th>NAME</th>
+            <th>PRIZE POOL</th>
+            <th>STATE</th>
+            <th>REGISTERED</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="tournament-list"></tbody>
+        </table>
+      </div>
     </div>
-    <!-- Tables tab -->
-    <div id="tab-tables" style="display:none;padding:0 16px;">
-      <div class="section-label">Open Tables</div>
+    <div id="tab-tables" style="display:none;">
       <div id="room-list"></div>
       <div class="create-room-section">
-        <div class="section-label">Create a Table</div>
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;margin-bottom:10px;font-family:sans-serif;">CREATE A PRIVATE TABLE</div>
         <input id="inp-name-lobby" class="inp" placeholder="Your name…" maxlength="14" style="margin-bottom:8px;"/>
-        <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px;">TABLE SIZE</div>
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px;font-family:sans-serif;">TABLE SIZE</div>
         <div class="seat-row" id="seat-row-lobby">
           <button class="seat-btn" data-seats="3">3</button>
           <button class="seat-btn" data-seats="4">4</button>
@@ -436,6 +608,22 @@
       </div>
     </div>
   </div>
+
+  <!-- Selected tournament detail panel (bottom, like PokerStars) -->
+  <div class="t-detail-panel" id="t-detail-panel">
+    <div class="t-detail-name" id="t-detail-name">—</div>
+    <div class="t-detail-meta">
+      <div class="t-detail-item"><div class="t-detail-label">Start</div><div class="t-detail-val" id="t-detail-start">—</div></div>
+      <div class="t-detail-item"><div class="t-detail-label">Buy-in</div><div class="t-detail-val" id="t-detail-buyin">—</div></div>
+      <div class="t-detail-item"><div class="t-detail-label">Prize Pool</div><div class="t-detail-val" id="t-detail-prize">—</div></div>
+      <div class="t-detail-item"><div class="t-detail-label">Players</div><div class="t-detail-val" id="t-detail-players">—</div></div>
+    </div>
+    <div class="t-detail-actions">
+      <button class="btn-observe" id="btn-observe">Observe</button>
+      <button class="btn-play-now" id="btn-play-now">Register</button>
+    </div>
+  </div>
+
 </div>
 
 <!-- ── TOURNAMENT WAITING ROOM ── -->
@@ -819,80 +1007,109 @@ function showRoundResult(data){
 }
 
 // ── Tournament UI ──
+let currentTournamentList=[];
+let selectedTournamentId=null;
+
 function renderTournamentList(list){
-  const el=document.getElementById('tournament-list');
-  if(!list||!list.length){el.innerHTML='<div class="no-items">No tournaments scheduled</div>';return;}
+  currentTournamentList=list||[];
+  const filterState=document.getElementById('filter-state')?.value||'all';
+  const filtered=filterState==='all'?currentTournamentList:currentTournamentList.filter(t=>t.status===filterState);
+  document.getElementById('filter-count').textContent=`${filtered.length} tournament${filtered.length!==1?'s':''}`;
 
-  const table=document.createElement('table');
-  table.className='t-grid';
-  table.innerHTML=`<thead><tr>
-    <th>TIME</th>
-    <th>NAME</th>
-    <th>PLAYERS</th>
-    <th>STARTS IN</th>
-    <th>STATUS</th>
-    <th></th>
-  </tr></thead>`;
-  const tbody=document.createElement('tbody');
+  const tbody=document.getElementById('tournament-list');
+  if(!tbody)return;
+  if(!filtered.length){tbody.innerHTML=`<tr><td colspan="7" class="no-items">No tournaments available</td></tr>`;return;}
 
-  list.forEach(t=>{
+  tbody.innerHTML='';
+  filtered.forEach(t=>{
     const isRegistered=myTournamentId===t.id;
     const isFull=t.playerCount>=t.maxPlayers;
     const isLive=t.status==='inProgress';
+    const isSelected=selectedTournamentId===t.id;
     const d=new Date(t.startTime);
     const timeStr=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     const msUntil=Math.max(0,t.startTime-Date.now());
     const m=Math.floor(msUntil/60000);
     const s=Math.floor((msUntil%60000)/1000);
-    const countdownStr=isLive?'—':`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-
-    let badge='';
-    if(isLive) badge='<span class="t-badge live">LIVE</span>';
-    else if(isRegistered) badge='<span class="t-badge registered">JOINED</span>';
-    else if(isFull) badge='<span class="t-badge full">FULL</span>';
-    else badge='<span class="t-badge open">OPEN</span>';
-
-    let actionHTML='';
-    if(!isLive&&!isFull){
-      actionHTML=`<button class="btn-register${isRegistered?' unregister':''}" data-id="${t.id}">${isRegistered?'Leave':'Register'}</button>`;
-    }
+    const stateStr=isLive?'<span class="t-badge live">LIVE</span>':
+      isRegistered?'<span class="t-badge registered">REGISTERED</span>':
+      isFull?'<span class="t-badge full">FULL</span>':
+      m<2?'<span class="t-badge starting">STARTING</span>':
+      '<span class="t-badge open">REGISTERING</span>';
 
     const tr=document.createElement('tr');
-    tr.className=(isLive?'row-live':isRegistered?'row-registered':'');
+    tr.className=[isLive?'row-live':'',isRegistered?'row-registered':'',isSelected?'row-selected':''].join(' ').trim();
+    tr.dataset.id=t.id;
     tr.innerHTML=`
-      <td class="col-time">${timeStr}</td>
-      <td class="col-name">15-Min Tournament</td>
-      <td class="col-players">${t.playerCount} / ${t.maxPlayers}</td>
-      <td class="col-countdown" data-start="${t.startTime}">${countdownStr}</td>
-      <td class="col-status">${badge}</td>
-      <td class="col-action">${actionHTML}</td>`;
+      <td class="col-start">${timeStr}</td>
+      <td class="col-buyin">FREE</td>
+      <td class="col-name">15-Min Classic</td>
+      <td class="col-prize" data-pc="${t.playerCount}">—</td>
+      <td class="col-state">${stateStr}</td>
+      <td class="col-registered">${t.playerCount} / ${t.maxPlayers}</td>
+      <td class="col-action">
+        ${!isLive&&!isFull?`<button class="btn-register${isRegistered?' unregister':''}" data-id="${t.id}">${isRegistered?'Leave':'Register'}</button>`:''}
+      </td>`;
 
+    tr.addEventListener('click',()=>selectTournament(t));
     tr.querySelector('.btn-register')?.addEventListener('click',e=>{
       e.stopPropagation();
-      const tid=e.target.dataset.id;
+      const tid=e.target.closest('[data-id]').dataset.id||t.id;
       const name=document.getElementById('inp-name').value.trim();
       if(!name){showToast('Enter your name on the home screen first','#ff4d4f');return;}
-      if(isRegistered){socket.emit('unregisterTournament',{tournamentId:tid});myTournamentId=null;}
-      else{socket.emit('registerTournament',{tournamentId:tid,name,avatar:myAvatar});myTournamentId=tid;}
+      if(isRegistered){socket.emit('unregisterTournament',{tournamentId:t.id});myTournamentId=null;}
+      else{socket.emit('registerTournament',{tournamentId:t.id,name,avatar:myAvatar});myTournamentId=t.id;}
     });
     tbody.appendChild(tr);
   });
 
-  table.appendChild(tbody);
-  el.innerHTML='';
-  el.appendChild(table);
-
-  // Live countdown ticker
+  // Tick countdowns & prize pools
   clearInterval(window._tCountdown);
   window._tCountdown=setInterval(()=>{
-    document.querySelectorAll('.col-countdown[data-start]').forEach(td=>{
-      const ms=Math.max(0,Number(td.dataset.start)-Date.now());
-      if(ms===0){td.textContent='—';return;}
-      const m=Math.floor(ms/60000);
-      const s=Math.floor((ms%60000)/1000);
-      td.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    currentTournamentList.forEach(t=>{
+      const tr=document.querySelector(`tr[data-id="${t.id}"]`);if(!tr)return;
+      const isLive=t.status==='inProgress';
+      const ms=Math.max(0,t.startTime-Date.now());
+      const m=Math.floor(ms/60000),s=Math.floor((ms%60000)/1000);
+      const stateCell=tr.querySelector('.col-state');
+      if(stateCell&&!isLive){
+        const badge=ms<120000?'<span class="t-badge starting">STARTING</span>':'';
+        if(ms<120000&&!stateCell.innerHTML.includes('STARTING'))stateCell.innerHTML=badge||stateCell.innerHTML;
+      }
     });
   },1000);
+
+  // Auto-select first if none selected
+  if(!selectedTournamentId&&filtered.length)selectTournament(filtered[0]);
+}
+
+function selectTournament(t){
+  selectedTournamentId=t.id;
+  document.querySelectorAll('.t-grid tbody tr').forEach(r=>r.classList.toggle('row-selected',r.dataset.id===t.id));
+  const panel=document.getElementById('t-detail-panel');
+  panel.classList.add('visible');
+  const d=new Date(t.startTime);
+  document.getElementById('t-detail-name').textContent='15-Minute Classic Tournament';
+  document.getElementById('t-detail-start').textContent=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('t-detail-buyin').textContent='FREE';
+  document.getElementById('t-detail-prize').textContent='Glory';
+  document.getElementById('t-detail-players').textContent=`${t.playerCount} / ${t.maxPlayers}`;
+
+  const isRegistered=myTournamentId===t.id;
+  const isFull=t.playerCount>=t.maxPlayers;
+  const isLive=t.status==='inProgress';
+  const playBtn=document.getElementById('btn-play-now');
+  if(isLive){playBtn.textContent='In Progress';playBtn.disabled=true;}
+  else if(isRegistered){playBtn.textContent='Leave';playBtn.style.background='rgba(255,77,79,0.8)';playBtn.disabled=false;}
+  else if(isFull){playBtn.textContent='Full';playBtn.disabled=true;}
+  else{playBtn.textContent='Register';playBtn.style.background='';playBtn.disabled=false;}
+
+  playBtn.onclick=()=>{
+    const name=document.getElementById('inp-name').value.trim();
+    if(!name){showToast('Enter your name on the home screen first','#ff4d4f');return;}
+    if(isRegistered){socket.emit('unregisterTournament',{tournamentId:t.id});myTournamentId=null;}
+    else if(!isLive&&!isFull){socket.emit('registerTournament',{tournamentId:t.id,name,avatar:myAvatar});myTournamentId=t.id;}
+  };
 }
 
 function startTournamentCountdown(startTime){
@@ -1042,10 +1259,22 @@ function initLobbyTabs(){
     tab.addEventListener('click',()=>{
       document.querySelectorAll('.lobby-tab').forEach(t=>t.classList.remove('active'));
       tab.classList.add('active');
-      document.getElementById('tab-tournaments').style.display=tab.dataset.tab==='tournaments'?'block':'none';
-      document.getElementById('tab-tables').style.display=tab.dataset.tab==='tables'?'block':'none';
+      const isTournaments=tab.dataset.tab==='tournaments';
+      document.getElementById('tab-tournaments').style.display=isTournaments?'block':'none';
+      document.getElementById('tab-tables').style.display=isTournaments?'none':'block';
+      document.getElementById('lobby-filterbar').style.display=isTournaments?'flex':'none';
+      document.getElementById('t-detail-panel').classList.toggle('visible',isTournaments&&!!selectedTournamentId);
     });
   });
+  // Filter change
+  document.getElementById('filter-state')?.addEventListener('change',()=>renderTournamentList(currentTournamentList));
+  // Clock
+  function updateClock(){
+    const now=new Date();
+    const el=document.getElementById('lobby-clock');
+    if(el)el.textContent=now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  }
+  updateClock();setInterval(updateClock,10000);
 }
 
 // ── Boot ──
