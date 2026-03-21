@@ -1,0 +1,12 @@
+{
+  "appId": "com.passtheace.app",
+  "appName": "Pass the Ace",
+  "webDir": "public",
+  "server": {
+    "url": "https://pass-the-ace.onrender.com",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

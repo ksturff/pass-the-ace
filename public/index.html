@@ -59,42 +59,53 @@
     .divider { text-align:center; color:var(--muted); font-size:11px; margin:12px 0; }
 
     /* ── MOBILE GAME CLASS (applied via JS) ── */
-    body.mobile-game #top-nav { height: 32px; }
-    body.mobile-game #screen-game { padding-top: 32px; }
-    body.mobile-game #table-area { padding: 2px 0 0 0; align-items: flex-start; padding-top: 8px; }
+    body.mobile-game #top-nav { display: none !important; }
+    body.mobile-game #screen-game { padding-top: 0 !important; }
+    body.mobile-game #game-topbar { display: none !important; }
+    body.mobile-game #table-area {
+      padding: 0 !important;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+    }
     body.mobile-game #game-table {
-      width: 50vw;
-      height: calc(50vw / 1.6);
-      max-height: calc(100vh - 32px - 76px);
-      aspect-ratio: unset;
-      margin: 0 auto;
+      width: 100vw !important;
+      height: calc(100vh - 90px) !important;
+      max-height: none !important;
+      aspect-ratio: unset !important;
+      margin: 0 !important;
     }
     body.mobile-game #hand-area {
-      height: 76px !important;
-      gap: 6px !important;
-      padding: 0 8px !important;
+      height: 90px !important;
+      gap: 10px !important;
+      padding: 0 14px !important;
     }
-    body.mobile-game #my-card-canvas { width: 32px !important; height: 46px !important; }
-    body.mobile-game #my-avatar-display { width: 26px !important; height: 26px !important; font-size: 13px !important; }
-    body.mobile-game #my-name-label { font-size: 7px !important; }
-    body.mobile-game #my-info { min-width: 30px !important; gap: 2px !important; }
-    body.mobile-game #waiting-label { font-size: 7px !important; }
-    body.mobile-game .hand-btn { padding: 5px 8px !important; font-size: 9px !important; border-radius: 6px !important; }
-    body.mobile-game #hand-buttons { min-width: 74px !important; gap: 4px !important; }
-    /* card sizes set by JS via canvas dimensions */
+    body.mobile-game #my-card-canvas { width: 44px !important; height: 62px !important; }
+    body.mobile-game #my-avatar-display { width: 36px !important; height: 36px !important; font-size: 18px !important; }
+    body.mobile-game #my-name-label { font-size: 8px !important; }
+    body.mobile-game #my-info { min-width: 34px !important; gap: 3px !important; }
+    body.mobile-game #waiting-label { font-size: 8px !important; }
+    body.mobile-game .hand-btn {
+      padding: 10px 16px !important;
+      font-size: 12px !important;
+      border-radius: 10px !important;
+      min-width: 80px !important;
+    }
+    body.mobile-game #hand-buttons { min-width: 100px !important; gap: 6px !important; }
     body.mobile-game .p-hud-inner {
       padding: 3px 6px 3px 3px !important;
       gap: 4px !important;
     }
     body.mobile-game .p-info { display: none !important; }
     body.mobile-game .p-avatar {
-      width: 26px !important; height: 26px !important; font-size: 13px !important;
+      width: 30px !important; height: 30px !important; font-size: 16px !important;
     }
     body.mobile-game #turn-banner {
-      bottom: 82px !important; font-size: 10px !important; padding: 4px 12px !important;
+      bottom: 96px !important; font-size: 11px !important; padding: 5px 14px !important;
     }
-    body.mobile-game #btn-game-menu { font-size: 8px !important; padding: 3px 8px !important; }
-    body.mobile-game #my-chips-dots .p-chip-dot { width: 6px !important; height: 6px !important; }
+    body.mobile-game #my-chips-dots .p-chip-dot { width: 7px !important; height: 7px !important; }
+    /* Hide rotate prompt on mobile app - orientation is locked in manifest */
+    body.mobile-game #rotate-prompt { display: none !important; }
 
     /* ── PROFILE SCREEN ── */
     #screen-profile {
@@ -1205,13 +1216,13 @@ function showAuthError(elId, msg) {
 function initAuth() {
   const googleProvider = new firebase.auth.GoogleAuthProvider();
 
-  // Google sign in
+  // Google sign in — use redirect for mobile app compatibility
   document.getElementById('btn-google-signin').addEventListener('click', async () => {
-    try { await auth.signInWithPopup(googleProvider); }
+    try { await auth.signInWithRedirect(googleProvider); }
     catch(e) { showAuthError('login-error', e.message); }
   });
   document.getElementById('btn-google-signup').addEventListener('click', async () => {
-    try { await auth.signInWithPopup(googleProvider); }
+    try { await auth.signInWithRedirect(googleProvider); }
     catch(e) { showAuthError('signup-error', e.message); }
   });
 
@@ -1589,34 +1600,22 @@ function getSeatPositions(n){
   const mobile=isMobileDevice();
 
   if(mobile){
-    // On mobile, calculate positions relative to the game-table element
-    // using pixel-based ellipse that fits within the visible screen
+    // On mobile, table is now full width (100vw) x (100vh - 90px)
     const tableEl=document.getElementById('game-table');
-    const tableRect=tableEl?tableEl.getBoundingClientRect():{width:300,height:200,left:0,top:0};
-    const tw=tableRect.width;
-    const th=tableRect.height;
-    const screenW=window.innerWidth;
-    const screenH=window.innerHeight;
+    const tableRect=tableEl?tableEl.getBoundingClientRect():{width:window.innerWidth,height:window.innerHeight-90,left:0,top:0};
+    const tw=tableRect.width||window.innerWidth;
+    const th=tableRect.height||(window.innerHeight-90);
 
-    // Table center in screen coords
-    const tcx=tableRect.left+tw/2;
-    const tcy=tableRect.top+th/2;
+    // HUD ellipse: avatars sit just outside the felt edge
+    const hudPxX=tw*0.44;
+    const hudPxY=th*0.44;
 
-    // HUD ellipse: extends beyond table to use available screen space
-    // Available left of table: tableRect.left
-    // Available right: screenW - tableRect.right - 60 (browser chrome)
-    const availLeft=tableRect.left-14;
-    const availRight=screenW-tableRect.right-70;
-    const hudPxX=tw/2+Math.min(availLeft,availRight)-4;
-    const hudPxY=th/2+14;
-
-    // Card ellipse: inside the table
-    const cardPxX=tw*0.33;
+    // Card ellipse: inside the felt
+    const cardPxX=tw*0.30;
     const cardPxY=th*0.28;
 
     for(let i=0;i<n;i++){
       const angle=(90+i*360/n)*Math.PI/180;
-      // Convert back to % of table for positioning
       const hudLeft=50+Math.cos(angle)*hudPxX/tw*100;
       const hudTop=50+Math.sin(angle)*hudPxY/th*100;
       const cardLeft=50+Math.cos(angle)*cardPxX/tw*100;
