@@ -107,6 +107,7 @@
       align-items: center;
       gap: 4px;
       z-index: 5;
+      pointer-events: none;
     }
 
     /* HUD pill */
@@ -457,9 +458,9 @@ function getSeatPositions(n) {
   const positions = [];
   for (let i = 0; i < n; i++) {
     // Start at top (270deg), go clockwise
-    const angle = (270 + i * 360 / n) * Math.PI / 180;
+    const angle = (90 + i * 360 / n) * Math.PI / 180;
     // Ellipse radii as % of container (with padding for HUDs)
-    const rx = 38, ry = 34;
+    const rx = 32, ry = 28;
     const cx = 50, cy = 50;
     const left = cx + Math.cos(angle) * rx;
     const top  = cy + Math.sin(angle) * ry;
@@ -586,9 +587,14 @@ function buildTable() {
     inner.appendChild(avatar);
     inner.appendChild(info);
 
-    // Stack: card on top, HUD below
-    slot.appendChild(cardWrap);
-    slot.appendChild(inner);
+    // For top-half players (top < 50%), put HUD above card; bottom-half put HUD below
+    if (pos.top < 50) {
+      slot.appendChild(inner);
+      slot.appendChild(cardWrap);
+    } else {
+      slot.appendChild(cardWrap);
+      slot.appendChild(inner);
+    }
     table.appendChild(slot);
   });
 
