@@ -63,9 +63,8 @@
     body.mobile-game #screen-game { padding-top: 32px; }
     body.mobile-game #table-area { padding: 2px 0 0 0; align-items: flex-start; padding-top: 8px; }
     body.mobile-game #game-table {
-      width: 36vw;
-      height: calc(36vw / 1.6);
-      max-height: calc(100vh - 32px - 76px);
+      width: 86vw;
+      height: calc(100vh - 32px - 76px - 16px);
       aspect-ratio: unset;
       margin: 0 auto;
     }
@@ -1561,10 +1560,10 @@ function getSeatPositions(n){
   const mobile=isMobileDevice();
   // Desktop: HUDs just outside rail, cards inside felt
   // Mobile: same approach but tighter to fit phone screen
-  const hudRx = mobile ? 55 : 50;
-  const hudRy = mobile ? 52 : 48;
-  const cardRx = mobile ? 36 : 33;
-  const cardRy = mobile ? 30 : 26;
+  const hudRx = mobile ? 52 : 50;
+  const hudRy = mobile ? 50 : 48;
+  const cardRx = mobile ? 38 : 33;
+  const cardRy = mobile ? 33 : 26;
   for(let i=0;i<n;i++){
     const angle=(90+i*360/n)*Math.PI/180;
     const cx=50, cy=50;
