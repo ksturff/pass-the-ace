@@ -1436,6 +1436,7 @@ let isTournamentGame=false;
 // ── Avatar picker ──
 function buildAvatarPicker() {
   const grid=document.getElementById('avatar-grid');
+  if(!grid)return;
   AVATARS.forEach((em,i)=>{
     const btn=document.createElement('div');
     btn.className='av-opt'+(i===0?' selected':'');
@@ -1954,8 +1955,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   // Home buttons
   document.getElementById('btn-tournaments').addEventListener('click',()=>{
-    const name=document.getElementById('inp-name').value.trim();
-    if(!name){showToast('Enter your name first','#ff4d4f');return;}
     showScreen('screen-lobby');
     document.querySelectorAll('.lobby-tab').forEach(t=>t.classList.remove('active'));
     document.querySelector('[data-tab="tournaments"]').classList.add('active');
@@ -1968,7 +1967,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(currentTournamentList.length) renderTournamentList(currentTournamentList);
   });
   document.getElementById('btn-private-room').addEventListener('click',()=>{
-    const name=document.getElementById('inp-name').value.trim();
+    const name=userProfile?.displayName||'';
     if(name)document.getElementById('inp-name-lobby').value=name;
     showScreen('screen-lobby');
     document.querySelectorAll('.lobby-tab').forEach(t=>t.classList.remove('active'));
@@ -1977,7 +1976,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('tab-tables').style.display='block';
   });
   document.getElementById('btn-quick-play').addEventListener('click',()=>{
-    const name=userProfile?.displayName||document.getElementById('inp-name').value.trim()||'You';
+    const name=userProfile?.displayName||'Player';
     myAvatar=userProfile?.avatar||myAvatar;
     startSolo(name,10);
   });
