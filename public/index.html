@@ -173,13 +173,26 @@
       transform: translate(-50%, -50%);
       z-index: 4;
       pointer-events: none;
-      width: clamp(32px, 4.5vw, 48px);
-      height: clamp(46px, 6.5vw, 69px);
+      width: 38px;
+      height: 54px;
     }
 
     .p-card-wrap {
       width: 100%;
       height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .p-card-wrap img {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+      object-fit: fill;
+      display: block;
+      position: absolute;
+      top: 0; left: 0;
     }
 
     /* Opponent card — sits below the HUD pill, on the table */
@@ -473,11 +486,11 @@ function getSeatPositions(n) {
   const positions = [];
   for (let i = 0; i < n; i++) {
     const angle = (90 + i * 360 / n) * Math.PI / 180;
-    const cx = 50, cy = 54;
-    // HUD outside the rail
-    const hudRx = 46, hudRy = 52;
-    // Card pulled well inside the rail — away from HUDs
-    const cardRx = 30, cardRy = 27;
+    const cx = 50, cy = 50;
+    // HUD just outside the rail outer edge (rail outer = ~47% x, ~45.5% y)
+    const hudRx = 50, hudRy = 48;
+    // Card just inside the felt, near the rail inner edge (~43% x, ~37% y)
+    const cardRx = 42, cardRy = 36;
     positions.push({
       hud:  { left: cx + Math.cos(angle) * hudRx,  top: cy + Math.sin(angle) * hudRy },
       card: { left: cx + Math.cos(angle) * cardRx, top: cy + Math.sin(angle) * cardRy },
@@ -584,9 +597,6 @@ function buildTable() {
     cardImg.id = `card-${p.id}`;
     cardImg.src = 'assets/back.png';
     cardImg.alt = '';
-    cardImg.style.width = '100%';
-    cardImg.style.height = '100%';
-    cardImg.style.objectFit = 'cover';
     cardWrap.appendChild(cardImg);
     cardSlot.appendChild(cardWrap);
     table.appendChild(cardSlot);
