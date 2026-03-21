@@ -63,24 +63,24 @@
     body.mobile-game #screen-game { padding-top: 32px; }
     body.mobile-game #table-area { padding: 2px 0 0 0; align-items: flex-start; padding-top: 8px; }
     body.mobile-game #game-table {
-      width: 46vw;
-      height: calc(46vw / 1.6);
-      max-height: calc(100vh - 32px - 100px);
+      width: 36vw;
+      height: calc(36vw / 1.6);
+      max-height: calc(100vh - 32px - 76px);
       aspect-ratio: unset;
       margin: 0 auto;
     }
     body.mobile-game #hand-area {
-      height: 100px !important;
-      gap: 8px !important;
-      padding: 0 10px !important;
+      height: 76px !important;
+      gap: 6px !important;
+      padding: 0 8px !important;
     }
-    body.mobile-game #my-card-canvas { width: 42px !important; height: 60px !important; }
-    body.mobile-game #my-avatar-display { width: 30px !important; height: 30px !important; font-size: 15px !important; }
-    body.mobile-game #my-name-label { font-size: 8px !important; }
-    body.mobile-game #my-info { min-width: 36px !important; }
-    body.mobile-game #waiting-label { font-size: 8px !important; }
-    body.mobile-game .hand-btn { padding: 7px 10px !important; font-size: 10px !important; border-radius: 8px !important; }
-    body.mobile-game #hand-buttons { min-width: 88px !important; gap: 5px !important; }
+    body.mobile-game #my-card-canvas { width: 32px !important; height: 46px !important; }
+    body.mobile-game #my-avatar-display { width: 26px !important; height: 26px !important; font-size: 13px !important; }
+    body.mobile-game #my-name-label { font-size: 7px !important; }
+    body.mobile-game #my-info { min-width: 30px !important; gap: 2px !important; }
+    body.mobile-game #waiting-label { font-size: 7px !important; }
+    body.mobile-game .hand-btn { padding: 5px 8px !important; font-size: 9px !important; border-radius: 6px !important; }
+    body.mobile-game #hand-buttons { min-width: 74px !important; gap: 4px !important; }
     /* card sizes set by JS via canvas dimensions */
     body.mobile-game .p-hud-inner {
       padding: 3px 6px 3px 3px !important;
@@ -91,7 +91,7 @@
       width: 26px !important; height: 26px !important; font-size: 13px !important;
     }
     body.mobile-game #turn-banner {
-      bottom: 108px !important; font-size: 10px !important; padding: 4px 12px !important;
+      bottom: 82px !important; font-size: 10px !important; padding: 4px 12px !important;
     }
     body.mobile-game #btn-game-menu { font-size: 8px !important; padding: 3px 8px !important; }
     body.mobile-game #my-chips-dots .p-chip-dot { width: 6px !important; height: 6px !important; }
@@ -1550,10 +1550,34 @@ function isMobileDevice(){
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
 }
 
-function getMobileTableRect(){
-  const table = document.getElementById('game-table');
-  return table ? table.getBoundingClientRect() : null;
+
+function applyMobileGameLayout(){
+  if(isMobileDevice()) document.body.classList.add('mobile-game');
+  else document.body.classList.remove('mobile-game');
 }
+
+function getSeatPositions(n){
+  const positions=[];
+  const mobile=isMobileDevice();
+  // Desktop: HUDs just outside rail, cards inside felt
+  // Mobile: same approach but tighter to fit phone screen
+  const hudRx = mobile ? 55 : 50;
+  const hudRy = mobile ? 52 : 48;
+  const cardRx = mobile ? 36 : 33;
+  const cardRy = mobile ? 30 : 26;
+  for(let i=0;i<n;i++){
+    const angle=(90+i*360/n)*Math.PI/180;
+    const cx=50, cy=50;
+    positions.push({
+      hud:{ left: cx+Math.cos(angle)*hudRx, top: cy+Math.sin(angle)*hudRy },
+      card:{ left: cx+Math.cos(angle)*cardRx, top: cy+Math.sin(angle)*cardRy },
+      angle
+    });
+  }
+  return positions;
+}
+
+
 
 function applyMobileGameLayout(){
   if(isMobileDevice()) document.body.classList.add('mobile-game');
@@ -1730,16 +1754,17 @@ function updateHandArea(){
   const handCanvas=document.getElementById('my-card-canvas');
   const handCtx=handCanvas.getContext('2d');
   const cardDisp=document.getElementById('my-card-display');
-  handCtx.clearRect(0,0,70,100);
+  const hcw=isMobileDevice()?42:70;const hch=isMobileDevice()?60:100;
+  handCanvas.width=hcw;handCanvas.height=hch;
+  handCanvas.style.width=hcw+'px';handCanvas.style.height=hch+'px';
+  handCtx.clearRect(0,0,hcw,hch);
   if(me.card&&me.card!=='hidden'){
     const key=cardKey(me.card);const img=cardImages[key];
-    const hcw=isMobileDevice()?38:70;const hch=isMobileDevice()?54:100;
-    handCanvas.style.width=hcw+'px';handCanvas.style.height=hch+'px';
     if(img&&img.complete&&img.naturalWidth>0)handCtx.drawImage(img,0,0,hcw,hch);
     else drawCardFallback(handCtx,me.card,hcw/2,hch/2,hcw,hch,true);
     cardDisp.classList.toggle('glow',myTurn);
   }else{
-    drawCardFallback(handCtx,null,35,50,70,100,false);
+    drawCardFallback(handCtx,null,hcw/2,hch/2,hcw,hch,false);
     cardDisp.classList.remove('glow');
   }
   const keepBtn=document.getElementById('btn-keep');
