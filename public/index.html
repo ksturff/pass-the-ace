@@ -178,21 +178,8 @@
     }
 
     .p-card-wrap {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .p-card-wrap img {
-      width: 100% !important;
-      height: 100% !important;
-      max-width: 100% !important;
-      max-height: 100% !important;
-      object-fit: fill;
-      display: block;
-      position: absolute;
-      top: 0; left: 0;
+      width: 38px;
+      height: 54px;
     }
 
     /* Opponent card — sits below the HUD pill, on the table */
@@ -490,7 +477,7 @@ function getSeatPositions(n) {
     // HUD just outside the rail outer edge (rail outer = ~47% x, ~45.5% y)
     const hudRx = 50, hudRy = 48;
     // Card just inside the felt, near the rail inner edge (~43% x, ~37% y)
-    const cardRx = 42, cardRy = 36;
+    const cardRx = 35, cardRy = 28;
     positions.push({
       hud:  { left: cx + Math.cos(angle) * hudRx,  top: cy + Math.sin(angle) * hudRy },
       card: { left: cx + Math.cos(angle) * cardRx, top: cy + Math.sin(angle) * cardRy },
@@ -592,12 +579,12 @@ function buildTable() {
     cardWrap.className = 'p-card-wrap';
     cardWrap.id = `cardwrap-${p.id}`;
 
-    const cardImg = document.createElement('img');
-    cardImg.className = 'p-card';
-    cardImg.id = `card-${p.id}`;
-    cardImg.src = 'assets/back.png';
-    cardImg.alt = '';
-    cardWrap.appendChild(cardImg);
+    const cardCanvas = document.createElement('canvas');
+    cardCanvas.className = 'p-card';
+    cardCanvas.id = `card-${p.id}`;
+    cardCanvas.width = 38;
+    cardCanvas.height = 54;
+    cardWrap.appendChild(cardCanvas);
     cardSlot.appendChild(cardWrap);
     table.appendChild(cardSlot);
 
@@ -670,17 +657,23 @@ function updateTable(revealAll = false) {
     // Card glow on the card slot
     if (cardWrap) cardWrap.classList.toggle('active-glow', isCur && !p.eliminated && !revealAll);
 
-    // Card image
-    if (cardImg) {
+    // Draw card on canvas - always exact size
+    const cardCanvas = document.getElementById(`card-${p.id}`);
+    if (cardCanvas) {
+      const cctx = cardCanvas.getContext('2d');
       if (!p.card || p.eliminated) {
-        cardImg.style.visibility = 'hidden';
+        cctx.clearRect(0, 0, 38, 54);
       } else {
-        cardImg.style.visibility = 'visible';
         const isHidden = p.card === 'hidden';
         const faceUp = revealAll || (!isHidden && p.card?.rank === 'K');
         const key = faceUp ? cardKey(p.card) : 'back';
         const img = cardImages[key];
-        cardImg.src = (img && img.complete && img.naturalWidth > 0) ? img.src : 'assets/back.png';
+        cctx.clearRect(0, 0, 38, 54);
+        if (img && img.complete && img.naturalWidth > 0) {
+          cctx.drawImage(img, 0, 0, 38, 54);
+        } else {
+          drawCardFallback(cctx, isHidden ? null : p.card, 19, 27, 38, 54, faceUp);
+        }
       }
     }
 
