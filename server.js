@@ -552,5 +552,9 @@ function getLobbyRooms() {
     .map(r => ({ code: r.code, playerCount: r.players.length, maxPlayers: r.options.seats || 8, inProgress: !!r.gameState, mode: r.options.mode || 'Classic' }));
 }
 
+// Generate tournament schedule on startup
+ensureTournamentsExist();
+console.log(`Generated ${tournaments.size} tournaments`);
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running → http://localhost:${PORT}`));
