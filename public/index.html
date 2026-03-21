@@ -167,6 +167,14 @@
     .p-chip-dot.danger { background: #ff4d4f; box-shadow: 0 0 4px rgba(255,77,79,0.5); }
     .p-chip-dot.empty { background: #1e2530; border: 1px solid rgba(255,255,255,0.08); box-shadow: none; }
 
+    /* Card slot — absolutely positioned on the table felt, independent of HUD */
+    .player-card-slot {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      z-index: 4;
+      pointer-events: none;
+    }
+
     /* Opponent card — sits below the HUD pill, on the table */
     .p-card {
       width: clamp(28px, 4.5vw, 44px);
@@ -450,21 +458,24 @@ let cardImages={},assetsReady=false;
 let toastTimer=null,kingToastTimer=null;
 let soloPlayers=[],soloDealerIndex=0,soloCurrentIndex=0,soloTurnsTaken=0;
 
-// ── Seat positions as % of table width/height ──
-// Layout: player 0 = human (bottom, in hand area), opponents placed around ellipse
-// Positions are [left%, top%] for each seat index (0=top, going clockwise)
-// We compute these dynamically based on player count
+// ── Two ellipses: HUDs outside rail, cards just inside rail ──
+// The SVG table rail outer edge sits at roughly rx=44%, ry=40% of container
+// HUDs go outside: rx=52%, ry=47%
+// Cards go just inside the rail: rx=40%, ry=36%
 function getSeatPositions(n) {
   const positions = [];
   for (let i = 0; i < n; i++) {
-    // Start at top (270deg), go clockwise
     const angle = (90 + i * 360 / n) * Math.PI / 180;
-    // Ellipse radii as % of container (with padding for HUDs)
-    const rx = 32, ry = 28;
     const cx = 50, cy = 50;
-    const left = cx + Math.cos(angle) * rx;
-    const top  = cy + Math.sin(angle) * ry;
-    positions.push({ left, top });
+    // HUD outside the rail
+    const hudRx = 52, hudRy = 47;
+    // Card just inside the rail
+    const cardRx = 40, cardRy = 35;
+    positions.push({
+      hud:  { left: cx + Math.cos(angle) * hudRx,  top: cy + Math.sin(angle) * hudRy },
+      card: { left: cx + Math.cos(angle) * cardRx, top: cy + Math.sin(angle) * cardRy },
+      angle // keep angle so we can orient HUD side for left/right players
+    });
   }
   return positions;
 }
@@ -528,28 +539,35 @@ function drawCardFallback(ctx,card,cx,cy,w,h,faceUp){
 }
 
 // ── Build the full DOM table ──
+// HUD elements sit outside the rail, card elements sit inside — two separate positioned divs
 function buildTable() {
   const table = document.getElementById('game-table');
-  // Remove old player slots
-  table.querySelectorAll('.player-slot').forEach(el => el.remove());
+  table.querySelectorAll('.player-slot, .player-card-slot').forEach(el => el.remove());
 
   const list = isSolo ? soloPlayers : players;
   const opponents = list.filter(p => p.id !== myId);
   const totalSeats = list.length;
   const positions = getSeatPositions(totalSeats);
 
-  // opponents occupy seats 1..n-1 (seat 0 is the human at bottom)
   opponents.forEach((p, i) => {
     const seatIdx = i + 1;
     const pos = positions[seatIdx];
+    const angleDeg = pos.angle * 180 / Math.PI;
 
-    const slot = document.createElement('div');
-    slot.className = 'player-slot';
-    slot.id = `slot-${p.id}`;
-    slot.style.left = pos.left + '%';
-    slot.style.top = pos.top + '%';
+    // Determine if player is on left, right, top, or bottom
+    // angleDeg: 90=bottom, 270=top, 0/180=sides
+    const isTop    = angleDeg > 225 && angleDeg < 315;
+    const isBottom = angleDeg > 45  && angleDeg < 135;
+    const isLeft   = angleDeg >= 135 && angleDeg <= 225;
+    // everything else is right side
 
-    // Card
+    // ── CARD element — positioned on the table felt ──
+    const cardSlot = document.createElement('div');
+    cardSlot.className = 'player-card-slot';
+    cardSlot.id = `cardslot-${p.id}`;
+    cardSlot.style.left = pos.card.left + '%';
+    cardSlot.style.top  = pos.card.top  + '%';
+
     const cardWrap = document.createElement('div');
     cardWrap.className = 'p-card-wrap';
     cardWrap.id = `cardwrap-${p.id}`;
@@ -560,8 +578,16 @@ function buildTable() {
     cardImg.src = 'assets/back.png';
     cardImg.alt = '';
     cardWrap.appendChild(cardImg);
+    cardSlot.appendChild(cardWrap);
+    table.appendChild(cardSlot);
 
-    // HUD pill
+    // ── HUD element — positioned outside the rail ──
+    const slot = document.createElement('div');
+    slot.className = 'player-slot';
+    slot.id = `slot-${p.id}`;
+    slot.style.left = pos.hud.left + '%';
+    slot.style.top  = pos.hud.top  + '%';
+
     const inner = document.createElement('div');
     inner.className = 'p-hud-inner';
 
@@ -584,17 +610,18 @@ function buildTable() {
 
     info.appendChild(name);
     info.appendChild(chips);
-    inner.appendChild(avatar);
-    inner.appendChild(info);
 
-    // For top-half players (top < 50%), put HUD above card; bottom-half put HUD below
-    if (pos.top < 50) {
-      slot.appendChild(inner);
-      slot.appendChild(cardWrap);
+    // Left-side players: avatar on right side of pill
+    if (isLeft) {
+      inner.appendChild(info);
+      inner.style.flexDirection = 'row-reverse';
+      inner.appendChild(avatar);
     } else {
-      slot.appendChild(cardWrap);
-      slot.appendChild(inner);
+      inner.appendChild(avatar);
+      inner.appendChild(info);
     }
+
+    slot.appendChild(inner);
     table.appendChild(slot);
   });
 
@@ -606,33 +633,34 @@ function updateTable(revealAll = false) {
   const opponents = list.filter(p => p.id !== myId);
 
   opponents.forEach((p, i) => {
-    const slot = document.getElementById(`slot-${p.id}`);
-    const cardImg = document.getElementById(`card-${p.id}`);
+    const slot    = document.getElementById(`slot-${p.id}`);
+    const cardSlot = document.getElementById(`cardslot-${p.id}`);
+    const cardImg  = document.getElementById(`card-${p.id}`);
     const cardWrap = document.getElementById(`cardwrap-${p.id}`);
-    const chipsEl = document.getElementById(`chips-${p.id}`);
-    const avatar = document.getElementById(`avatar-${p.id}`);
+    const chipsEl  = document.getElementById(`chips-${p.id}`);
+    const avatar   = document.getElementById(`avatar-${p.id}`);
     if (!slot) return;
 
     const isCur = p.id === currentPlayerId;
 
-    // Slot state classes
+    // HUD active state
     slot.classList.toggle('active-turn', isCur && !p.eliminated);
     slot.classList.toggle('eliminated', p.eliminated);
 
-    // Card glow
+    // Card glow on the card slot
     if (cardWrap) cardWrap.classList.toggle('active-glow', isCur && !p.eliminated && !revealAll);
 
     // Card image
     if (cardImg) {
       if (!p.card || p.eliminated) {
-        cardImg.style.display = 'none';
+        cardImg.style.visibility = 'hidden';
       } else {
-        cardImg.style.display = 'block';
+        cardImg.style.visibility = 'visible';
         const isHidden = p.card === 'hidden';
         const faceUp = revealAll || (!isHidden && p.card?.rank === 'K');
         const key = faceUp ? cardKey(p.card) : 'back';
         const img = cardImages[key];
-        cardImg.src = (img && img.complete && img.naturalWidth > 0) ? img.src : '';
+        cardImg.src = (img && img.complete && img.naturalWidth > 0) ? img.src : 'assets/back.png';
       }
     }
 
@@ -823,7 +851,7 @@ function soloContinue(){
   const alive=soloAlive();
   if(alive.length<=1){document.getElementById('over-winner').textContent=alive[0]?.name??'???';document.getElementById('game-over').classList.add('show');return;}
   soloDealerIndex=soloNextAlive(soloDealerIndex,1);
-  soloPlayers.forEach(p=>p.card=null);players=soloPlayers;soloStartRound();
+  soloPlayers.forEach(p=>p.card=null);players=soloPlayers;buildTable();soloStartRound();
 }
 
 // ── Boot ──
