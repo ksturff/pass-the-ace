@@ -78,17 +78,17 @@
       align-items: center;
       justify-content: center;
       padding: 12px;
-      overflow: hidden;
+      overflow: visible;
     }
 
     /* The table itself — sized to fit the available area */
     #game-table {
       position: relative;
-      /* Fill height, constrain width by aspect ratio */
       height: 100%;
       max-height: 100%;
       aspect-ratio: 1.75;
       max-width: 100%;
+      overflow: visible;
     }
 
     #table-bg {
@@ -467,10 +467,10 @@ function getSeatPositions(n) {
   for (let i = 0; i < n; i++) {
     const angle = (90 + i * 360 / n) * Math.PI / 180;
     const cx = 50, cy = 50;
-    // HUD outside the rail
-    const hudRx = 52, hudRy = 47;
+    // HUD outside the rail — narrower X to avoid side clipping, taller Y for bottom players
+    const hudRx = 46, hudRy = 50;
     // Card just inside the rail
-    const cardRx = 40, cardRy = 35;
+    const cardRx = 38, cardRy = 37;
     positions.push({
       hud:  { left: cx + Math.cos(angle) * hudRx,  top: cy + Math.sin(angle) * hudRy },
       card: { left: cx + Math.cos(angle) * cardRx, top: cy + Math.sin(angle) * cardRy },
