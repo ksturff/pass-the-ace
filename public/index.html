@@ -61,16 +61,75 @@
     .player-dot { width:8px; height:8px; border-radius:50%; background:var(--ok); flex-shrink:0; }
     #btn-start-game { display:none; }
 
-    #canvas-wrap { position:fixed; left:0; right:0; top:0; bottom:160px; display:flex; align-items:center; justify-content:center; }
+    #canvas-wrap { position:fixed; left:0; right:0; top:48px; bottom:160px; display:flex; align-items:center; justify-content:center; overflow:visible; }
     canvas { display:block; }
-    #hud { position:fixed; left:0; right:0; top:0; bottom:160px; pointer-events:none; z-index:5; }
-    .p-hud { position:absolute; display:flex; flex-direction:column; align-items:center; gap:4px; transform:translate(-50%,-50%); pointer-events:none; transition:transform .2s; }
-    .p-hud.active-turn { transform:translate(-50%,-50%) scale(1.12); }
-    .p-name { color:rgba(255,255,255,.7); font-size:9px; letter-spacing:.5px; white-space:nowrap; max-width:90px; overflow:hidden; text-overflow:ellipsis; text-align:center; }
-    .p-avatar { width:48px; height:48px; border-radius:50%; border:2px solid rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; font-size:24px; transition:border-color .3s, box-shadow .3s; background:#1a1f24; }
-    .p-avatar.glow { border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,229,255,.2), 0 0 20px 4px var(--accent); }
-    .p-avatar.eliminated { opacity:.2; filter:grayscale(1); }
+    #hud { position:fixed; left:0; right:0; top:48px; bottom:160px; pointer-events:none; z-index:5; overflow:visible; }
+
+    /* ── Premium Player HUD ── */
+    .p-hud {
+      position:absolute;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      transform:translate(-50%,-50%);
+      pointer-events:none;
+      transition:transform .2s, filter .2s;
+    }
+    .p-hud.active-turn { transform:translate(-50%,-50%) scale(1.06); }
+    .p-hud.hud-eliminated { filter:grayscale(1); opacity:0.3; }
+
+    .p-hud-inner {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      background:linear-gradient(135deg,rgba(22,28,38,0.96) 0%,rgba(14,18,26,0.96) 100%);
+      border:1px solid rgba(255,255,255,0.09);
+      border-radius:40px;
+      padding:5px 12px 5px 5px;
+      backdrop-filter:blur(4px);
+      box-shadow:0 4px 24px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06);
+      transition:border-color .3s, box-shadow .3s;
+      white-space:nowrap;
+    }
+    .p-hud.active-turn .p-hud-inner {
+      border-color:rgba(0,229,255,0.45);
+      box-shadow:0 4px 24px rgba(0,0,0,0.55), 0 0 0 2px rgba(0,229,255,0.15), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .p-avatar {
+      width:34px; height:34px; border-radius:50%;
+      border:1.5px solid rgba(255,255,255,0.12);
+      display:flex; align-items:center; justify-content:center;
+      font-size:18px;
+      background:#1a2030;
+      flex-shrink:0;
+      transition:border-color .3s, box-shadow .3s;
+    }
+    .p-avatar.glow {
+      border-color:var(--accent);
+      box-shadow:0 0 0 2px rgba(0,229,255,0.2), 0 0 12px rgba(0,229,255,0.5);
+    }
+    .p-avatar.eliminated { opacity:.4; }
+
+    .p-info { display:flex; flex-direction:column; gap:3px; }
+    .p-name {
+      color:rgba(232,244,255,0.85);
+      font-size:9px;
+      letter-spacing:0.8px;
+      text-transform:uppercase;
+      white-space:nowrap;
+      max-width:80px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
     .p-chips { display:flex; align-items:center; gap:3px; }
+    .p-chip-dot {
+      width:7px; height:7px; border-radius:50%;
+      background:var(--gold);
+      box-shadow:0 0 5px rgba(255,215,0,0.5);
+    }
+    .p-chip-dot.danger { background:#ff4d4f; box-shadow:0 0 5px rgba(255,77,79,0.5); }
+    .p-chip-dot.empty { background:#1e2530; border:1px solid rgba(255,255,255,0.08); box-shadow:none; }
 
     #hand-area { position:fixed; bottom:0; left:0; right:0; height:160px; background:linear-gradient(to top, #060809 60%, transparent 100%); border-top:1px solid rgba(0,229,255,0.12); display:none; align-items:center; justify-content:center; gap:20px; z-index:20; padding:0 24px; }
     #hand-area.visible { display:flex; }
@@ -314,7 +373,7 @@ function drawCardFallback(ctx,card,cx,cy,w,h,faceUp){
 
 function seatAngle(i,n){return(90+i*360/n)*Math.PI/180;}
 function cardPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*RX,y:CY+Math.sin(a)*RY};}
-function hudPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*(RX+72),y:CY+Math.sin(a)*(RY+56)};}
+function hudPos(i,n){const a=seatAngle(i,n);return{x:CX+Math.cos(a)*(RX+90),y:CY+Math.sin(a)*(RY+72)};}
 
 function drawTable(revealAll=false){
   if(!ctx)return;
@@ -345,18 +404,30 @@ function drawTable(revealAll=false){
   });
 }
 
+function premiumChips(chips,danger){
+  const total=3;
+  return Array.from({length:total},(_,i)=>{
+    if(i<chips){const cls=danger||chips<=1?'p-chip-dot danger':'p-chip-dot';return `<span class="${cls}"></span>`;}
+    return '<span class="p-chip-dot empty"></span>';
+  }).join('');
+}
+
 function buildHUDs(){
   const hud=document.getElementById('hud');hud.innerHTML='';
   const list=isSolo?soloPlayers:players;
   const opponents=list.filter(p=>p.id!==myId);
   opponents.forEach((p,i)=>{
     const div=document.createElement('div');div.className='p-hud';div.id=`hud-${p.id}`;
+    const inner=document.createElement('div');inner.className='p-hud-inner';
     const avatarEl=document.createElement('div');avatarEl.className='p-avatar';avatarEl.id=`avatar-${p.id}`;
     avatarEl.textContent=p.avatar||BOT_AVATARS[i%BOT_AVATARS.length];
+    const infoEl=document.createElement('div');infoEl.className='p-info';
     const nameEl=document.createElement('div');nameEl.className='p-name';nameEl.textContent=p.name;
     const chipsEl=document.createElement('div');chipsEl.className='p-chips';chipsEl.id=`chips-${p.id}`;
-    chipsEl.innerHTML=chipDots(p.chips,false);
-    div.appendChild(avatarEl);div.appendChild(nameEl);div.appendChild(chipsEl);
+    chipsEl.innerHTML=premiumChips(p.chips,false);
+    infoEl.appendChild(nameEl);infoEl.appendChild(chipsEl);
+    inner.appendChild(avatarEl);inner.appendChild(infoEl);
+    div.appendChild(inner);
     hud.appendChild(div);
   });
   document.getElementById('my-avatar-display').textContent=myAvatar;
@@ -389,9 +460,9 @@ function updateHUDs(){
     if(!hudEl)return;
     const isCur=p.id===currentPlayerId;
     hudEl.classList.toggle('active-turn',isCur&&!p.eliminated);
+    hudEl.classList.toggle('hud-eliminated',p.eliminated);
     if(avatar){avatar.classList.toggle('glow',isCur&&!p.eliminated);avatar.classList.toggle('eliminated',p.eliminated);}
-    if(chipsEl)chipsEl.innerHTML=p.eliminated?'<span style="color:#444;font-size:12px;">☠</span>':chipDots(p.chips,p.chips<=1);
-    hudEl.style.opacity=p.eliminated?'0.3':'1';
+    if(chipsEl)chipsEl.innerHTML=p.eliminated?'<span style="color:#333;font-size:10px;letter-spacing:1px;">OUT</span>':premiumChips(p.chips,p.chips<=1);
   });
   updateHandArea();
 }
@@ -404,7 +475,7 @@ function updateHandArea(){
   document.getElementById('my-name-label').textContent=me.name||'YOU';
   document.getElementById('my-avatar-display').textContent=myAvatar;
   const chipsEl=document.getElementById('my-chips-dots');
-  chipsEl.innerHTML=me.eliminated?'<span style="color:#555;font-size:16px;">☠</span>':chipDots(me.chips,me.chips<=1);
+  chipsEl.innerHTML=me.eliminated?'<span style="color:#555;font-size:16px;">☠</span>':premiumChips(me.chips,me.chips<=1);
   document.getElementById('waiting-label').textContent=myTurn?'':me.eliminated?'Eliminated':'Waiting…';
   const handCanvas=document.getElementById('my-card-canvas');
   const handCtx=handCanvas.getContext('2d');
