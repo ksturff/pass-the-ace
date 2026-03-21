@@ -58,6 +58,59 @@
     .btn-ghost:hover { border-color:rgba(0,229,255,0.3); color:var(--text); }
     .divider { text-align:center; color:var(--muted); font-size:11px; margin:12px 0; }
 
+    /* ── MOBILE LANDSCAPE GAME OVERRIDES ── */
+    @media (max-width: 767px) and (orientation: landscape) {
+      /* Shrink nav */
+      #top-nav { height: 32px; }
+      #screen-game { padding-top: 32px; }
+
+      /* Table fills available height tightly */
+      #game-table {
+        height: 100%;
+        max-height: calc(100vh - 32px - clamp(90px,26vh,120px));
+        aspect-ratio: 1.75;
+        width: auto;
+      }
+
+      #hand-area {
+        height: clamp(90px, 26vh, 120px) !important;
+        gap: 8px !important;
+        padding: 0 10px !important;
+      }
+
+      /* Smaller card in hand */
+      #my-card-canvas { width: 44px !important; height: 63px !important; }
+      #my-avatar-display { width: 32px !important; height: 32px !important; font-size: 16px !important; }
+      #my-name-label { font-size: 8px !important; }
+      #my-info { min-width: 40px !important; }
+      #waiting-label { font-size: 8px !important; }
+      .hand-btn { padding: 6px 10px !important; font-size: 10px !important; }
+      #hand-buttons { min-width: 90px !important; gap: 5px !important; }
+
+      /* Smaller opponent cards */
+      .player-card-slot { width: 24px !important; height: 34px !important; }
+      .p-card-wrap { width: 24px !important; height: 34px !important; }
+
+      /* Compact HUD pills — avatar only, no name */
+      .p-hud-inner { padding: 3px !important; border-radius: 50% !important; }
+      .p-info { display: none !important; }
+      .p-avatar {
+        width: clamp(22px, 5vh, 30px) !important;
+        height: clamp(22px, 5vh, 30px) !important;
+        font-size: clamp(11px, 2.5vh, 16px) !important;
+      }
+
+      /* Turn banner */
+      #turn-banner {
+        bottom: calc(clamp(90px,26vh,120px) + 6px) !important;
+        font-size: 10px !important;
+        padding: 4px 12px !important;
+      }
+
+      /* Home button */
+      #btn-game-menu { font-size: 8px !important; padding: 3px 8px !important; }
+    }
+
     /* ── PROFILE SCREEN ── */
     #screen-profile {
       background: var(--bg);
@@ -1509,11 +1562,11 @@ function drawCardFallback(ctx,card,cx,cy,w,h,faceUp){
 // ── Seat positions: two ellipses ──
 function getSeatPositions(n){
   const positions=[];
-  // On narrow screens, keep everything tighter
-  const isMobile=window.innerWidth<600;
-  const hudRx=isMobile?44:50;
-  const hudRy=isMobile?46:48;
-  const cardRx=isMobile?30:33;
+  // Mobile landscape: short screen, tight layout
+  const isMobile=window.innerWidth<768&&window.innerHeight<500;
+  const hudRx=isMobile?46:50;
+  const hudRy=isMobile?44:48;
+  const cardRx=isMobile?32:33;
   const cardRy=isMobile?24:26;
   for(let i=0;i<n;i++){
     const angle=(90+i*360/n)*Math.PI/180;
