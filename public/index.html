@@ -200,6 +200,10 @@
     .t-badge.live { background:rgba(255,215,0,0.15); color:var(--gold); }
     .t-badge.registered { background:rgba(0,229,255,0.15); color:var(--accent); }
     .t-badge.starting { background:rgba(255,165,0,0.15); color:orange; }
+    .t-badge.past { background:rgba(255,255,255,0.04); color:var(--muted); }
+    .t-grid tbody tr.row-past { opacity:0.4; cursor:default; }
+    .t-grid tbody tr.row-past:hover { background:transparent !important; }
+    .col-date { font-size:10px; color:var(--muted); font-weight:400; }
 
     .btn-register {
       padding: 4px 12px; border-radius: 5px;
@@ -1013,74 +1017,72 @@ let selectedTournamentId=null;
 function renderTournamentList(list){
   currentTournamentList=list||[];
   const filterState=document.getElementById('filter-state')?.value||'all';
-  const filtered=filterState==='all'?currentTournamentList:currentTournamentList.filter(t=>t.status===filterState);
+  const now=Date.now();
+  let filtered=currentTournamentList;
+  if(filterState==='registering') filtered=filtered.filter(t=>t.status==='registering');
+  else if(filterState==='inProgress') filtered=filtered.filter(t=>t.status==='inProgress');
   document.getElementById('filter-count').textContent=`${filtered.length} tournament${filtered.length!==1?'s':''}`;
-
   const tbody=document.getElementById('tournament-list');
   if(!tbody)return;
-  if(!filtered.length){tbody.innerHTML=`<tr><td colspan="7" class="no-items">No tournaments available</td></tr>`;return;}
-
+  if(!filtered.length){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);font-family:sans-serif;font-size:13px;">No tournaments found</td></tr>`;return;}
   tbody.innerHTML='';
+  let autoScrolled=false;
   filtered.forEach(t=>{
     const isRegistered=myTournamentId===t.id;
     const isFull=t.playerCount>=t.maxPlayers;
     const isLive=t.status==='inProgress';
+    const isPast=t.startTime<now&&!isLive;
+    const isUpcoming=t.startTime>=now;
+    const isSoon=isUpcoming&&(t.startTime-now)<15*60*1000;
     const isSelected=selectedTournamentId===t.id;
     const d=new Date(t.startTime);
     const timeStr=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    const msUntil=Math.max(0,t.startTime-Date.now());
-    const m=Math.floor(msUntil/60000);
-    const s=Math.floor((msUntil%60000)/1000);
-    const stateStr=isLive?'<span class="t-badge live">LIVE</span>':
-      isRegistered?'<span class="t-badge registered">REGISTERED</span>':
-      isFull?'<span class="t-badge full">FULL</span>':
-      m<2?'<span class="t-badge starting">STARTING</span>':
-      '<span class="t-badge open">REGISTERING</span>';
-
+    const dateStr=d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+    let stateBadge='';
+    if(isLive) stateBadge='<span class="t-badge live">● LIVE</span>';
+    else if(isPast) stateBadge='<span class="t-badge past">FINISHED</span>';
+    else if(isRegistered) stateBadge='<span class="t-badge registered">REGISTERED</span>';
+    else if(isFull) stateBadge='<span class="t-badge full">FULL</span>';
+    else stateBadge='<span class="t-badge open">REGISTERING</span>';
     const tr=document.createElement('tr');
-    tr.className=[isLive?'row-live':'',isRegistered?'row-registered':'',isSelected?'row-selected':''].join(' ').trim();
+    tr.className=[isLive?'row-live':'',isPast?'row-past':'',isRegistered?'row-registered':'',isSelected?'row-selected':''].filter(Boolean).join(' ');
     tr.dataset.id=t.id;
+    tr.id=`trow-${t.id}`;
     tr.innerHTML=`
-      <td class="col-start">${timeStr}</td>
+      <td class="col-start">${timeStr}<span class="col-date"> ${dateStr}</span></td>
       <td class="col-buyin">FREE</td>
       <td class="col-name">15-Min Classic</td>
-      <td class="col-prize" data-pc="${t.playerCount}">—</td>
-      <td class="col-state">${stateStr}</td>
+      <td class="col-prize">—</td>
+      <td class="col-state">${stateBadge}</td>
       <td class="col-registered">${t.playerCount} / ${t.maxPlayers}</td>
-      <td class="col-action">
-        ${!isLive&&!isFull?`<button class="btn-register${isRegistered?' unregister':''}" data-id="${t.id}">${isRegistered?'Leave':'Register'}</button>`:''}
-      </td>`;
-
+      <td class="col-action">${(!isPast&&!isLive&&!isFull)?`<button class="btn-register${isRegistered?' unregister':''}" data-id="${t.id}">${isRegistered?'Leave':'Register'}</button>`:''}</td>`;
     tr.addEventListener('click',()=>selectTournament(t));
     tr.querySelector('.btn-register')?.addEventListener('click',e=>{
       e.stopPropagation();
-      const tid=e.target.closest('[data-id]').dataset.id||t.id;
       const name=document.getElementById('inp-name').value.trim();
       if(!name){showToast('Enter your name on the home screen first','#ff4d4f');return;}
       if(isRegistered){socket.emit('unregisterTournament',{tournamentId:t.id});myTournamentId=null;}
       else{socket.emit('registerTournament',{tournamentId:t.id,name,avatar:myAvatar});myTournamentId=t.id;}
     });
     tbody.appendChild(tr);
+    if(!autoScrolled&&(isLive||isUpcoming)){
+      autoScrolled=true;
+      setTimeout(()=>tr.scrollIntoView({block:'center',behavior:'smooth'}),150);
+      if(!selectedTournamentId)selectTournament(t);
+    }
   });
-
-  // Tick countdowns & prize pools
   clearInterval(window._tCountdown);
   window._tCountdown=setInterval(()=>{
+    const nowMs=Date.now();
     currentTournamentList.forEach(t=>{
-      const tr=document.querySelector(`tr[data-id="${t.id}"]`);if(!tr)return;
+      const tr=document.getElementById(`trow-${t.id}`);if(!tr)return;
       const isLive=t.status==='inProgress';
-      const ms=Math.max(0,t.startTime-Date.now());
-      const m=Math.floor(ms/60000),s=Math.floor((ms%60000)/1000);
-      const stateCell=tr.querySelector('.col-state');
-      if(stateCell&&!isLive){
-        const badge=ms<120000?'<span class="t-badge starting">STARTING</span>':'';
-        if(ms<120000&&!stateCell.innerHTML.includes('STARTING'))stateCell.innerHTML=badge||stateCell.innerHTML;
-      }
+      const isPast=t.startTime<nowMs&&!isLive;
+      const stateCell=tr.querySelector('.col-state');if(!stateCell)return;
+      if(isLive&&!stateCell.innerHTML.includes('LIVE'))stateCell.innerHTML='<span class="t-badge live">● LIVE</span>';
+      else if(isPast&&!stateCell.innerHTML.includes('FINISHED'))stateCell.innerHTML='<span class="t-badge past">FINISHED</span>';
     });
-  },1000);
-
-  // Auto-select first if none selected
-  if(!selectedTournamentId&&filtered.length)selectTournament(filtered[0]);
+  },5000);
 }
 
 function selectTournament(t){
@@ -1090,25 +1092,24 @@ function selectTournament(t){
   panel.classList.add('visible');
   const d=new Date(t.startTime);
   document.getElementById('t-detail-name').textContent='15-Minute Classic Tournament';
-  document.getElementById('t-detail-start').textContent=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('t-detail-start').textContent=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' · '+d.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});
   document.getElementById('t-detail-buyin').textContent='FREE';
   document.getElementById('t-detail-prize').textContent='Glory';
   document.getElementById('t-detail-players').textContent=`${t.playerCount} / ${t.maxPlayers}`;
-
   const isRegistered=myTournamentId===t.id;
   const isFull=t.playerCount>=t.maxPlayers;
   const isLive=t.status==='inProgress';
+  const isPast=t.startTime<Date.now()&&!isLive;
   const playBtn=document.getElementById('btn-play-now');
-  if(isLive){playBtn.textContent='In Progress';playBtn.disabled=true;}
-  else if(isRegistered){playBtn.textContent='Leave';playBtn.style.background='rgba(255,77,79,0.8)';playBtn.disabled=false;}
-  else if(isFull){playBtn.textContent='Full';playBtn.disabled=true;}
+  if(isLive||isPast){playBtn.textContent=isLive?'In Progress':'Finished';playBtn.disabled=true;playBtn.style.background='';}
+  else if(isRegistered){playBtn.textContent='Leave Tournament';playBtn.style.background='rgba(255,77,79,0.85)';playBtn.disabled=false;}
+  else if(isFull){playBtn.textContent='Table Full';playBtn.disabled=true;playBtn.style.background='';}
   else{playBtn.textContent='Register';playBtn.style.background='';playBtn.disabled=false;}
-
   playBtn.onclick=()=>{
     const name=document.getElementById('inp-name').value.trim();
-    if(!name){showToast('Enter your name on the home screen first','#ff4d4f');return;}
+    if(!name){showToast('Enter your name first','#ff4d4f');return;}
     if(isRegistered){socket.emit('unregisterTournament',{tournamentId:t.id});myTournamentId=null;}
-    else if(!isLive&&!isFull){socket.emit('registerTournament',{tournamentId:t.id,name,avatar:myAvatar});myTournamentId=t.id;}
+    else if(!isLive&&!isFull&&!isPast){socket.emit('registerTournament',{tournamentId:t.id,name,avatar:myAvatar});myTournamentId=t.id;}
   };
 }
 

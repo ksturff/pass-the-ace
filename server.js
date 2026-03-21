@@ -40,14 +40,18 @@ function getRoom(code) { return rooms.get(code); }
 // ─────────────────────────────────────────
 const tournaments = new Map(); // id -> tournament
 
-function getNextTournamentTimes(count = 8) {
+function getNextTournamentTimes(count = 200) {
   const now = Date.now();
   const interval = TOURNAMENT_INTERVAL_MS;
   const times = [];
-  // Find next slot on the 15-min boundary
-  const nextSlot = Math.ceil(now / interval) * interval;
+  // Start from beginning of current day
+  const startOfDay = new Date();
+  startOfDay.setHours(0,0,0,0);
+  const dayStart = startOfDay.getTime();
+  // Find first 15-min slot of the day
+  const firstSlot = Math.ceil(dayStart / interval) * interval;
   for (let i = 0; i < count; i++) {
-    times.push(nextSlot + i * interval);
+    times.push(firstSlot + i * interval);
   }
   return times;
 }
@@ -71,10 +75,10 @@ function ensureTournamentsExist() {
       });
     }
   });
-  // Clean up old finished tournaments
-  const cutoff = Date.now() - TOURNAMENT_INTERVAL_MS * 2;
+  // Clean up tournaments older than 24 hours
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
   for (const [id, t] of tournaments.entries()) {
-    if (t.startTime < cutoff && t.status === 'finished') {
+    if (t.startTime < cutoff) {
       tournaments.delete(id);
     }
   }
@@ -82,10 +86,10 @@ function ensureTournamentsExist() {
 
 function getPublicTournaments() {
   ensureTournamentsExist();
+  const now = Date.now();
   return Array.from(tournaments.values())
-    .filter(t => t.status !== 'finished' || Date.now() - t.startTime < 60000)
+    .filter(t => t.startTime >= now - 60 * 60 * 1000) // keep last hour too
     .sort((a, b) => a.startTime - b.startTime)
-    .slice(0, 6)
     .map(t => ({
       id: t.id,
       startTime: t.startTime,
