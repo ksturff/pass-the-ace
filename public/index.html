@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="screen-orientation" content="landscape"/>
   <title>Pass the Ace</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet"/>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -14,6 +15,27 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Force landscape on mobile ── */
+    #rotate-prompt {
+      display: none;
+      position: fixed; inset: 0; z-index: 9999;
+      background: #0b0d10;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px;
+    }
+    .rotate-icon { font-size: 64px; animation: spin90 1.5s ease-in-out infinite alternate; }
+    @keyframes spin90 {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(90deg); }
+    }
+    .rotate-text { font-size: 14px; color: var(--muted); font-family: sans-serif; letter-spacing: 1px; text-align: center; }
+    .rotate-title { font-size: 16px; letter-spacing: 2px; color: var(--accent); }
+
+    @media (max-width: 768px) and (orientation: portrait) {
+      #rotate-prompt { display: flex; }
+    }
     :root {
       --bg: #0b0d10; --surface: #11161b; --stroke: #22262b;
       --accent: #00e5ff; --accent2: #1765ff;
@@ -514,7 +536,7 @@
     .cv-item { padding:4px 10px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid var(--stroke); font-family:sans-serif; font-size:11px; color:var(--text); }
 
     /* ── GAME SCREEN ── */
-    #screen-game { background:var(--bg); height:100%; }
+    #screen-game { background:var(--bg); height:100%; padding-top:44px; }
     #table-area {
       flex:1; position:relative; min-height:0;
       display:flex; align-items:center; justify-content:center;
@@ -525,7 +547,7 @@
       /* Portrait phone: width-driven, taller ratio */
       width: 92vw;
       height: calc(92vw / 1.45);
-      max-height: calc(100vh - 220px);
+      max-height: calc(100vh - 44px - 180px);
     }
     @media (min-aspect-ratio: 4/3) {
       /* Landscape / desktop: height-driven */
@@ -533,7 +555,7 @@
         width: auto;
         height: 100%;
         aspect-ratio: 1.75;
-        max-height: 100%;
+        max-height: calc(100vh - 44px - clamp(130px,22vw,165px));
       }
     }
     #table-bg { position:absolute; inset:0; width:100%; height:100%; }
@@ -628,6 +650,13 @@
   </style>
 </head>
 <body>
+
+<!-- ── ROTATE PROMPT ── -->
+<div id="rotate-prompt">
+  <div class="rotate-icon">📱</div>
+  <div class="rotate-title">ROTATE YOUR DEVICE</div>
+  <div class="rotate-text">Pass the Ace plays best in landscape mode</div>
+</div>
 
 <!-- ── TOP NAV ── -->
 <div id="top-nav">
