@@ -697,6 +697,9 @@
 
 <!-- ── GAME ── -->
 <div id="screen-game" class="screen">
+  <div id="game-topbar" style="position:fixed;top:0;left:0;right:0;height:36px;display:flex;align-items:center;padding:0 12px;z-index:25;pointer-events:none;">
+    <button id="btn-game-menu" style="pointer-events:all;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 12px;color:var(--muted);font-size:10px;font-family:'Orbitron',sans-serif;cursor:pointer;letter-spacing:1px;backdrop-filter:blur(4px);">← HOME</button>
+  </div>
   <div id="table-area">
     <div id="game-table">
       <svg id="table-bg" viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg">
@@ -1367,6 +1370,15 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('game-over').classList.remove('show');
     if(isSolo){soloPlayers.forEach(p=>{p.chips=3;p.eliminated=false;p.card=null;});players=soloPlayers;buildTable();soloStartRound();}
     else socket.emit('startGame');
+  });
+  document.getElementById('btn-game-menu').addEventListener('click',()=>{
+    if(confirm('Leave game and return to menu?')){
+      document.getElementById('hand-area').classList.remove('visible');
+      document.getElementById('round-result').classList.remove('show');
+      document.getElementById('game-over').classList.remove('show');
+      isSolo=false;isTournamentGame=false;myId=socket?.id||null;
+      showScreen('screen-home');
+    }
   });
   document.getElementById('btn-menu').addEventListener('click',()=>{
     document.getElementById('game-over').classList.remove('show');
