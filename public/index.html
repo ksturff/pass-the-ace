@@ -1550,6 +1550,11 @@ function isMobileDevice(){
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
 }
 
+function getMobileTableRect(){
+  const table = document.getElementById('game-table');
+  return table ? table.getBoundingClientRect() : null;
+}
+
 function applyMobileGameLayout(){
   if(isMobileDevice()) document.body.classList.add('mobile-game');
   else document.body.classList.remove('mobile-game');
@@ -1558,18 +1563,58 @@ function applyMobileGameLayout(){
 function getSeatPositions(n){
   const positions=[];
   const mobile=isMobileDevice();
-  const hudRx=mobile?50:50;
-  const hudRy=mobile?47:48;
-  const cardRx=mobile?34:33;
-  const cardRy=mobile?28:26;
-  for(let i=0;i<n;i++){
-    const angle=(90+i*360/n)*Math.PI/180;
-    const cx=50,cy=50;
-    positions.push({
-      hud:{left:cx+Math.cos(angle)*hudRx,top:cy+Math.sin(angle)*hudRy},
-      card:{left:cx+Math.cos(angle)*cardRx,top:cy+Math.sin(angle)*cardRy},
-      angle
-    });
+
+  if(mobile){
+    // On mobile, calculate positions relative to the game-table element
+    // using pixel-based ellipse that fits within the visible screen
+    const tableEl=document.getElementById('game-table');
+    const tableRect=tableEl?tableEl.getBoundingClientRect():{width:300,height:200,left:0,top:0};
+    const tw=tableRect.width;
+    const th=tableRect.height;
+    const screenW=window.innerWidth;
+    const screenH=window.innerHeight;
+
+    // Table center in screen coords
+    const tcx=tableRect.left+tw/2;
+    const tcy=tableRect.top+th/2;
+
+    // HUD ellipse: extends beyond table to use available screen space
+    // Available left of table: tableRect.left
+    // Available right: screenW - tableRect.right - 60 (browser chrome)
+    const availLeft=tableRect.left-14;
+    const availRight=screenW-tableRect.right-70;
+    const hudPxX=tw/2+Math.min(availLeft,availRight)-4;
+    const hudPxY=th/2+14;
+
+    // Card ellipse: inside the table
+    const cardPxX=tw*0.33;
+    const cardPxY=th*0.28;
+
+    for(let i=0;i<n;i++){
+      const angle=(90+i*360/n)*Math.PI/180;
+      // Convert back to % of table for positioning
+      const hudLeft=50+Math.cos(angle)*hudPxX/tw*100;
+      const hudTop=50+Math.sin(angle)*hudPxY/th*100;
+      const cardLeft=50+Math.cos(angle)*cardPxX/tw*100;
+      const cardTop=50+Math.sin(angle)*cardPxY/th*100;
+      positions.push({
+        hud:{left:hudLeft,top:hudTop},
+        card:{left:cardLeft,top:cardTop},
+        angle
+      });
+    }
+  } else {
+    const hudRx=50,hudRy=48;
+    const cardRx=33,cardRy=26;
+    for(let i=0;i<n;i++){
+      const angle=(90+i*360/n)*Math.PI/180;
+      const cx=50,cy=50;
+      positions.push({
+        hud:{left:cx+Math.cos(angle)*hudRx,top:cy+Math.sin(angle)*hudRy},
+        card:{left:cx+Math.cos(angle)*cardRx,top:cy+Math.sin(angle)*cardRy},
+        angle
+      });
+    }
   }
   return positions;
 }
@@ -1889,7 +1934,7 @@ function initSocket(){
     const cur=players.find(p=>p.id===currentPlayerId);
     document.getElementById('turn-banner').textContent=myTurn?'🎯 Your turn!':`${cur?.name??'…'} is thinking…`;
     if(!document.getElementById('screen-game').classList.contains('active')){
-      applyMobileGameLayout();loadAssets().then(()=>{showScreen('screen-game');buildTable();updateTable();});
+      applyMobileGameLayout();loadAssets().then(()=>{showScreen('screen-game');requestAnimationFrame(()=>{buildTable();updateTable();});});
     }else{updateTable();}
   });
   socket.on('kingBlocked',()=>showKingToast());
@@ -1926,7 +1971,7 @@ function startSolo(name,seats){
     chips:3,eliminated:false,card:null,seatIndex:i,isHuman:i===0
   }));
   myId='human';soloDealerIndex=0;players=soloPlayers;
-  applyMobileGameLayout();loadAssets().then(()=>{showScreen('screen-game');buildTable();soloStartRound();});
+  applyMobileGameLayout();loadAssets().then(()=>{showScreen('screen-game');requestAnimationFrame(()=>{buildTable();soloStartRound();});});
 }
 function soloStartRound(){
   const deck=(()=>{const d=[];for(const s of SUITS)for(const r of RANKS)d.push({rank:r,suit:s});for(let i=d.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[d[i],d[j]]=[d[j],d[i]];}return d;})();
