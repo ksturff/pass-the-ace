@@ -61,7 +61,7 @@ function getTournamentId(startTime) {
 }
 
 function ensureTournamentsExist() {
-  const times = getNextTournamentTimes(8);
+  const times = getNextTournamentTimes(200);
   times.forEach(startTime => {
     const id = getTournamentId(startTime);
     if (!tournaments.has(id)) {
@@ -402,6 +402,11 @@ io.on('connection', socket => {
   // Send initial data
   socket.emit('tournamentList', getPublicTournaments());
   socket.emit('lobbyUpdate', getLobbyRooms());
+
+  // ── Client requests tournament list explicitly
+  socket.on('getTournaments', () => {
+    socket.emit('tournamentList', getPublicTournaments());
+  });
 
   // ── Tournament registration
   socket.on('registerTournament', ({ tournamentId, name, avatar }) => {

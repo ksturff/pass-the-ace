@@ -1151,7 +1151,7 @@ function renderLobbyRooms(rooms){
 function initSocket(){
   socket=io();
   socket.on('connect',()=>{myId=socket.id;});
-  socket.on('tournamentList',list=>{currentTournamentList=list||[];if(document.getElementById('screen-lobby').classList.contains('active'))renderTournamentList(list);});
+  socket.on('tournamentList',list=>{currentTournamentList=list||[];renderTournamentList(list);});
   socket.on('lobbyUpdate',rooms=>{renderLobbyRooms(rooms);});
   socket.on('registeredTournament',data=>{
     myTournamentId=data.tournamentId;
@@ -1292,7 +1292,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('tab-tournaments').style.display='block';
     document.getElementById('tab-tables').style.display='none';
     document.getElementById('lobby-filterbar').style.display='flex';
-    renderTournamentList(currentTournamentList);
+    // Always fetch fresh from server
+    socket.emit('getTournaments');
+    // Also render what we have immediately
+    if(currentTournamentList.length) renderTournamentList(currentTournamentList);
   });
   document.getElementById('btn-private-room').addEventListener('click',()=>{
     const name=document.getElementById('inp-name').value.trim();
