@@ -198,12 +198,24 @@
     #screen-home {
       background: radial-gradient(ellipse 120% 60% at 50% -5%, #0d1e2e 0%, #0b0d10 55%);
       align-items: center;
-      justify-content: center;
-      padding: 60px 16px 24px;
+      justify-content: flex-start;
+      overflow-y: auto;
+      padding: 56px 16px 16px;
     }
-    .home-wrap { width: min(400px, 96vw); display:flex; flex-direction:column; align-items:center; }
+    .home-wrap { width: min(400px, 96vw); display:flex; flex-direction:column; align-items:center; gap:0; max-width:100%; }
 
-    .home-logo { display:flex; flex-direction:column; align-items:center; margin-bottom:28px; gap:10px; }
+    .home-logo { display:flex; flex-direction:column; align-items:center; margin-bottom:16px; gap:8px; }
+    @media (max-height: 500px) {
+      .home-logo { margin-bottom:6px; gap:4px; }
+      .logo-icon { width:40px !important; height:40px !important; }
+      .logo-title { font-size:18px !important; letter-spacing:2px !important; }
+      .logo-sub { display:none; }
+      .mode-card { padding:8px 12px !important; }
+      .mode-icon { width:32px !important; height:32px !important; font-size:16px !important; }
+      .mode-name { font-size:11px !important; }
+      .mode-desc { display:none; }
+      .home-modes { gap:6px !important; }
+    }
     .logo-icon {
       width: 72px; height: 72px; border-radius: 20px;
       background: linear-gradient(135deg, #0d2a45, #091828);
@@ -544,19 +556,11 @@
     }
     #game-table {
       position:relative; overflow:visible;
-      /* Portrait phone: width-driven, taller ratio */
-      width: 92vw;
-      height: calc(92vw / 1.45);
-      max-height: calc(100vh - 44px - 180px);
-    }
-    @media (min-aspect-ratio: 4/3) {
-      /* Landscape / desktop: height-driven */
-      #game-table {
-        width: auto;
-        height: 100%;
-        aspect-ratio: 1.75;
-        max-height: calc(100vh - 44px - clamp(130px,22vw,165px));
-      }
+      /* Default: height-driven for landscape and desktop */
+      width: auto;
+      height: 100%;
+      aspect-ratio: 1.75;
+      max-height: calc(100vh - 44px - clamp(130px,22vw,165px));
     }
     #table-bg { position:absolute; inset:0; width:100%; height:100%; }
 
@@ -821,10 +825,8 @@
       <div class="logo-sub">Don't get caught with the lowest card</div>
     </div>
 
-    <div class="home-name-section">
-      <input id="inp-name" class="inp" placeholder="Enter your name…" maxlength="14" style="margin-bottom:10px;"/>
-      <div class="avatar-label">Choose your avatar</div>
-      <div class="avatar-grid" id="avatar-grid"></div>
+    <div class="home-name-section" style="width:100%;margin-bottom:12px;">
+      <input id="inp-name" class="inp" placeholder="Enter your name…" maxlength="14" style="margin-bottom:0;display:none;"/>
     </div>
 
     <div class="home-modes">
