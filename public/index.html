@@ -623,30 +623,31 @@
     .player-slot.eliminated { opacity:0.25; filter:grayscale(1); }
 
     .p-hud-inner {
-      display:flex; align-items:center; gap:5px;
-      background:linear-gradient(135deg,rgba(18,24,34,0.97) 0%,rgba(12,16,24,0.97) 100%);
-      border:1px solid rgba(255,255,255,0.08);
-      border-radius:40px; padding:3px 8px 3px 3px;
-      box-shadow:0 4px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+      display:flex; align-items:center; gap:0;
+      background:rgba(8,12,18,0.92);
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:6px; padding:0;
+      box-shadow:0 2px 12px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04);
       transition:border-color .3s, box-shadow .3s; white-space:nowrap;
+      overflow:hidden; min-width:0;
     }
     .player-slot.active-turn .p-hud-inner {
-      border-color:rgba(0,229,255,0.45);
-      box-shadow:0 4px 16px rgba(0,0,0,0.6), 0 0 0 2px rgba(0,229,255,0.15), inset 0 1px 0 rgba(255,255,255,0.05);
+      border-color:rgba(0,229,255,0.5);
+      box-shadow:0 2px 12px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,229,255,0.2);
     }
     .p-avatar {
-      width:clamp(22px,5vw,34px); height:clamp(22px,5vw,34px);
-      border-radius:50%; border:1.5px solid rgba(255,255,255,0.1);
+      width:clamp(24px,4.5vw,32px); height:clamp(24px,4.5vw,32px);
+      border-radius:0; border:none; border-right:1px solid rgba(255,255,255,0.08);
       display:flex; align-items:center; justify-content:center;
-      font-size:clamp(11px,3vw,18px); background:#1a2030; flex-shrink:0;
-      transition:border-color .3s, box-shadow .3s;
+      font-size:clamp(12px,2.5vw,17px); background:rgba(255,255,255,0.04); flex-shrink:0;
+      transition:background .3s;
     }
-    .player-slot.active-turn .p-avatar { border-color:var(--accent); box-shadow:0 0 0 2px rgba(0,229,255,0.2), 0 0 8px rgba(0,229,255,0.4); }
-    .p-info { display:flex; flex-direction:column; gap:2px; }
-    .p-name { color:rgba(232,244,255,0.85); font-size:clamp(6px,1.8vw,9px); letter-spacing:0.4px; text-transform:uppercase; white-space:nowrap; max-width:clamp(40px,12vw,75px); overflow:hidden; text-overflow:ellipsis; }
+    .player-slot.active-turn .p-avatar { background:rgba(0,229,255,0.12); }
+    .p-info { display:flex; flex-direction:column; gap:1px; padding:3px 6px; }
+    .p-name { color:rgba(232,244,255,0.9); font-size:clamp(6px,1.6vw,8px); letter-spacing:0.5px; text-transform:uppercase; white-space:nowrap; max-width:clamp(36px,10vw,65px); overflow:hidden; text-overflow:ellipsis; font-weight:700; }
     .p-chips { display:flex; align-items:center; gap:3px; }
-    .p-chip-dot { width:clamp(5px,0.8vw,7px); height:clamp(5px,0.8vw,7px); border-radius:50%; background:var(--gold); box-shadow:0 0 4px rgba(255,215,0,0.5); }
-    .p-chip-dot.danger { background:#ff4d4f; box-shadow:0 0 4px rgba(255,77,79,0.5); }
+    .p-chip-dot { width:clamp(5px,0.8vw,6px); height:clamp(5px,0.8vw,6px); border-radius:50%; background:var(--gold); box-shadow:0 0 3px rgba(255,215,0,0.5); }
+    .p-chip-dot.danger { background:#ff4d4f; box-shadow:0 0 3px rgba(255,77,79,0.5); }
     .p-chip-dot.empty { background:#1e2530; border:1px solid rgba(255,255,255,0.07); box-shadow:none; }
 
     .player-card-slot { position:absolute; transform:translate(-50%,-50%); z-index:4; pointer-events:none; }
@@ -1561,35 +1562,6 @@ function isMobileDevice(){
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
 }
 
-
-function applyMobileGameLayout(){
-  if(isMobileDevice()) document.body.classList.add('mobile-game');
-  else document.body.classList.remove('mobile-game');
-}
-
-function getSeatPositions(n){
-  const positions=[];
-  const mobile=isMobileDevice();
-  // Desktop: HUDs just outside rail, cards inside felt
-  // Mobile: same approach but tighter to fit phone screen
-  const hudRx = mobile ? 53 : 50;
-  const hudRy = mobile ? 50 : 48;
-  const cardRx = mobile ? 34 : 33;
-  const cardRy = mobile ? 27 : 26;
-  for(let i=0;i<n;i++){
-    const angle=(90+i*360/n)*Math.PI/180;
-    const cx=50, cy=50;
-    positions.push({
-      hud:{ left: cx+Math.cos(angle)*hudRx, top: cy+Math.sin(angle)*hudRy },
-      card:{ left: cx+Math.cos(angle)*cardRx, top: cy+Math.sin(angle)*cardRy },
-      angle
-    });
-  }
-  return positions;
-}
-
-
-
 function applyMobileGameLayout(){
   if(isMobileDevice()) document.body.classList.add('mobile-game');
   else document.body.classList.remove('mobile-game');
@@ -1600,18 +1572,15 @@ function getSeatPositions(n){
   const mobile=isMobileDevice();
 
   if(mobile){
-    // On mobile, table is now full width (100vw) x (100vh - 90px)
     const tableEl=document.getElementById('game-table');
     const tableRect=tableEl?tableEl.getBoundingClientRect():{width:window.innerWidth,height:window.innerHeight-90,left:0,top:0};
     const tw=tableRect.width||window.innerWidth;
     const th=tableRect.height||(window.innerHeight-90);
 
-    // HUD ellipse: avatars sit just outside the felt edge
-    const hudPxX=tw*0.44;
+    // Tighter horizontal radius so left/right seats hug the oval rail
+    const hudPxX=tw*0.36;
     const hudPxY=th*0.44;
-
-    // Card ellipse: inside the felt
-    const cardPxX=tw*0.30;
+    const cardPxX=tw*0.26;
     const cardPxY=th*0.28;
 
     for(let i=0;i<n;i++){
@@ -1627,8 +1596,9 @@ function getSeatPositions(n){
       });
     }
   } else {
-    const hudRx=50,hudRy=48;
-    const cardRx=33,cardRy=26;
+    // Desktop: tighter horizontal radius to match oval
+    const hudRx=44,hudRy=47;
+    const cardRx=30,cardRy=26;
     for(let i=0;i<n;i++){
       const angle=(90+i*360/n)*Math.PI/180;
       const cx=50,cy=50;
