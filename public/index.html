@@ -586,11 +586,11 @@
     .cv-item { padding:4px 10px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid var(--stroke); font-family:sans-serif; font-size:11px; color:var(--text); }
 
     /* ── GAME SCREEN ── */
-    #screen-game { background:var(--bg); height:100%; padding-top:0; }
+    #screen-game { background:var(--bg); height:100%; padding-top:0; overflow:hidden; }
     #table-area {
       flex:1; position:relative; min-height:0;
       display:flex; align-items:center; justify-content:center;
-      padding:0; overflow:visible;
+      padding:0; overflow:hidden;
     }
     #game-table {
       position:relative; overflow:visible;
@@ -1555,9 +1555,9 @@ function getSeatPositions(n){
 
   // Radii as fraction of each axis — naturally follows the oval shape
   const hudPxX=tw*0.37;
-  const hudPxY=th*0.52;
+  const hudPxY=th*0.42;
   const cardPxX=tw*0.26;
-  const cardPxY=th*0.34;
+  const cardPxY=th*0.28;
 
   for(let i=0;i<n;i++){
     const angle=(90+i*360/n)*Math.PI/180;
