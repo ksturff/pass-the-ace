@@ -58,54 +58,43 @@
     .btn-ghost:hover { border-color:rgba(0,229,255,0.3); color:var(--text); }
     .divider { text-align:center; color:var(--muted); font-size:11px; margin:12px 0; }
 
-    /* ── MOBILE GAME CLASS (applied via JS) ── */
-    body.mobile-game #top-nav { display: none !important; }
-    body.mobile-game #screen-game { padding-top: 0 !important; }
-    body.mobile-game #game-topbar { display: none !important; }
-    body.mobile-game #table-area {
-      padding: 0 !important;
+    /* ── MOBILE-FIRST GAME LAYOUT ── */
+    #top-nav { display: none !important; }
+    #screen-game { padding-top: 0 !important; }
+    #game-topbar { display: none !important; }
+    #table-area {
+      padding: 0;
       align-items: center;
       justify-content: center;
       flex: 1;
     }
-    body.mobile-game #game-table {
-      width: 100vw !important;
-      height: calc(100vh - 90px) !important;
-      max-height: none !important;
-      aspect-ratio: unset !important;
-      margin: 0 !important;
+    #game-table {
+      width: 100vw;
+      height: calc(100vh - 90px);
+      max-height: none;
+      aspect-ratio: unset;
+      margin: 0;
     }
-    body.mobile-game #hand-area {
+    #hand-area {
       height: 90px !important;
       gap: 10px !important;
       padding: 0 14px !important;
     }
-    body.mobile-game #my-card-canvas { width: 44px !important; height: 62px !important; }
-    body.mobile-game #my-avatar-display { width: 36px !important; height: 36px !important; font-size: 18px !important; }
-    body.mobile-game #my-name-label { font-size: 8px !important; }
-    body.mobile-game #my-info { min-width: 34px !important; gap: 3px !important; }
-    body.mobile-game #waiting-label { font-size: 8px !important; }
-    body.mobile-game .hand-btn {
-      padding: 10px 16px !important;
-      font-size: 12px !important;
-      border-radius: 10px !important;
-      min-width: 80px !important;
+    #my-card-canvas { width: 44px !important; height: 62px !important; }
+    #my-avatar-display { width: 36px !important; height: 36px !important; font-size: 18px !important; }
+    #my-name-label { font-size: 8px !important; }
+    #my-info { min-width: 34px !important; gap: 3px !important; }
+    #waiting-label { font-size: 8px !important; }
+    .hand-btn {
+      padding: 10px 16px;
+      font-size: 12px;
+      border-radius: 10px;
+      min-width: 80px;
     }
-    body.mobile-game #hand-buttons { min-width: 100px !important; gap: 6px !important; }
-    body.mobile-game .p-hud-inner {
-      padding: 3px 6px 3px 3px !important;
-      gap: 4px !important;
-    }
-    body.mobile-game .p-info { display: none !important; }
-    body.mobile-game .p-avatar {
-      width: 30px !important; height: 30px !important; font-size: 16px !important;
-    }
-    body.mobile-game #turn-banner {
-      bottom: 96px !important; font-size: 11px !important; padding: 5px 14px !important;
-    }
-    body.mobile-game #my-chips-dots .p-chip-dot { width: 7px !important; height: 7px !important; }
-    /* Hide rotate prompt on mobile app - orientation is locked in manifest */
-    body.mobile-game #rotate-prompt { display: none !important; }
+    #hand-buttons { min-width: 100px; gap: 6px; }
+    #turn-banner { bottom: 96px; font-size: 11px; padding: 5px 14px; }
+    #my-chips-dots .p-chip-dot { width: 7px; height: 7px; }
+    #rotate-prompt { display: none !important; }
 
     /* ── PROFILE SCREEN ── */
     #screen-profile {
@@ -597,7 +586,7 @@
     .cv-item { padding:4px 10px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid var(--stroke); font-family:sans-serif; font-size:11px; color:var(--text); }
 
     /* ── GAME SCREEN ── */
-    #screen-game { background:var(--bg); height:100%; padding-top:44px; }
+    #screen-game { background:var(--bg); height:100%; padding-top:0; }
     #table-area {
       flex:1; position:relative; min-height:0;
       display:flex; align-items:center; justify-content:center;
@@ -605,11 +594,9 @@
     }
     #game-table {
       position:relative; overflow:visible;
-      /* Default: height-driven for landscape and desktop */
-      width: auto;
-      height: 100%;
-      aspect-ratio: 1.75;
-      max-height: calc(100vh - 44px - clamp(130px,22vw,165px));
+      width: 100vw;
+      height: calc(100vh - 90px);
+      max-height: none;
     }
     #table-bg { position:absolute; inset:0; width:100%; height:100%; }
 
@@ -1558,56 +1545,33 @@ function drawCardFallback(ctx,card,cx,cy,w,h,faceUp){
 }
 
 // ── Seat positions: two ellipses ──
-function isMobileDevice(){
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
-}
 
-function applyMobileGameLayout(){
-  if(isMobileDevice()) document.body.classList.add('mobile-game');
-  else document.body.classList.remove('mobile-game');
-}
 
 function getSeatPositions(n){
   const positions=[];
-  const mobile=isMobileDevice();
+  const tableEl=document.getElementById('game-table');
+  const tw=tableEl?tableEl.offsetWidth:window.innerWidth;
+  const th=tableEl?tableEl.offsetHeight:(window.innerHeight-90);
 
-  if(mobile){
-    const tableEl=document.getElementById('game-table');
-    const tableRect=tableEl?tableEl.getBoundingClientRect():{width:window.innerWidth,height:window.innerHeight-90,left:0,top:0};
-    const tw=tableRect.width||window.innerWidth;
-    const th=tableRect.height||(window.innerHeight-90);
+  // Radii as fraction of each axis — naturally follows the oval shape
+  const hudPxX=tw*0.37;
+  const hudPxY=th*0.52;
+  const cardPxX=tw*0.26;
+  const cardPxY=th*0.34;
 
-    // Tighter horizontal radius so left/right seats hug the oval rail
-    const hudPxX=tw*0.36;
-    const hudPxY=th*0.44;
-    const cardPxX=tw*0.26;
-    const cardPxY=th*0.28;
-
-    for(let i=0;i<n;i++){
-      const angle=(90+i*360/n)*Math.PI/180;
-      const hudLeft=50+Math.cos(angle)*hudPxX/tw*100;
-      const hudTop=50+Math.sin(angle)*hudPxY/th*100;
-      const cardLeft=50+Math.cos(angle)*cardPxX/tw*100;
-      const cardTop=50+Math.sin(angle)*cardPxY/th*100;
-      positions.push({
-        hud:{left:hudLeft,top:hudTop},
-        card:{left:cardLeft,top:cardTop},
-        angle
-      });
-    }
-  } else {
-    // Desktop: tighter horizontal radius to match oval
-    const hudRx=44,hudRy=47;
-    const cardRx=30,cardRy=26;
-    for(let i=0;i<n;i++){
-      const angle=(90+i*360/n)*Math.PI/180;
-      const cx=50,cy=50;
-      positions.push({
-        hud:{left:cx+Math.cos(angle)*hudRx,top:cy+Math.sin(angle)*hudRy},
-        card:{left:cx+Math.cos(angle)*cardRx,top:cy+Math.sin(angle)*cardRy},
-        angle
-      });
-    }
+  for(let i=0;i<n;i++){
+    const angle=(90+i*360/n)*Math.PI/180;
+    positions.push({
+      hud:{
+        left:50+Math.cos(angle)*hudPxX/tw*100,
+        top:50+Math.sin(angle)*hudPxY/th*100
+      },
+      card:{
+        left:50+Math.cos(angle)*cardPxX/tw*100,
+        top:50+Math.sin(angle)*cardPxY/th*100
+      },
+      angle
+    });
   }
   return positions;
 }
@@ -1627,8 +1591,7 @@ function buildTable(){
     const isLeft=pos.angle*180/Math.PI>=135&&pos.angle*180/Math.PI<=225;
 
     // Card slot
-    const mobile=isMobileDevice();
-    const cw=mobile?22:38;const ch=mobile?32:54;
+        const cw=22;const ch=32;
     const cardSlot=document.createElement('div');
     cardSlot.className='player-card-slot';
     cardSlot.id=`cardslot-${p.id}`;
@@ -1723,7 +1686,7 @@ function updateHandArea(){
   const handCanvas=document.getElementById('my-card-canvas');
   const handCtx=handCanvas.getContext('2d');
   const cardDisp=document.getElementById('my-card-display');
-  const hcw=isMobileDevice()?42:70;const hch=isMobileDevice()?60:100;
+  const hcw=42;const hch=60;
   handCanvas.width=hcw;handCanvas.height=hch;
   handCanvas.style.width=hcw+'px';handCanvas.style.height=hch+'px';
   handCtx.clearRect(0,0,hcw,hch);
@@ -1928,7 +1891,7 @@ function initSocket(){
     const cur=players.find(p=>p.id===currentPlayerId);
     document.getElementById('turn-banner').textContent=myTurn?'🎯 Your turn!':`${cur?.name??'…'} is thinking…`;
     if(!document.getElementById('screen-game').classList.contains('active')){
-      applyMobileGameLayout();loadAssets().then(()=>{showScreen('screen-game');requestAnimationFrame(()=>{buildTable();updateTable();});});
+      loadAssets().then(()=>{showScreen('screen-game');requestAnimationFrame(()=>{buildTable();updateTable();});});
     }else{updateTable();}
   });
   socket.on('kingBlocked',()=>showKingToast());
@@ -1965,7 +1928,7 @@ function startSolo(name,seats){
     chips:3,eliminated:false,card:null,seatIndex:i,isHuman:i===0
   }));
   myId='human';soloDealerIndex=0;players=soloPlayers;
-  applyMobileGameLayout();loadAssets().then(()=>{showScreen('screen-game');requestAnimationFrame(()=>{buildTable();soloStartRound();});});
+  loadAssets().then(()=>{showScreen('screen-game');requestAnimationFrame(()=>{buildTable();soloStartRound();});});
 }
 function soloStartRound(){
   const deck=(()=>{const d=[];for(const s of SUITS)for(const r of RANKS)d.push({rank:r,suit:s});for(let i=d.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[d[i],d[j]]=[d[j],d[i]];}return d;})();
