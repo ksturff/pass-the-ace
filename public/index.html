@@ -2088,6 +2088,17 @@ function renderTournamentList(list){
         showToast('Left Daily Tournament', '#8a7a50');
       } else {
         tryEnterTicketTournament({type:'ticket', ticketType:'daily'}, () => {
+          // Find the matching server tournament for this time slot
+          const targetTime = slotDate.getTime();
+          const match = currentTournamentList.find(t =>
+            t.type === 'daily' &&
+            Math.abs(t.startTime - targetTime) < 60000 &&
+            t.status === 'registering'
+          );
+          if (!match) { showToast('No server tournament found for this slot yet', '#ff4d4f', 3000); return; }
+          const name = userProfile?.displayName || 'Player';
+          socket.emit('registerTournament', { tournamentId: match.id, name, avatar: myAvatar, ticketType: 'daily' });
+          myTournamentId = match.id;
           window[regId] = true;
           renderTournamentList(currentTournamentList);
           showToast(`🎟️ Registered for ${fmtTime(slotDate)} Daily!`, '#cd7f32', 3000);
@@ -2123,6 +2134,16 @@ function renderTournamentList(list){
         showToast('Left Saturday Championship', '#8a7a50');
       } else {
         tryEnterTicketTournament({type:'ticket', ticketType:'saturday'}, () => {
+          const targetTime = slotDate.getTime();
+          const match = currentTournamentList.find(t =>
+            t.type === 'saturday' &&
+            Math.abs(t.startTime - targetTime) < 60000 &&
+            t.status === 'registering'
+          );
+          if (!match) { showToast('No server tournament found for this slot yet', '#ff4d4f', 3000); return; }
+          const name = userProfile?.displayName || 'Player';
+          socket.emit('registerTournament', { tournamentId: match.id, name, avatar: myAvatar, ticketType: 'saturday' });
+          myTournamentId = match.id;
           window[regId] = true;
           renderTournamentList(currentTournamentList);
           showToast(`🏆 Registered for ${fmtTime(slotDate)} Saturday Championship!`, '#ffd700', 3500);
@@ -2294,18 +2315,11 @@ function initSocket(){
     if(data.isTournament)myTournamentId=null;
     const iWon=data.winner.id===myId||data.winner.name===(userProfile?.displayName||'');
     const placement=data.placements?.[myId]??(iWon?1:0);
-    // Detect which ticket tournament type the player was registered for
-    const satSlots=[12,15,18,21];
-    const dailySlots=[14,18,22];
-    let tType = null;
-    if(satSlots.some(h=>window[`_satReg_${h}`])) tType='saturday';
-    else if(dailySlots.some(h=>window[`_dailyReg_${h}`])) tType='daily';
-    else if(isTournamentGame) tType='micro'; // regular server tournament
-    // Clear registration flags on win
-    if(iWon && placement===1){
-      satSlots.forEach(h=>window[`_satReg_${h}`]=false);
-      dailySlots.forEach(h=>window[`_dailyReg_${h}`]=false);
-    }
+    // Use tournamentType from server — most reliable source
+    const tType = data.tournamentType || (isTournamentGame ? 'micro' : null);
+    // Clear all registration flags
+    [12,15,18,21].forEach(h=>window[`_satReg_${h}`]=false);
+    [14,18,22].forEach(h=>window[`_dailyReg_${h}`]=false);
     recordGameResult(iWon, placement, tType);
   });
   socket.on('roomCreated',data=>{myRoomCode=data.code;isHost=true;document.getElementById('waiting-code').textContent=data.code;updateWaitingRoom(data.players);showScreen('screen-waiting');});

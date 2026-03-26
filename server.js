@@ -19,11 +19,27 @@ const RANKS = [2,3,4,5,6,7,8,9,10,'J','Q','K','A'];
 const RANK_VALUE = {2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,J:11,Q:12,K:13,A:1};
 const CHIPS_START = 3;
 const BOT_DELAY_MS = 1200;
-const MAX_PLAYERS = 10;
-const TOURNAMENT_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
-const REGISTRATION_OPEN_MS = 14 * 60 * 1000;   // open 14 min before start
+const MAX_PLAYERS_MICRO    = 10;
+const MAX_PLAYERS_DAILY    = 50;
+const MAX_PLAYERS_SATURDAY = 200;
+const TOURNAMENT_INTERVAL_MS = 15 * 60 * 1000;
 const BOT_NAMES = ['Alex','Sam','Jordan','Taylor','Morgan','Casey','Riley','Quinn','Avery','Blake'];
 const BOT_AVATARS = ['🐺','🦁','🐯','🦅','🐉','🦈','👾','🤖','💀','🦂'];
+
+// ─────────────────────────────────────────
+//  SELF-PING — keeps Render free tier alive
+// ─────────────────────────────────────────
+const RENDER_URL = process.env.RENDER_EXTERNAL_URL || null;
+if (RENDER_URL) {
+  setInterval(() => {
+    http.get(`${RENDER_URL}/health`, (res) => {
+      console.log(`[ping] ${res.statusCode}`);
+    }).on('error', (e) => {
+      console.warn('[ping error]', e.message);
+    });
+  }, 10 * 60 * 1000); // ping every 10 minutes
+  console.log(`Self-ping active → ${RENDER_URL}/health`);
+}
 
 // ─────────────────────────────────────────
 //  ROOMS (private multiplayer)
@@ -40,47 +56,73 @@ function getRoom(code) { return rooms.get(code); }
 // ─────────────────────────────────────────
 const tournaments = new Map(); // id -> tournament
 
-function getNextTournamentTimes(count = 200) {
+// Returns array of { startTime, type } for all upcoming slots
+function getAllTournamentSlots(count = 200) {
+  const slots = [];
   const now = Date.now();
-  const interval = TOURNAMENT_INTERVAL_MS;
-  const times = [];
-  // Start from beginning of current day
-  const startOfDay = new Date();
-  startOfDay.setHours(0,0,0,0);
-  const dayStart = startOfDay.getTime();
-  // Find first 15-min slot of the day
-  const firstSlot = Math.ceil(dayStart / interval) * interval;
+
+  // ── MICRO: every 15 minutes ──
+  const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
+  const firstMicro = Math.ceil(startOfDay.getTime() / TOURNAMENT_INTERVAL_MS) * TOURNAMENT_INTERVAL_MS;
   for (let i = 0; i < count; i++) {
-    times.push(firstSlot + i * interval);
+    slots.push({ startTime: firstMicro + i * TOURNAMENT_INTERVAL_MS, type: 'micro' });
   }
-  return times;
+
+  // ── DAILY: 2pm, 6pm, 10pm — next 14 days ──
+  const dailyHours = [14, 18, 22];
+  for (let d = 0; d < 14; d++) {
+    const base = new Date(startOfDay.getTime() + d * 86400000);
+    dailyHours.forEach(hr => {
+      const t = new Date(base); t.setHours(hr, 0, 0, 0);
+      slots.push({ startTime: t.getTime(), type: 'daily' });
+    });
+  }
+
+  // ── SATURDAY: 12pm, 3pm, 6pm, 9pm — next 8 Saturdays ──
+  const satHours = [12, 15, 18, 21];
+  for (let w = 0; w < 8; w++) {
+    const daysUntilSat = (6 - startOfDay.getDay() + 7) % 7 + w * 7;
+    const sat = new Date(startOfDay.getTime() + daysUntilSat * 86400000);
+    satHours.forEach(hr => {
+      const t = new Date(sat); t.setHours(hr, 0, 0, 0);
+      slots.push({ startTime: t.getTime(), type: 'saturday' });
+    });
+  }
+
+  return slots;
 }
 
-function getTournamentId(startTime) {
-  return `tournament_${startTime}`;
+function getTournamentId(startTime, type) {
+  return `${type}_${startTime}`;
+}
+
+function maxPlayersForType(type) {
+  if (type === 'daily')    return MAX_PLAYERS_DAILY;
+  if (type === 'saturday') return MAX_PLAYERS_SATURDAY;
+  return MAX_PLAYERS_MICRO;
 }
 
 function ensureTournamentsExist() {
-  const times = getNextTournamentTimes(200);
-  times.forEach(startTime => {
-    const id = getTournamentId(startTime);
+  const slots = getAllTournamentSlots(200);
+  slots.forEach(({ startTime, type }) => {
+    const id = getTournamentId(startTime, type);
     if (!tournaments.has(id)) {
       tournaments.set(id, {
         id,
         startTime,
-        players: [],    // registered human players
+        type,                  // 'micro' | 'daily' | 'saturday'
+        players: [],
         gameState: null,
-        status: 'registering', // registering | starting | inProgress | finished
-        winners: []
+        status: 'registering',
+        winners: [],
+        placements: {}         // socketId -> placement number
       });
     }
   });
   // Clean up tournaments older than 24 hours
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
   for (const [id, t] of tournaments.entries()) {
-    if (t.startTime < cutoff) {
-      tournaments.delete(id);
-    }
+    if (t.startTime < cutoff) tournaments.delete(id);
   }
 }
 
@@ -88,13 +130,14 @@ function getPublicTournaments() {
   ensureTournamentsExist();
   const now = Date.now();
   return Array.from(tournaments.values())
-    .filter(t => t.startTime >= now - 60 * 60 * 1000) // keep last hour too
+    .filter(t => t.startTime >= now - 60 * 60 * 1000)
     .sort((a, b) => a.startTime - b.startTime)
     .map(t => ({
       id: t.id,
       startTime: t.startTime,
+      type: t.type,
       playerCount: t.players.length,
-      maxPlayers: MAX_PLAYERS,
+      maxPlayers: maxPlayersForType(t.type),
       status: t.status,
       winners: t.winners
     }));
@@ -115,34 +158,33 @@ setInterval(() => {
 
 function startTournament(t) {
   t.status = 'inProgress';
+  t.placements = {};
+  t.eliminationOrder = []; // track order eliminated
 
-  // Fill empty seats with bots
+  const maxPlayers = maxPlayersForType(t.type);
+
+  // Fill empty seats with bots (micro only — daily/saturday need real players)
   const seats = [...t.players];
-  let botIdx = 0;
-  while (seats.length < MAX_PLAYERS) {
-    const name = BOT_NAMES[botIdx % BOT_NAMES.length];
-    seats.push({
-      id: `bot_${t.id}_${botIdx}`,
-      name,
-      avatar: BOT_AVATARS[botIdx % BOT_AVATARS.length],
-      chips: CHIPS_START,
-      eliminated: false,
-      card: null,
-      seatIndex: seats.length,
-      isBot: true
-    });
-    botIdx++;
+  if (t.type === 'micro') {
+    let botIdx = 0;
+    while (seats.length < maxPlayers) {
+      seats.push({
+        id: `bot_${t.id}_${botIdx}`,
+        name: BOT_NAMES[botIdx % BOT_NAMES.length],
+        avatar: BOT_AVATARS[botIdx % BOT_AVATARS.length],
+        chips: CHIPS_START, eliminated: false, card: null,
+        seatIndex: seats.length, isBot: true
+      });
+      botIdx++;
+    }
   }
 
-  // Reset human players
   seats.forEach(p => { p.chips = CHIPS_START; p.eliminated = false; p.card = null; });
 
-  // Notify registered players the tournament is starting
   t.players.forEach(p => {
-    io.to(p.id).emit('tournamentStarting', { tournamentId: t.id });
+    io.to(p.id).emit('tournamentStarting', { tournamentId: t.id, tournamentType: t.type });
   });
 
-  // Store full player list and start
   t.allPlayers = seats;
   t.gameState = null;
   startTournamentGame(t);
@@ -320,7 +362,15 @@ function endTournamentRound(t) {
   const alive = alivePlayers(t.allPlayers);
   const minVal = Math.min(...alive.map(p => cardValue(p.card)));
   const losers = alive.filter(p => cardValue(p.card) === minVal);
-  losers.forEach(p => { p.chips--; if (p.chips <= 0) p.eliminated = true; });
+  losers.forEach(p => {
+    p.chips--;
+    if (p.chips <= 0) {
+      p.eliminated = true;
+      // Track elimination order for placement
+      if (!t.eliminationOrder) t.eliminationOrder = [];
+      t.eliminationOrder.push(p.id);
+    }
+  });
 
   t.allPlayers.filter(p => !p.isBot).forEach(player => {
     const sanitized = t.allPlayers.map(p => ({
@@ -336,8 +386,27 @@ function endTournamentRound(t) {
     const winner = stillAlive[0] || t.allPlayers[0];
     t.status = 'finished';
     t.winners = [winner.name];
+
+    // Build placements map: socketId -> finishing position
+    // Winner = 1, then reverse elimination order
+    const humanPlayers = t.allPlayers.filter(p => !p.isBot);
+    const totalHumans = humanPlayers.length;
+    const placements = {};
+    placements[winner.id] = 1;
+    const eliminated = (t.eliminationOrder || []).filter(id =>
+      humanPlayers.find(p => p.id === id)
+    );
+    eliminated.reverse().forEach((id, idx) => {
+      placements[id] = idx + 2; // 2nd, 3rd, 4th...
+    });
+
     t.allPlayers.filter(p => !p.isBot).forEach(player => {
-      io.to(player.id).emit('gameOver', { winner: { name: winner.name }, isTournament: true });
+      io.to(player.id).emit('gameOver', {
+        winner: { name: winner.name, id: winner.id },
+        isTournament: true,
+        tournamentType: t.type,
+        placements
+      });
     });
     io.emit('tournamentList', getPublicTournaments());
     return;
@@ -409,21 +478,35 @@ io.on('connection', socket => {
   });
 
   // ── Tournament registration
-  socket.on('registerTournament', ({ tournamentId, name, avatar }) => {
+  socket.on('registerTournament', ({ tournamentId, name, avatar, ticketType }) => {
     const t = tournaments.get(tournamentId);
     if (!t) { socket.emit('error', 'Tournament not found.'); return; }
     if (t.status !== 'registering') { socket.emit('error', 'Registration is closed.'); return; }
-    if (t.players.length >= MAX_PLAYERS) { socket.emit('error', 'Tournament is full.'); return; }
+    if (t.players.length >= maxPlayersForType(t.type)) { socket.emit('error', 'Tournament is full.'); return; }
     if (t.players.find(p => p.id === socket.id)) { socket.emit('error', 'Already registered.'); return; }
 
-    const player = { id: socket.id, name, avatar: avatar || '🎭', chips: CHIPS_START, eliminated: false, card: null, seatIndex: t.players.length, isBot: false };
+    // Ticket-gated tournaments: client already spent the ticket via Firestore
+    // Server just validates the type matches
+    if (t.type === 'daily' && ticketType !== 'daily') {
+      socket.emit('error', 'Daily Ticket required.'); return;
+    }
+    if (t.type === 'saturday' && ticketType !== 'saturday') {
+      socket.emit('error', 'Saturday Ticket required.'); return;
+    }
+
+    const player = {
+      id: socket.id, name, avatar: avatar || '🎭',
+      chips: CHIPS_START, eliminated: false, card: null,
+      seatIndex: t.players.length, isBot: false
+    };
     t.players.push(player);
     socket.join(tournamentId);
     socket.data.tournamentId = tournamentId;
+    socket.data.tournamentType = t.type;
     socket.data.playerName = name;
     socket.data.playerAvatar = avatar;
 
-    socket.emit('registeredTournament', { tournamentId, playerCount: t.players.length });
+    socket.emit('registeredTournament', { tournamentId, tournamentType: t.type, playerCount: t.players.length });
     io.emit('tournamentList', getPublicTournaments());
   });
 
@@ -559,7 +642,9 @@ function getLobbyRooms() {
 
 // Generate tournament schedule on startup
 ensureTournamentsExist();
-console.log(`Generated ${tournaments.size} tournaments`);
+const counts = { micro: 0, daily: 0, saturday: 0 };
+for (const t of tournaments.values()) counts[t.type] = (counts[t.type] || 0) + 1;
+console.log(`Tournaments generated → micro: ${counts.micro}, daily: ${counts.daily}, saturday: ${counts.saturday}`);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running → http://localhost:${PORT}`));
