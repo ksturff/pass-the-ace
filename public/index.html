@@ -74,23 +74,7 @@
     /* ── MOBILE-FIRST GAME LAYOUT ── */
     #top-nav { display: none !important; }
     #screen-game { padding-top: 0 !important; }
-    #game-topbar { display: flex !important; }
-    #btn-game-menu {
-      pointer-events: all;
-      background: rgba(0,0,0,0.6);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 8px;
-      padding: 6px 14px;
-      color: var(--muted);
-      font-size: 10px;
-      font-family: 'Orbitron', sans-serif;
-      cursor: pointer;
-      letter-spacing: 1px;
-      backdrop-filter: blur(4px);
-      min-height: 32px;
-      -webkit-tap-highlight-color: rgba(255,215,0,0.2);
-    }
-    #btn-game-menu:active { opacity: 0.7; }
+    #game-topbar { display: none !important; }
     #table-area {
       padding: 0;
       align-items: center;
@@ -906,7 +890,7 @@
 
 <!-- ── TOP NAV ── -->
 <div id="top-nav">
-  <div class="nav-logo">PASS THE ACE</div>
+  <div class="nav-logo">PASS THE SATURDAY</div>
   <div class="nav-spacer"></div>
   <div class="nav-profile" id="nav-profile-btn">
     <span class="nav-avatar" id="nav-avatar">🎭</span>
@@ -1007,7 +991,7 @@
           <text x="62" y="64" font-size="11" font-family="Orbitron,sans-serif" font-weight="700" fill="rgba(255,215,0,0.7)" text-anchor="end">A</text>
         </svg>
       </div>
-      <div class="login-title">PASS THE ACE</div>
+      <div class="login-title">PASS THE SATURDAY</div>
       <div class="login-sub">Sign in to play</div>
     </div>
 
@@ -1081,7 +1065,7 @@
           <text x="62" y="64" font-size="11" font-family="Orbitron,sans-serif" font-weight="700" fill="rgba(255,215,0,0.7)" text-anchor="end">A</text>
         </svg>
       </div>
-      <div class="logo-title">PASS THE ACE</div>
+      <div class="logo-title">PASS THE SATURDAY</div>
       <div class="logo-sub">Don't get caught with the lowest card</div>
     </div>
 
@@ -1183,7 +1167,7 @@
   <!-- Top bar -->
   <div class="lobby-topbar">
     <button class="lobby-back" id="btn-lobby-back">← HOME</button>
-    <div class="lobby-topbar-title">PASS THE ACE</div>
+    <div class="lobby-topbar-title">PASS THE SATURDAY</div>
     <div class="lobby-topbar-time" id="lobby-clock"></div>
   </div>
 
@@ -2157,14 +2141,18 @@ function updateTable(revealAll=false){
     slot.classList.toggle('eliminated',p.eliminated);
     if(cardWrap)cardWrap.classList.toggle('active-glow',isCur&&!p.eliminated&&!revealAll);
     if(cardCanvas){
+      const dpr=window.devicePixelRatio||1;
       const cctx=cardCanvas.getContext('2d');
-      cctx.clearRect(0,0,cardCanvas.width,cardCanvas.height);
+      const cw=cardCanvas.offsetWidth||44;
+      const ch=cardCanvas.offsetHeight||64;
+      cardCanvas.width=cw*dpr;cardCanvas.height=ch*dpr;
+      cctx.scale(dpr,dpr);
+      cctx.clearRect(0,0,cw,ch);
       if(p.card&&!p.eliminated){
         const isHidden=p.card==='hidden';
         const faceUp=revealAll||(!isHidden&&p.card?.rank==='K');
         const key=faceUp?cardKey(p.card):'back';
         const img=cardImages[key];
-        const cw=cardCanvas.width,ch=cardCanvas.height;
         if(img&&img.complete&&img.naturalWidth>0)cctx.drawImage(img,0,0,cw,ch);
         else drawCardFallback(cctx,isHidden?null:p.card,cw/2,ch/2,cw,ch,faceUp);
       }
@@ -2187,9 +2175,11 @@ function updateHandArea(){
   const handCanvas=document.getElementById('my-card-canvas');
   const handCtx=handCanvas.getContext('2d');
   const cardDisp=document.getElementById('my-card-display');
+  const dpr=window.devicePixelRatio||1;
   const hcw=42;const hch=60;
-  handCanvas.width=hcw;handCanvas.height=hch;
+  handCanvas.width=hcw*dpr;handCanvas.height=hch*dpr;
   handCanvas.style.width=hcw+'px';handCanvas.style.height=hch+'px';
+  handCtx.scale(dpr,dpr);
   handCtx.clearRect(0,0,hcw,hch);
   if(me.card&&me.card!=='hidden'){
     const key=cardKey(me.card);const img=cardImages[key];
@@ -2218,11 +2208,16 @@ function showRoundResult(data){
   data.players.forEach(p=>{
     if(!p.card||p.card==='hidden')return;
     const item=document.createElement('div');item.className='result-card-item';
-    const c=document.createElement('canvas');c.width=44;c.height=64;
-    c.style.cssText='border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.5);';
+    const c=document.createElement('canvas');
+    const dpr=window.devicePixelRatio||1;
+    const rw=44;const rh=64;
+    c.width=rw*dpr;c.height=rh*dpr;
+    c.style.width=rw+'px';c.style.height=rh+'px';
+    c.style.cssText+='border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.5);';
+    const cx=c.getContext('2d');cx.scale(dpr,dpr);
     const key=cardKey(p.card);const img=cardImages[key];
-    if(img&&img.complete&&img.naturalWidth>0){const cx=c.getContext('2d');cx.drawImage(img,0,0,44,64);}
-    else drawCardFallback(c.getContext('2d'),p.card,22,32,44,64,true);
+    if(img&&img.complete&&img.naturalWidth>0){cx.drawImage(img,0,0,rw,rh);}
+    else drawCardFallback(cx,p.card,rw/2,rh/2,rw,rh,true);
     item.appendChild(c);
     const label=document.createElement('div');label.textContent=p.name;
     if(losers.find(l=>l.name===p.name))label.style.color='#ff4d4f';
