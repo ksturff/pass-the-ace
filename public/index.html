@@ -44,9 +44,22 @@
     }
     html, body { width:100%; height:100%; background:var(--bg); overflow:hidden; font-family:'Orbitron',sans-serif; color:var(--text); }
 
-    .screen { position:fixed; inset:0; display:none; z-index:10; overflow-y:auto; }
-    .screen.active { display:flex; flex-direction:column; }
-    #screen-game.active { display:flex; flex-direction:column; }
+    .screen { position:fixed; inset:0; display:none; z-index:10; }
+    .screen.active { display:block; overflow-y:scroll; -webkit-overflow-scrolling:touch; }
+    /* Login, profile, leaderboard, howto, home — block-scroll screens */
+    #screen-login.active,
+    #screen-profile.active,
+    #screen-profile-setup.active,
+    #screen-leaderboard.active,
+    #screen-howto.active,
+    #screen-home.active { display:block; overflow-y:scroll; -webkit-overflow-scrolling:touch; }
+    /* Lobby is flex (has sticky topbar) */
+    #screen-lobby.active { display:flex; flex-direction:column; overflow:hidden; }
+    /* Game never scrolls */
+    #screen-game.active { display:flex; flex-direction:column; overflow:hidden; }
+    /* Waiting screens */
+    #screen-waiting.active,
+    #screen-tournament-wait.active { display:flex; flex-direction:column; overflow-y:scroll; -webkit-overflow-scrolling:touch; }
 
     /* ── Shared components ── */
     .inp { width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--stroke); background:#0e1216; color:var(--text); font-size:14px; font-family:'Orbitron',sans-serif; outline:none; transition:border-color .2s; }
@@ -99,8 +112,7 @@
     /* ── PROFILE SCREEN ── */
     #screen-profile {
       background: var(--bg);
-      align-items: center; justify-content: flex-start;
-      overflow-y: auto; padding: 60px 16px 24px;
+      padding: 60px 16px 24px;
     }
     .profile-wrap { width: min(480px, 96vw); margin: 0 auto; }
     .profile-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; }
@@ -141,8 +153,7 @@
     /* ── LEADERBOARD SCREEN ── */
     #screen-leaderboard {
       background: var(--bg);
-      align-items: center; justify-content: flex-start;
-      overflow-y: auto; padding: 60px 16px 24px;
+      padding: 60px 16px 24px;
     }
     .lb-wrap { width: min(480px, 96vw); margin: 0 auto; }
     .lb-title { font-size:16px; letter-spacing:2px; color:var(--accent); margin-bottom:20px; text-align:center; }
@@ -172,12 +183,10 @@
     .lb-score-val { font-size:16px; font-weight:700; color:var(--accent); }
     .lb-score-label { font-size:9px; color:var(--muted); font-family:sans-serif; letter-spacing:1px; }
 
-    /* ── LOGIN SCREEN ── */
-    #screen-login {
-      background: radial-gradient(ellipse 120% 60% at 50% -5%, #1a1200 0%, #0a0800 55%);
-      align-items: center; justify-content: flex-start;
-      overflow-y: auto; padding: 48px 16px 24px;
-    }
+    /* Center content on block-scroll screens */
+    #screen-login, #screen-profile-setup { background: radial-gradient(ellipse 120% 60% at 50% -5%, #1a1200 0%, #0a0800 55%); }
+    #screen-login .login-wrap,
+    #screen-profile-setup .profile-setup-wrap { margin: 0 auto; }
     .login-wrap { width: min(380px, 92vw); display: flex; flex-direction: column; align-items: center; gap: 0; margin: 0 auto; }
     .login-logo { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 36px; }
     .login-title { font-size: clamp(22px,5vw,32px); letter-spacing: 4px; background: linear-gradient(90deg,var(--accent2),var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -202,10 +211,7 @@
     .login-error { font-family: sans-serif; font-size: 12px; color: var(--danger); text-align: center; min-height: 16px; }
 
     /* ── PROFILE SETUP ── */
-    #screen-profile-setup {
-      background: radial-gradient(ellipse 120% 60% at 50% -5%, #1a1200 0%, #0a0800 55%);
-      align-items: center; justify-content: center;
-    }
+    #screen-profile-setup { padding: 48px 16px 24px; }
     .profile-setup-wrap { width: min(380px, 92vw); }
     .profile-setup-title { font-size: 16px; letter-spacing: 2px; color: var(--accent); text-align: center; margin-bottom: 6px; }
     .profile-setup-sub { font-family: sans-serif; font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 24px; }
@@ -236,12 +242,9 @@
     /* ── HOME SCREEN ── */
     #screen-home {
       background: radial-gradient(ellipse 120% 60% at 50% -5%, #1a1200 0%, #0a0800 55%);
-      align-items: center;
-      justify-content: flex-start;
-      overflow-y: auto;
       padding: 56px 16px 16px;
     }
-    .home-wrap { width: min(400px, 96vw); display:flex; flex-direction:column; align-items:center; gap:0; max-width:100%; }
+    .home-wrap { width: min(400px, 96vw); display:flex; flex-direction:column; align-items:center; gap:0; max-width:100%; margin: 0 auto; }
 
     .home-logo { display:flex; flex-direction:column; align-items:center; margin-bottom:16px; gap:8px; }
     @media (max-height: 500px) {
@@ -365,7 +368,7 @@
     .filter-count { font-size: 10px; color: var(--muted); font-family: sans-serif; white-space: nowrap; }
 
     /* Grid table */
-    .lobby-content { flex:1; overflow-y:auto; padding: 0; }
+    .lobby-content { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding: 0; }
 
     .t-grid-wrap { width:100%; }
     .t-grid {
@@ -620,7 +623,7 @@
     .tw-name { font-size:9px; color:var(--muted); font-family:sans-serif; max-width:48px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
     /* ── HOW TO PLAY ── */
-    #screen-howto { background:var(--bg); align-items:center; justify-content:flex-start; overflow-y:auto; padding:24px 16px; }
+    #screen-howto { background:var(--bg); overflow-y:auto; -webkit-overflow-scrolling:touch; padding:24px 16px; }
     .howto-wrap { width:min(480px,96vw); }
     .howto-header { display:flex; align-items:center; gap:12px; margin-bottom:24px; }
     .howto-title { font-size:16px; letter-spacing:2px; color:var(--accent); }
