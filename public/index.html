@@ -468,6 +468,48 @@
 
     .section-label { font-size:9px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; }
 
+    /* ── TICKET SYSTEM ── */
+    .t-grid .col-buyin-ticket { color: #cd7f32; font-weight: 700; font-size: 12px; }
+    .t-grid .col-prize-ticket { color: #ffd700; font-weight: 700; font-size: 12px; }
+    .t-grid tbody tr.row-ticket { border-left: 2px solid rgba(205,127,50,0.4); }
+    .t-grid tbody tr.row-ticket:hover { background: rgba(205,127,50,0.06) !important; }
+    .t-grid tbody tr.row-weekly { border-left: 2px solid rgba(255,215,0,0.5); background: rgba(255,215,0,0.02) !important; }
+    .t-grid tbody tr.row-weekly:hover { background: rgba(255,215,0,0.07) !important; }
+    .t-badge.ticket { background:rgba(205,127,50,0.15); color:#cd7f32; border:1px solid rgba(205,127,50,0.3); }
+    .t-badge.weekly { background:rgba(255,215,0,0.15); color:#ffd700; border:1px solid rgba(255,215,0,0.35); }
+    .ticket-wallet {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(205,127,50,0.1); border: 1px solid rgba(205,127,50,0.3);
+      border-radius: 20px; padding: 4px 12px;
+      font-size: 12px; color: #cd7f32; font-family: 'Orbitron', sans-serif;
+      letter-spacing: 0.5px;
+    }
+    .ticket-wallet.gold-wallet {
+      background: rgba(255,215,0,0.08); border-color: rgba(255,215,0,0.3); color: #ffd700;
+    }
+    .ticket-wallet .tw-count { font-weight: 700; color: #ffd700; }
+    .ticket-wallet.gold-wallet .tw-count { color: #fff; }
+    /* Ticket modal */
+    .ticket-modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:300; display:none; place-items:center; }
+    .ticket-modal-bg.show { display:grid; }
+    .ticket-modal {
+      background: linear-gradient(135deg, #1a1200, #0d0a00);
+      border: 1px solid rgba(205,127,50,0.4);
+      border-radius: 16px; padding: 28px; width: min(340px, 92vw);
+      display: flex; flex-direction: column; gap: 14px; text-align: center;
+      box-shadow: 0 0 40px rgba(205,127,50,0.15);
+    }
+    .ticket-modal.gold-modal {
+      background: linear-gradient(135deg, #1a1500, #0d0b00);
+      border-color: rgba(255,215,0,0.5);
+      box-shadow: 0 0 50px rgba(255,215,0,0.2);
+    }
+    .ticket-modal-icon { font-size: 48px; }
+    .ticket-modal-title { font-size: 14px; letter-spacing: 2px; color: #cd7f32; }
+    .ticket-modal-body { font-family: sans-serif; font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .ticket-modal-body strong { color: var(--text); }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+
     /* ── Tournament grid table ── */
     .t-grid {
       width: 100%;
@@ -881,8 +923,16 @@
         font-size:18px; font-weight:700;
         background:linear-gradient(90deg,#ffd700,#ffaa00);
         -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-        margin-left:4px;
+        margin-left:4px; margin-right:12px;
       ">—</span>
+      <div class="ticket-wallet" id="home-ticket-wallet" title="Bronze Tickets — enter ticket tournaments">
+        🎟️ <span style="color:var(--muted);font-size:10px;letter-spacing:1px;">BRONZE</span>
+        <span class="tw-count" id="home-ticket-count">0</span>
+      </div>
+      <div class="ticket-wallet gold-wallet" id="home-gold-wallet" title="Gold Tickets — enter Weekly Championship">
+        🏅 <span style="color:rgba(255,215,0,0.6);font-size:10px;letter-spacing:1px;">GOLD</span>
+        <span class="tw-count" id="home-gold-count">0</span>
+      </div>
     </div>
 
     <div class="home-modes">
@@ -1160,6 +1210,61 @@
   </div>
 </div>
 
+<!-- ── NO TICKET MODAL ── -->
+<div class="ticket-modal-bg" id="no-ticket-modal">
+  <div class="ticket-modal">
+    <div class="ticket-modal-icon">🎟️</div>
+    <div class="ticket-modal-title">TICKET REQUIRED</div>
+    <div class="ticket-modal-body">
+      You need a <strong>Bronze Ticket</strong> to enter this tournament.<br><br>
+      Win a Quick Play game to have a chance of earning one!<br>
+      <span style="font-size:11px;color:var(--muted);">(~30% drop chance on win)</span>
+    </div>
+    <button class="btn-primary" id="btn-no-ticket-play" style="background:linear-gradient(90deg,#8B4513,#cd7f32);color:#fff;">⚡ Play Quick Play</button>
+    <button class="btn-ghost" id="btn-no-ticket-cancel">Close</button>
+  </div>
+</div>
+
+<!-- ── TICKET EARNED MODAL ── -->
+<div class="ticket-modal-bg" id="ticket-earned-modal">
+  <div class="ticket-modal">
+    <div class="ticket-modal-icon" style="animation:pulse 1s ease-in-out 3;">🎟️</div>
+    <div class="ticket-modal-title" style="color:#ffd700;">BRONZE TICKET EARNED!</div>
+    <div class="ticket-modal-body">
+      You won and earned a <strong>🎟️ Bronze Ticket</strong>!<br><br>
+      Use it in the Tournaments lobby to enter a <strong>Ticket Tournament</strong>.
+    </div>
+    <button class="btn-primary" id="btn-ticket-earned-ok" style="background:linear-gradient(90deg,#8B4513,#cd7f32);color:#fff;">Nice! 🎉</button>
+  </div>
+</div>
+
+<!-- ── GOLD TICKET EARNED MODAL ── -->
+<div class="ticket-modal-bg" id="gold-ticket-earned-modal">
+  <div class="ticket-modal gold-modal">
+    <div class="ticket-modal-icon" style="animation:pulse 0.8s ease-in-out 4;">🏅</div>
+    <div class="ticket-modal-title" style="color:#ffd700;">GOLD TICKET EARNED!</div>
+    <div class="ticket-modal-body">
+      You won the Bronze Tournament and earned a <strong>🏅 Gold Ticket</strong>!<br><br>
+      Use it on <strong>Sunday</strong> to enter the <strong>Weekly Championship</strong>.<br>
+      <span style="font-size:11px;color:var(--muted);">Win the championship to earn a permanent 🏆 trophy on your profile.</span>
+    </div>
+    <button class="btn-primary" id="btn-gold-ticket-earned-ok" style="background:linear-gradient(90deg,#b8860b,#ffd700);color:#001018;">Let's go! 🏆</button>
+  </div>
+</div>
+
+<!-- ── NO GOLD TICKET MODAL ── -->
+<div class="ticket-modal-bg" id="no-gold-ticket-modal">
+  <div class="ticket-modal gold-modal">
+    <div class="ticket-modal-icon">🏅</div>
+    <div class="ticket-modal-title" style="color:#ffd700;">GOLD TICKET REQUIRED</div>
+    <div class="ticket-modal-body">
+      The <strong>Weekly Championship</strong> requires a <strong>🏅 Gold Ticket</strong>.<br><br>
+      Earn one by winning the <strong>Bronze Ticket Tournament</strong>.
+    </div>
+    <button class="btn-primary" id="btn-no-gold-ok" style="background:linear-gradient(90deg,#b8860b,#ffd700);color:#001018;">Got it</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -1199,9 +1304,72 @@ function updateNavBar() {
   document.getElementById('nav-avatar').textContent = userProfile.avatar || '🎭';
   document.getElementById('nav-username').textContent = userProfile.displayName || 'Player';
   document.getElementById('top-nav').classList.add('visible');
-  // Update chip balance display on home screen
   const balEl = document.getElementById('home-chip-balance');
   if (balEl) balEl.textContent = (userProfile.chipBalance ?? 2500).toLocaleString();
+  const ticketEl = document.getElementById('home-ticket-count');
+  if (ticketEl) ticketEl.textContent = userProfile.bronzeTickets ?? 0;
+  const goldEl = document.getElementById('home-gold-count');
+  if (goldEl) goldEl.textContent = userProfile.goldTickets ?? 0;
+}
+
+// ── Ticket system ──
+async function awardBronzeTicket() {
+  if (!currentUser) return;
+  const newCount = (userProfile?.bronzeTickets ?? 0) + 1;
+  await saveUserProfile(currentUser.uid, { bronzeTickets: newCount });
+  updateNavBar();
+  document.getElementById('ticket-earned-modal').classList.add('show');
+}
+
+async function awardGoldTicket() {
+  if (!currentUser) return;
+  const newCount = (userProfile?.goldTickets ?? 0) + 1;
+  await saveUserProfile(currentUser.uid, { goldTickets: newCount });
+  updateNavBar();
+  document.getElementById('gold-ticket-earned-modal').classList.add('show');
+}
+
+async function awardWeeklyTrophy() {
+  if (!currentUser) return;
+  const newCount = (userProfile?.weeklyTrophies ?? 0) + 1;
+  await saveUserProfile(currentUser.uid, { weeklyTrophies: newCount });
+  updateNavBar();
+}
+
+async function spendBronzeTicket() {
+  if (!currentUser) return false;
+  const count = userProfile?.bronzeTickets ?? 0;
+  if (count <= 0) return false;
+  await saveUserProfile(currentUser.uid, { bronzeTickets: count - 1 });
+  updateNavBar();
+  return true;
+}
+
+async function spendGoldTicket() {
+  if (!currentUser) return false;
+  const count = userProfile?.goldTickets ?? 0;
+  if (count <= 0) return false;
+  await saveUserProfile(currentUser.uid, { goldTickets: count - 1 });
+  updateNavBar();
+  return true;
+}
+
+function tryEnterTicketTournament(tournamentData, onSuccess) {
+  if (tournamentData.ticketType === 'gold') {
+    const count = userProfile?.goldTickets ?? 0;
+    if (count > 0) {
+      spendGoldTicket().then(() => onSuccess());
+    } else {
+      document.getElementById('no-gold-ticket-modal').classList.add('show');
+    }
+  } else {
+    const count = userProfile?.bronzeTickets ?? 0;
+    if (count > 0) {
+      spendBronzeTicket().then(() => onSuccess());
+    } else {
+      document.getElementById('no-ticket-modal').classList.add('show');
+    }
+  }
 }
 
 // ── Auth state listener ──
@@ -1311,7 +1479,8 @@ function initAuth() {
 }
 
 // ── Stats tracking ──
-async function recordGameResult(won, placement=0) {
+// tournamentType: null (solo/regular), 'bronze' (Bronze Ticket Tournament), 'weekly' (Weekly Championship)
+async function recordGameResult(won, placement=0, tournamentType=null) {
   if (!currentUser) return;
   try {
     await db.collection('users').doc(currentUser.uid).update({
@@ -1323,7 +1492,13 @@ async function recordGameResult(won, placement=0) {
     if (isSolo) {
       const payout = won ? 200 : 50;
       await updateChipBalance(payout);
-      if (won) showToast(`You won! +${payout} chips 🏆`, '#ffd700', 3000);
+      if (won) {
+        showToast(`You won! +${payout} chips 🏆`, '#ffd700', 3000);
+        // ~30% chance to drop a Bronze ticket on solo win
+        if (Math.random() < 0.30) {
+          setTimeout(() => awardBronzeTicket(), 1200);
+        }
+      }
       else showToast('+50 chips for playing', '#8a7a50', 2000);
     } else {
       let payout = 50;
@@ -1333,6 +1508,20 @@ async function recordGameResult(won, placement=0) {
       await updateChipBalance(payout);
       if (payout > 50) showToast(`+${payout.toLocaleString()} chips! 🏆`, '#ffd700', 3000);
       else showToast('+50 chips participation bonus', '#8a7a50', 2500);
+
+      // Ticket tournament rewards
+      if (won && placement === 1) {
+        if (tournamentType === 'bronze') {
+          // Won Bronze Tournament → award Gold Ticket
+          setTimeout(() => awardGoldTicket(), 1400);
+        } else if (tournamentType === 'weekly') {
+          // Won Weekly Championship → award permanent trophy
+          setTimeout(async () => {
+            await awardWeeklyTrophy();
+            showToast('🏆 Weekly Champion! Trophy added to your profile!', '#ffd700', 5000);
+          }, 1400);
+        }
+      }
     }
   } catch(e) { console.error('stat update failed', e); }
 }
@@ -1343,6 +1532,10 @@ async function updateChipBalance(delta) {
   await saveUserProfile(currentUser.uid, { chipBalance: newBalance });
   const balEl = document.getElementById('home-chip-balance');
   if (balEl) balEl.textContent = newBalance.toLocaleString();
+  const ticketEl = document.getElementById('home-ticket-count');
+  if (ticketEl) ticketEl.textContent = userProfile?.bronzeTickets ?? 0;
+  const goldEl = document.getElementById('home-gold-count');
+  if (goldEl) goldEl.textContent = userProfile?.goldTickets ?? 0;
   return newBalance;
 }
 
@@ -1486,11 +1679,13 @@ async function loadLeaderboard(tab) {
 
       const row = document.createElement('div');
       row.className = 'lb-row' + (isMe ? ' me' : '');
+      const trophies = p.weeklyTrophies || 0;
+      const trophyBadge = trophies > 0 ? ` <span style="color:#ffd700;font-size:10px;letter-spacing:0.5px;">🏆×${trophies}</span>` : '';
       row.innerHTML = `
         <div class="lb-rank ${rankClass}">${rankDisplay}</div>
         <div class="lb-avatar">${p.avatar || '🎭'}</div>
         <div class="lb-info">
-          <div class="lb-name">${p.displayName || 'Player'}${isMe ? ' <span style="color:var(--accent);font-size:9px;">YOU</span>' : ''}</div>
+          <div class="lb-name">${p.displayName || 'Player'}${isMe ? ' <span style="color:var(--accent);font-size:9px;">YOU</span>' : ''}${trophyBadge}</div>
           <div class="lb-sub">${games} games played</div>
         </div>
         <div class="lb-score">
@@ -1828,6 +2023,77 @@ function renderTournamentList(list){
   if(!tbody)return;
   if(!filtered.length){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);font-family:sans-serif;font-size:13px;">No tournaments found</td></tr>`;return;}
   tbody.innerHTML='';
+  // ── Inject Bronze Ticket Tournament row (always shown at top) ──
+  const bronzeTicketRow=document.createElement('tr');
+  const myTickets=userProfile?.bronzeTickets??0;
+  const bronzeRegistered=window._bronzeTicketRegistered||false;
+  bronzeTicketRow.className='row-ticket'+(bronzeRegistered?' row-registered':'');
+  bronzeTicketRow.id='trow-bronze-ticket';
+  bronzeTicketRow.innerHTML=`
+    <td class="col-start" style="color:#cd7f32;font-weight:700;">DAILY</td>
+    <td class="col-buyin-ticket">🎟️ Bronze</td>
+    <td class="col-name">Bronze Ticket Tournament</td>
+    <td class="col-prize-ticket">🏅 Gold Ticket</td>
+    <td class="col-state"><span class="t-badge ticket">TICKET</span></td>
+    <td class="col-registered" style="color:#cd7f32;">${myTickets} owned</td>
+    <td class="col-action"><button class="btn-register${bronzeRegistered?' unregister':''}" id="btn-bronze-register" style="border-color:rgba(205,127,50,0.4);background:rgba(205,127,50,0.1);color:#cd7f32;">${bronzeRegistered?'Leave':'Enter'}</button></td>`;
+  bronzeTicketRow.querySelector('#btn-bronze-register').addEventListener('click',e=>{
+    e.stopPropagation();
+    if(bronzeRegistered){
+      window._bronzeTicketRegistered=false;
+      renderTournamentList(currentTournamentList);
+      showToast('Left Bronze tournament','#8a7a50');
+    } else {
+      tryEnterTicketTournament({type:'ticket',ticketType:'bronze'},()=>{
+        window._bronzeTicketRegistered=true;
+        renderTournamentList(currentTournamentList);
+        showToast('🎟️ Bronze ticket used! Registered!','#cd7f32',3000);
+      });
+    }
+  });
+  tbody.appendChild(bronzeTicketRow);
+
+  // ── Inject Weekly Championship row ──
+  const nextSunday = (()=>{
+    const now = new Date();
+    const d = new Date(now);
+    d.setDate(d.getDate() + ((7 - d.getDay()) % 7 || 7));
+    d.setHours(20, 0, 0, 0); // 8pm Sunday
+    return d;
+  })();
+  const msToSunday = nextSunday - Date.now();
+  const daysToSunday = Math.floor(msToSunday / 86400000);
+  const hoursToSunday = Math.floor((msToSunday % 86400000) / 3600000);
+  const countdownStr = daysToSunday > 0 ? `${daysToSunday}d ${hoursToSunday}h` : `${hoursToSunday}h`;
+  const myGoldTickets = userProfile?.goldTickets ?? 0;
+  const weeklyRegistered = window._weeklyRegistered || false;
+  const weeklyRow = document.createElement('tr');
+  weeklyRow.className = 'row-weekly' + (weeklyRegistered ? ' row-registered' : '');
+  weeklyRow.id = 'trow-weekly';
+  weeklyRow.innerHTML = `
+    <td class="col-start" style="color:#ffd700;font-weight:700;">SUN 8PM<span class="col-date"> in ${countdownStr}</span></td>
+    <td class="col-buyin-ticket" style="color:#ffd700;">🏅 Gold</td>
+    <td class="col-name" style="color:#ffd700;font-weight:700;">⭐ Weekly Championship</td>
+    <td class="col-prize-ticket" style="color:#ffd700;">🏆 Trophy</td>
+    <td class="col-state"><span class="t-badge weekly">WEEKLY</span></td>
+    <td class="col-registered" style="color:#ffd700;">${myGoldTickets} owned</td>
+    <td class="col-action"><button class="btn-register${weeklyRegistered?' unregister':''}" id="btn-weekly-register" style="border-color:rgba(255,215,0,0.4);background:rgba(255,215,0,0.1);color:#ffd700;">${weeklyRegistered?'Leave':'Enter'}</button></td>`;
+  weeklyRow.querySelector('#btn-weekly-register').addEventListener('click', e=>{
+    e.stopPropagation();
+    if (weeklyRegistered) {
+      window._weeklyRegistered = false;
+      renderTournamentList(currentTournamentList);
+      showToast('Left Weekly Championship', '#8a7a50');
+    } else {
+      tryEnterTicketTournament({type:'ticket', ticketType:'gold'}, ()=>{
+        window._weeklyRegistered = true;
+        renderTournamentList(currentTournamentList);
+        showToast('🏅 Gold ticket used! Registered for Sunday!', '#ffd700', 3500);
+      });
+    }
+  });
+  tbody.appendChild(weeklyRow);
+
   let autoScrolled=false;
   filtered.forEach(t=>{
     const isRegistered=myTournamentId===t.id;
@@ -1990,7 +2256,10 @@ function initSocket(){
     if(data.isTournament)myTournamentId=null;
     const iWon=data.winner.id===myId||data.winner.name===(userProfile?.displayName||'');
     const placement=data.placements?.[myId]??(iWon?1:0);
-    recordGameResult(iWon,placement);
+    // Determine tournament type from registration state
+    const tType = window._weeklyRegistered ? 'weekly' : window._bronzeTicketRegistered ? 'bronze' : null;
+    if(iWon && placement===1){ window._weeklyRegistered=false; window._bronzeTicketRegistered=false; }
+    recordGameResult(iWon, placement, tType);
   });
   socket.on('roomCreated',data=>{myRoomCode=data.code;isHost=true;document.getElementById('waiting-code').textContent=data.code;updateWaitingRoom(data.players);showScreen('screen-waiting');});
   socket.on('joinedRoom',data=>{myRoomCode=data.code;isHost=false;document.getElementById('waiting-code').textContent=data.code;updateWaitingRoom(data.players);showScreen('screen-waiting');});
@@ -2095,6 +2364,29 @@ function initLobbyTabs(){
 // ── Boot ──
 document.addEventListener('DOMContentLoaded',()=>{
   buildAvatarPicker();buildSetupAvatarPicker();buildEditAvatarPicker();initAuth();initProfile();initLeaderboard();initSocket();initLobbyTabs();
+
+  // Ticket modal buttons
+  document.getElementById('btn-no-ticket-cancel').addEventListener('click',()=>{
+    document.getElementById('no-ticket-modal').classList.remove('show');
+  });
+  document.getElementById('btn-no-ticket-play').addEventListener('click',()=>{
+    document.getElementById('no-ticket-modal').classList.remove('show');
+    const name=userProfile?.displayName||'Player';
+    myAvatar=userProfile?.avatar||myAvatar;
+    checkChipsAndProceed(100, async ()=>{
+      await updateChipBalance(-100);
+      startSolo(name,10);
+    });
+  });
+  document.getElementById('btn-ticket-earned-ok').addEventListener('click',()=>{
+    document.getElementById('ticket-earned-modal').classList.remove('show');
+  });
+  document.getElementById('btn-gold-ticket-earned-ok').addEventListener('click',()=>{
+    document.getElementById('gold-ticket-earned-modal').classList.remove('show');
+  });
+  document.getElementById('btn-no-gold-ok').addEventListener('click',()=>{
+    document.getElementById('no-gold-ticket-modal').classList.remove('show');
+  });
 
   // Home buttons
   document.getElementById('btn-tournaments').addEventListener('click',()=>{
