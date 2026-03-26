@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const { Server } = require('socket.io');
 const path = require('path');
 
@@ -32,7 +33,7 @@ const BOT_AVATARS = ['🐺','🦁','🐯','🦅','🐉','🦈','👾','🤖','�
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL || null;
 if (RENDER_URL) {
   setInterval(() => {
-    http.get(`${RENDER_URL}/health`, (res) => {
+    https.get(`${RENDER_URL}/health`, (res) => {
       console.log(`[ping] ${res.statusCode}`);
     }).on('error', (e) => {
       console.warn('[ping error]', e.message);
