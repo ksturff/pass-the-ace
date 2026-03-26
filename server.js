@@ -28,6 +28,74 @@ const BOT_NAMES = ['Alex','Sam','Jordan','Taylor','Morgan','Casey','Riley','Quin
 const BOT_AVATARS = ['🐺','🦁','🐯','🦅','🐉','🦈','👾','🤖','💀','🦂'];
 
 // ─────────────────────────────────────────
+//  SIT & STAY
+// ─────────────────────────────────────────
+const SIT_AND_STAY_SEATS    = 10;
+const SIT_AND_STAY_WAIT_MS  = 20000; // 20 seconds before bots fill empty seats
+const sitAndStayQueue       = [];    // players waiting to be seated
+let   sitAndStayTimer       = null;  // countdown timer handle
+let   sitAndStayGame        = null;  // active sit&stay room (one at a time; new one created when game starts)
+const SIT_AND_STAY_CODE     = 'SITANDSTAY';
+
+function getSitAndStayRoom() {
+  if (!sitAndStayGame) {
+    sitAndStayGame = {
+      code: SIT_AND_STAY_CODE,
+      players: [],
+      gameState: null,
+      options: { seats: SIT_AND_STAY_SEATS },
+      type: 'sitAndStay'
+    };
+  }
+  return sitAndStayGame;
+}
+
+function sitAndStayPlayerCount() {
+  return getSitAndStayRoom().players.filter(p => !p.isBot).length;
+}
+
+function broadcastSitAndStayStatus() {
+  const room = getSitAndStayRoom();
+  const realCount = room.players.filter(p => !p.isBot).length;
+  io.to(SIT_AND_STAY_CODE).emit('sitAndStayStatus', {
+    playerCount: realCount,
+    totalSeats: SIT_AND_STAY_SEATS,
+    waitMs: SIT_AND_STAY_WAIT_MS
+  });
+}
+
+function startSitAndStayCountdown() {
+  if (sitAndStayTimer) return; // already counting
+  sitAndStayTimer = setTimeout(() => {
+    sitAndStayTimer = null;
+    launchSitAndStay();
+  }, SIT_AND_STAY_WAIT_MS);
+}
+
+function launchSitAndStay() {
+  const room = getSitAndStayGame();
+  if (room.players.filter(p => !p.isBot).length === 0) return; // nobody left
+  // Fill remaining seats with bots
+  let botIdx = 0;
+  while (room.players.length < SIT_AND_STAY_SEATS) {
+    room.players.push({
+      id: `bot_ss_${Date.now()}_${botIdx}`,
+      name: BOT_NAMES[botIdx % BOT_NAMES.length],
+      avatar: BOT_AVATARS[botIdx % BOT_AVATARS.length],
+      chips: CHIPS_START, eliminated: false, card: null,
+      seatIndex: room.players.length, isBot: true
+    });
+    botIdx++;
+  }
+  io.to(SIT_AND_STAY_CODE).emit('sitAndStayLaunching');
+  startGame(room);
+  // Reset for next group
+  sitAndStayGame = null;
+}
+
+function getSitAndStayGame() { return getSitAndStayRoom(); }
+
+// ─────────────────────────────────────────
 //  SELF-PING — keeps Render free tier alive
 // ─────────────────────────────────────────
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL || null;
@@ -613,6 +681,53 @@ io.on('connection', socket => {
     handlePass(room);
   });
 
+  // ── Sit & Stay events
+  socket.on('joinSitAndStay', ({ name, avatar }) => {
+    const room = getSitAndStayGame();
+    // Already in game or already queued
+    if (room.players.find(p => p.id === socket.id)) return;
+    if (room.gameState) {
+      socket.emit('error', 'A Sit & Stay game is already in progress. Please wait a moment.');
+      return;
+    }
+    const player = {
+      id: socket.id, name, avatar: avatar || '🎭',
+      chips: CHIPS_START, eliminated: false, card: null,
+      seatIndex: room.players.length, isBot: false
+    };
+    room.players.push(player);
+    socket.join(SIT_AND_STAY_CODE);
+    socket.data.sitAndStayCode = SIT_AND_STAY_CODE;
+    broadcastSitAndStayStatus();
+
+    // If table is full, launch immediately
+    if (room.players.length >= SIT_AND_STAY_SEATS) {
+      if (sitAndStayTimer) { clearTimeout(sitAndStayTimer); sitAndStayTimer = null; }
+      launchSitAndStay();
+    } else {
+      // First player starts the countdown
+      startSitAndStayCountdown();
+      socket.emit('sitAndStayWaiting', {
+        playerCount: room.players.filter(p => !p.isBot).length,
+        totalSeats: SIT_AND_STAY_SEATS,
+        waitMs: SIT_AND_STAY_WAIT_MS
+      });
+    }
+  });
+
+  socket.on('leaveSitAndStay', () => {
+    const room = getSitAndStayGame();
+    room.players = room.players.filter(p => p.id !== socket.id);
+    socket.leave(SIT_AND_STAY_CODE);
+    socket.data.sitAndStayCode = null;
+    broadcastSitAndStayStatus();
+    // If nobody left, cancel the timer
+    if (room.players.filter(p => !p.isBot).length === 0) {
+      if (sitAndStayTimer) { clearTimeout(sitAndStayTimer); sitAndStayTimer = null; }
+      sitAndStayGame = null;
+    }
+  });
+
   socket.on('disconnect', () => {
     const code = socket.data.roomCode;
     if (code) {
@@ -630,6 +745,18 @@ io.on('connection', socket => {
       if (t && t.status === 'registering') {
         t.players = t.players.filter(p => p.id !== socket.id);
         io.emit('tournamentList', getPublicTournaments());
+      }
+    }
+    // Sit & Stay cleanup
+    if (socket.data.sitAndStayCode) {
+      const room = getSitAndStayGame();
+      if (room && !room.gameState) {
+        room.players = room.players.filter(p => p.id !== socket.id);
+        broadcastSitAndStayStatus();
+        if (room.players.filter(p => !p.isBot).length === 0) {
+          if (sitAndStayTimer) { clearTimeout(sitAndStayTimer); sitAndStayTimer = null; }
+          sitAndStayGame = null;
+        }
       }
     }
   });

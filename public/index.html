@@ -737,9 +737,149 @@
     .over-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
     .btn-again { padding:12px 24px; border-radius:12px; border:0; cursor:pointer; font-weight:700; font-size:13px; font-family:'Orbitron',sans-serif; background:linear-gradient(90deg,var(--accent2),var(--accent)); color:#001018; }
     .btn-menu-over { padding:12px 24px; border-radius:12px; border:1px solid var(--stroke); cursor:pointer; font-size:13px; font-family:'Orbitron',sans-serif; background:#1a1f24; color:var(--muted); }
+
+    /* ── SIT & STAY SEATS ── */
+    .ss-seat {
+      width:52px; height:52px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:22px;
+      border:2px solid rgba(255,255,255,0.08);
+      background:rgba(255,255,255,0.03);
+      transition:all .3s;
+    }
+    .ss-seat.filled {
+      border-color:rgba(255,215,0,0.4);
+      background:rgba(255,215,0,0.06);
+      box-shadow:0 0 12px rgba(255,215,0,0.15);
+    }
+    .ss-seat.empty { opacity:0.3; }
+
+    /* ── LEGAL CONSENT MODAL ── */
+    #legal-consent-overlay {
+      position:fixed; inset:0; z-index:99999;
+      background:rgba(0,0,0,0.92);
+      display:flex; align-items:center; justify-content:center;
+      padding:20px;
+    }
+    #legal-consent-overlay.hidden { display:none; }
+    .legal-consent-box {
+      background:linear-gradient(135deg,#18140a,#100e06);
+      border:1px solid rgba(255,215,0,0.2);
+      border-radius:20px;
+      padding:28px 24px;
+      max-width:380px; width:100%;
+      text-align:center;
+      box-shadow:0 0 40px rgba(255,215,0,0.08);
+    }
+    .legal-consent-icon { font-size:40px; margin-bottom:12px; }
+    .legal-consent-title { font-size:16px; letter-spacing:2px; color:var(--accent); margin-bottom:8px; }
+    .legal-consent-body { font-family:sans-serif; font-size:13px; color:var(--muted); line-height:1.7; margin-bottom:8px; }
+    .legal-consent-age { font-family:sans-serif; font-size:12px; color:rgba(255,215,0,0.5); margin-bottom:20px; }
+    .legal-consent-links { font-family:sans-serif; font-size:12px; color:var(--muted); margin-bottom:20px; }
+    .legal-consent-links a { color:var(--accent); cursor:pointer; text-decoration:underline; }
+    .btn-legal-accept {
+      width:100%; padding:14px;
+      border-radius:12px; border:0; cursor:pointer;
+      font-weight:700; font-size:13px; color:#1a1000;
+      background:linear-gradient(90deg,var(--accent2),var(--accent));
+      font-family:'Orbitron',sans-serif; letter-spacing:1px;
+      transition:opacity .2s;
+    }
+    .btn-legal-accept:hover { opacity:.88; }
+    .legal-consent-decline { font-family:sans-serif; font-size:11px; color:rgba(255,255,255,0.2); margin-top:12px; }
+
+    /* ── LEGAL FULL-SCREEN VIEWER ── */
+    #legal-viewer {
+      position:fixed; inset:0; z-index:99998;
+      background:var(--bg);
+      display:flex; flex-direction:column;
+    }
+    #legal-viewer.hidden { display:none; }
+    .legal-viewer-topbar {
+      display:flex; align-items:center; gap:12px;
+      padding:14px 16px;
+      border-bottom:1px solid var(--stroke);
+      background:var(--surface);
+      flex-shrink:0;
+    }
+    .legal-viewer-title { font-size:12px; letter-spacing:2px; color:var(--accent); flex:1; }
+    .btn-legal-close {
+      font-size:10px; color:var(--muted); letter-spacing:1px;
+      background:none; border:1px solid var(--stroke);
+      border-radius:8px; padding:6px 12px; cursor:pointer;
+      font-family:'Orbitron',sans-serif; transition:all .2s;
+    }
+    .btn-legal-close:hover { color:var(--text); border-color:rgba(255,215,0,0.3); }
+    .legal-viewer-content {
+      flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;
+      padding:24px 20px 40px;
+    }
+    .legal-section-title {
+      font-size:11px; color:var(--accent); letter-spacing:2px;
+      text-transform:uppercase; margin:24px 0 8px;
+      padding-bottom:6px; border-bottom:1px solid var(--stroke);
+    }
+    .legal-section-title:first-child { margin-top:0; }
+    .legal-body-text {
+      font-family:sans-serif; font-size:13px; color:var(--muted);
+      line-height:1.8; margin-bottom:12px;
+    }
+    .legal-body-text strong { color:var(--text); }
+    .legal-highlight {
+      background:rgba(255,215,0,0.05);
+      border:1px solid rgba(255,215,0,0.12);
+      border-left:3px solid rgba(255,215,0,0.4);
+      border-radius:8px; padding:12px 14px;
+      font-family:sans-serif; font-size:12px; color:var(--muted);
+      line-height:1.7; margin:12px 0;
+    }
+
+    /* ── LEGAL LINKS (login + profile) ── */
+    .legal-footer-links {
+      font-family:sans-serif; font-size:11px; color:var(--muted);
+      text-align:center; margin-top:12px;
+    }
+    .legal-footer-links a { color:rgba(255,215,0,0.6); cursor:pointer; text-decoration:none; }
+    .legal-footer-links a:hover { color:var(--accent); text-decoration:underline; }
+
+    /* Legal row in profile */
+    .profile-legal-row {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px; border-radius:12px;
+      background:linear-gradient(135deg,#18140a,#100e06);
+      border:1px solid rgba(255,255,255,0.06);
+      cursor:pointer; transition:all .2s; margin-bottom:8px;
+    }
+    .profile-legal-row:hover { border-color:rgba(255,215,0,0.2); }
+    .profile-legal-label { font-family:sans-serif; font-size:13px; color:var(--text); }
+    .profile-legal-arrow { color:var(--muted); font-size:16px; }
   </style>
 </head>
 <body>
+
+<!-- ── LEGAL CONSENT MODAL (first launch) ── -->
+<div id="legal-consent-overlay">
+  <div class="legal-consent-box">
+    <div class="legal-consent-icon">♠</div>
+    <div class="legal-consent-title">WELCOME TO PASS THE ACE</div>
+    <div class="legal-consent-body">Before you play, please review and agree to our Terms of Service and Privacy Policy.</div>
+    <div class="legal-consent-age">🔞 You must be 17 or older to play.</div>
+    <div class="legal-consent-links">
+      <a onclick="openLegal('terms')">Terms of Service</a> &nbsp;·&nbsp; <a onclick="openLegal('privacy')">Privacy Policy</a>
+    </div>
+    <button class="btn-legal-accept" onclick="acceptLegal()">I Agree — Let's Play</button>
+    <div class="legal-consent-decline">If you do not agree, please uninstall the app.</div>
+  </div>
+</div>
+
+<!-- ── LEGAL FULL-SCREEN VIEWER ── -->
+<div id="legal-viewer" class="hidden">
+  <div class="legal-viewer-topbar">
+    <div class="legal-viewer-title" id="legal-viewer-title">PRIVACY POLICY</div>
+    <button class="btn-legal-close" onclick="closeLegal()">✕ Close</button>
+  </div>
+  <div class="legal-viewer-content" id="legal-viewer-content"></div>
+</div>
 
 <!-- ── ROTATE PROMPT ── -->
 <div id="rotate-prompt">
@@ -790,6 +930,21 @@
     <div id="profile-recent" style="color:var(--muted);font-family:sans-serif;font-size:13px;text-align:center;padding:20px 0;">No games played yet</div>
 
     <button class="btn-ghost" id="btn-profile-back" style="margin-top:20px;">← Back</button>
+
+    <div style="margin-top:24px;">
+      <div class="profile-section-title">Legal</div>
+      <div class="profile-legal-row" onclick="openLegal('terms')">
+        <span class="profile-legal-label">Terms of Service</span>
+        <span class="profile-legal-arrow">›</span>
+      </div>
+      <div class="profile-legal-row" onclick="openLegal('privacy')">
+        <span class="profile-legal-label">Privacy Policy</span>
+        <span class="profile-legal-arrow">›</span>
+      </div>
+      <div style="font-family:sans-serif;font-size:11px;color:var(--muted);text-align:center;margin-top:12px;">
+        © 2026 Pop the Crowd Games · Pass the Ace · v1.0
+      </div>
+    </div>
   </div>
 </div>
 
@@ -864,6 +1019,9 @@
       <div class="login-error" id="signup-error"></div>
       <button class="btn-primary" id="btn-email-signup">Create Account</button>
       <div class="login-switch">Already have an account? <a id="btn-show-signin">Sign in</a></div>
+    </div>
+    <div class="legal-footer-links" style="margin-top:16px;padding-bottom:24px;">
+      By playing you agree to our <a onclick="openLegal('terms')">Terms of Service</a> and <a onclick="openLegal('privacy')">Privacy Policy</a>
     </div>
   </div>
 </div>
@@ -942,11 +1100,28 @@
     </div>
 
     <div class="home-modes">
-      <button class="mode-card featured" id="btn-tournaments">
+      <!-- TOURNAMENTS — Coming Soon -->
+      <div class="mode-card featured" style="opacity:0.5;cursor:default;position:relative;overflow:hidden;">
         <div class="mode-icon">🏆</div>
         <div class="mode-info">
           <div class="mode-name">TOURNAMENTS</div>
-          <div class="mode-desc">Scheduled games every 15 min — join or spectate</div>
+          <div class="mode-desc">Scheduled games every 15 min — coming soon!</div>
+        </div>
+        <div style="
+          position:absolute; top:8px; right:10px;
+          background:linear-gradient(90deg,#b8860b,#ffd700);
+          color:#1a1000; font-size:8px; font-weight:700;
+          letter-spacing:1.5px; padding:3px 8px; border-radius:20px;
+          font-family:'Orbitron',sans-serif;
+        ">COMING SOON</div>
+      </div>
+
+      <!-- SIT & STAY -->
+      <button class="mode-card" id="btn-sit-and-stay" style="border-color:rgba(255,215,0,0.2);">
+        <div class="mode-icon">🪑</div>
+        <div class="mode-info">
+          <div class="mode-name" style="background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">SIT &amp; STAY</div>
+          <div class="mode-desc">Jump in with real players — bots fill empty seats</div>
         </div>
         <div class="mode-arrow">›</div>
       </button>
@@ -1132,6 +1307,31 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ── SIT & STAY WAITING ── -->
+<div id="screen-sit-and-stay-wait" class="screen">
+  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;background:radial-gradient(ellipse 120% 60% at 50% -5%,#1a1200 0%,#0a0800 55%);">
+    <div style="font-size:48px;margin-bottom:16px;">🪑</div>
+    <div style="font-family:'Orbitron',sans-serif;font-size:16px;letter-spacing:3px;background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">SIT &amp; STAY</div>
+    <div style="font-family:sans-serif;font-size:13px;color:var(--muted);margin-bottom:32px;text-align:center;">Finding players for your table…</div>
+
+    <!-- Player slots -->
+    <div id="ss-seats" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:340px;margin-bottom:28px;"></div>
+
+    <!-- Countdown -->
+    <div style="background:linear-gradient(135deg,#18140a,#100e06);border:1px solid rgba(255,215,0,0.12);border-radius:16px;padding:16px 28px;text-align:center;margin-bottom:24px;">
+      <div style="font-family:sans-serif;font-size:11px;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px;">GAME STARTS IN</div>
+      <div id="ss-countdown" style="font-family:'Orbitron',sans-serif;font-size:36px;font-weight:700;background:linear-gradient(90deg,#ffd700,#ffaa00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">20</div>
+      <div style="font-family:sans-serif;font-size:11px;color:var(--muted);letter-spacing:1px;margin-top:4px;">Empty seats filled by bots</div>
+    </div>
+
+    <div id="ss-status" style="font-family:sans-serif;font-size:13px;color:var(--muted);margin-bottom:24px;text-align:center;">
+      Waiting for players…
+    </div>
+
+    <button class="btn-ghost" id="btn-leave-sit-and-stay" style="max-width:200px;">← Leave Queue</button>
   </div>
 </div>
 
@@ -2422,8 +2622,74 @@ function initLobbyTabs(){
   updateClock();setInterval(updateClock,10000);
 }
 
+// ── Legal ──
+const LEGAL_CONTENT = {
+  privacy: {
+    title: 'PRIVACY POLICY',
+    sections: [
+      { heading: 'Introduction', body: 'Pop the Crowd Games ("we," "our," or "us") operates Pass the Ace. This Privacy Policy explains how we collect, use, and protect your information when you play our game. By playing, you agree to the practices described here.' },
+      { heading: 'Data We Collect', body: '<strong>Account info:</strong> username, email address, and password when you register.<br><br><strong>Gameplay data:</strong> session length, game activity, scores, and progress.<br><br><strong>Device info:</strong> device model, operating system, and unique device identifiers.<br><br><strong>Crash &amp; performance data:</strong> error logs and analytics to help us improve the game.<br><br><strong>Purchase history:</strong> items bought and transaction IDs (not full payment details).<br><br><strong>Push notifications:</strong> only if you grant permission. Disable anytime in device settings.<br><br><strong>Advertising identifiers:</strong> IDFA (iOS) or GAID (Android), subject to your consent.' },
+      { heading: 'How We Use Your Data', body: 'We use your data to: operate and maintain your account; process in-app purchases; provide customer support; send game notifications (if permitted); analyse and improve gameplay; detect fraud or cheating; and comply with legal obligations. We do not sell your personal data to third parties.' },
+      { heading: 'Third-Party Services', body: 'We use the following third-party services, which may collect data under their own privacy policies:<br><br>• <strong>Firebase / Google</strong> — authentication, analytics, crash reporting<br>• <strong>Apple App Store / Google Play</strong> — app distribution and payment processing<br>• <strong>Advertising networks</strong> — serving ads within the game<br>• <strong>Render</strong> — backend hosting' },
+      { heading: 'In-App Purchases', body: 'All payments are processed by Apple or Google. We do not store your credit card details. We may receive transaction IDs and purchase records to verify purchases on your account.', highlight: 'Virtual coins have no real-world monetary value and cannot be exchanged for cash. All purchases are final. Refund requests must be directed to Apple or Google.' },
+      { heading: 'Advertising', body: 'The game may show ads from third-party networks. On iOS, we request permission via Apple\'s App Tracking Transparency (ATT) prompt before using your advertising identifier for personalised ads. You may opt out anytime in device settings. You may still see ads if you opt out, but they won\'t be personalised.' },
+      { heading: 'Data Retention', body: 'We keep your account data for as long as your account is active. If you delete your account, we will delete or anonymise your data within 30 days, except where required by law or for fraud prevention.' },
+      { heading: 'Your Rights', body: 'Depending on your location, you may have the right to: access your personal data; correct inaccurate data; request deletion of your account; opt out of personalised ads; and withdraw consent. Contact us below to exercise these rights. We respond within 30 days.' },
+      { heading: 'Age Restrictions', body: '', highlight: 'Pass the Ace is intended for players aged 17 and older. We do not knowingly collect data from anyone under 17. If you believe a minor has provided us with data, contact us immediately and we will delete it.' },
+      { heading: 'Contact Us', body: '<strong>Pop the Crowd Games</strong><br>Email: privacy@popthecrowdgames.com<br><br>Last updated: March 26, 2026' }
+    ]
+  },
+  terms: {
+    title: 'TERMS OF SERVICE',
+    sections: [
+      { heading: 'Acceptance of Terms', body: 'These Terms of Service govern your use of Pass the Ace. By downloading, installing, or playing the game, you agree to be bound by these Terms and our Privacy Policy. If you do not agree, do not use the game.' },
+      { heading: 'Eligibility', body: '', highlight: 'Pass the Ace is intended for players aged 17 and older. By using the game, you confirm you are at least 17 years of age. If you are under 17, you must not use the game.' },
+      { heading: 'Your Account', body: 'You agree to provide accurate information when registering, keep your password secure, notify us of any unauthorised account use, and take responsibility for all activity on your account. We may suspend or delete accounts that violate these Terms or contain false information.' },
+      { heading: 'Licence to Play', body: 'We grant you a personal, non-exclusive, non-transferable, revocable licence to play Pass the Ace for personal, non-commercial use. This licence does not include the right to copy, modify, distribute, sell, or exploit any part of the game.' },
+      { heading: 'Acceptable Use', body: 'You agree not to: cheat, hack, or use unauthorised software; harass or abuse other players; impersonate any person; use the game for commercial purposes without our consent; attempt to reverse engineer the game; exploit bugs (report them to us instead); or use automated bots or scripts. Violations may result in immediate account suspension.' },
+      { heading: 'In-App Purchases & Virtual Currency', body: 'Pass the Ace offers optional purchases of virtual coins for use within the game. All purchases are processed through Apple App Store or Google Play.', highlight: 'Virtual coins have no real-world monetary value. They cannot be transferred, exchanged for real money, or refunded except as required by law or platform policy. Coins are a limited licence to access in-game features, not a purchase of property.' },
+      { heading: 'Pricing & Refunds', body: 'Prices are shown in your local currency at purchase. We may change prices at any time; changes won\'t affect previous purchases. All purchases are final. Refund requests must be submitted to Apple or Google:<br><br>• <strong>Apple:</strong> reportaproblem.apple.com<br>• <strong>Google:</strong> Google Play Support<br><br>If you delete your account, any unused coins are forfeited and cannot be recovered.' },
+      { heading: 'Intellectual Property', body: 'All content in Pass the Ace — including graphics, sounds, music, game design, code, and trademarks — is owned by or licensed to Pop the Crowd Games. Nothing in these Terms transfers any ownership to you. "Pass the Ace" and "Pop the Crowd Games" are trademarks of Pop the Crowd Games.' },
+      { heading: 'Disclaimers', body: 'The game is provided "as is" without warranties of any kind. We do not warrant that the game will be uninterrupted or error-free. We are not responsible for any loss of coins or progress due to technical issues, though we will make reasonable efforts to resolve them.' },
+      { heading: 'Limitation of Liability', body: 'To the fullest extent permitted by law, Pop the Crowd Games shall not be liable for any indirect, incidental, or consequential damages from your use of the game. Our total liability for any claim shall not exceed the amount you paid us in the 90 days before the claim.' },
+      { heading: 'Termination', body: 'We may suspend or terminate your access at any time, with or without notice, for violation of these Terms or other reasons. You may delete your account through in-app settings. Upon termination, your licence ends and any unused virtual currency is forfeited.' },
+      { heading: 'Changes to Terms', body: 'We may update these Terms from time to time. We\'ll notify you of material changes via in-app notice or email. Continued use after changes means you accept the revised Terms.' },
+      { heading: 'Contact Us', body: '<strong>Pop the Crowd Games</strong><br>Email: legal@popthecrowdgames.com<br><br>Last updated: March 26, 2026' }
+    ]
+  }
+};
+
+function openLegal(type) {
+  const data = LEGAL_CONTENT[type];
+  document.getElementById('legal-viewer-title').textContent = data.title;
+  const content = data.sections.map(s => `
+    <div class="legal-section-title">${s.heading}</div>
+    ${s.highlight ? `<div class="legal-highlight">${s.highlight}</div>` : ''}
+    ${s.body ? `<div class="legal-body-text">${s.body}</div>` : ''}
+  `).join('');
+  document.getElementById('legal-viewer-content').innerHTML = content;
+  document.getElementById('legal-viewer').classList.remove('hidden');
+  document.getElementById('legal-viewer-content').scrollTop = 0;
+}
+
+function closeLegal() {
+  document.getElementById('legal-viewer').classList.add('hidden');
+}
+
+function acceptLegal() {
+  localStorage.setItem('ptc_legal_accepted', '1');
+  document.getElementById('legal-consent-overlay').classList.add('hidden');
+}
+
+function initLegal() {
+  if (localStorage.getItem('ptc_legal_accepted')) {
+    document.getElementById('legal-consent-overlay').classList.add('hidden');
+  }
+}
+
 // ── Boot ──
 document.addEventListener('DOMContentLoaded',()=>{
+  initLegal();
   buildAvatarPicker();buildSetupAvatarPicker();buildEditAvatarPicker();initAuth();initProfile();initLeaderboard();initSocket();initLobbyTabs();
 
   // Ticket modal buttons
@@ -2450,18 +2716,74 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 
   // Home buttons
-  document.getElementById('btn-tournaments').addEventListener('click',()=>{
-    showScreen('screen-lobby');
-    document.querySelectorAll('.lobby-tab').forEach(t=>t.classList.remove('active'));
-    document.querySelector('[data-tab="tournaments"]').classList.add('active');
-    document.getElementById('tab-tournaments').style.display='block';
-    document.getElementById('tab-tables').style.display='none';
-    document.getElementById('lobby-filterbar').style.display='flex';
-    // Always fetch fresh from server
-    socket.emit('getTournaments');
-    // Also render what we have immediately
-    if(currentTournamentList.length) renderTournamentList(currentTournamentList);
+  // Tournaments is Coming Soon — button is disabled in HTML, no listener needed
+
+  // ── Sit & Stay ──
+  let ssCountdownInterval = null;
+
+  function renderSsSeats(playerCount) {
+    const seats = document.getElementById('ss-seats');
+    if (!seats) return;
+    seats.innerHTML = '';
+    for (let i = 0; i < 10; i++) {
+      const div = document.createElement('div');
+      div.className = 'ss-seat ' + (i < playerCount ? 'filled' : 'empty');
+      div.textContent = i < playerCount ? '🧑' : '○';
+      seats.appendChild(div);
+    }
+  }
+
+  function startSsCountdown(waitMs) {
+    let remaining = Math.ceil(waitMs / 1000);
+    document.getElementById('ss-countdown').textContent = remaining;
+    if (ssCountdownInterval) clearInterval(ssCountdownInterval);
+    ssCountdownInterval = setInterval(() => {
+      remaining--;
+      const el = document.getElementById('ss-countdown');
+      if (el) el.textContent = Math.max(0, remaining);
+      if (remaining <= 0) clearInterval(ssCountdownInterval);
+    }, 1000);
+  }
+
+  document.getElementById('btn-sit-and-stay').addEventListener('click', () => {
+    const name = userProfile?.displayName || 'Player';
+    myAvatar = userProfile?.avatar || myAvatar;
+    checkChipsAndProceed(100, async () => {
+      await updateChipBalance(-100);
+      showScreen('screen-sit-and-stay-wait');
+      renderSsSeats(1);
+      socket.emit('joinSitAndStay', { name, avatar: myAvatar });
+    });
   });
+
+  document.getElementById('btn-leave-sit-and-stay').addEventListener('click', () => {
+    socket.emit('leaveSitAndStay');
+    if (ssCountdownInterval) clearInterval(ssCountdownInterval);
+    showScreen('screen-home');
+  });
+
+  // Sit & Stay socket events
+  socket.on('sitAndStayWaiting', ({ playerCount, totalSeats, waitMs }) => {
+    renderSsSeats(playerCount);
+    startSsCountdown(waitMs);
+    const status = document.getElementById('ss-status');
+    if (status) status.textContent = `${playerCount} of ${totalSeats} players found`;
+  });
+
+  socket.on('sitAndStayStatus', ({ playerCount, totalSeats }) => {
+    renderSsSeats(playerCount);
+    const status = document.getElementById('ss-status');
+    if (status) status.textContent = `${playerCount} of ${totalSeats} players found`;
+  });
+
+  socket.on('sitAndStayLaunching', () => {
+    if (ssCountdownInterval) clearInterval(ssCountdownInterval);
+    const status = document.getElementById('ss-status');
+    if (status) status.textContent = 'Starting game…';
+    const countdown = document.getElementById('ss-countdown');
+    if (countdown) countdown.textContent = '🃏';
+  });
+
   document.getElementById('btn-private-room').addEventListener('click',()=>{
     const name=userProfile?.displayName||'';
     if(name)document.getElementById('inp-name-lobby').value=name;
