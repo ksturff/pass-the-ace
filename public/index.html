@@ -74,7 +74,23 @@
     /* ── MOBILE-FIRST GAME LAYOUT ── */
     #top-nav { display: none !important; }
     #screen-game { padding-top: 0 !important; }
-    #game-topbar { display: none !important; }
+    #game-topbar { display: flex !important; }
+    #btn-game-menu {
+      pointer-events: all;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 6px 14px;
+      color: var(--muted);
+      font-size: 10px;
+      font-family: 'Orbitron', sans-serif;
+      cursor: pointer;
+      letter-spacing: 1px;
+      backdrop-filter: blur(4px);
+      min-height: 32px;
+      -webkit-tap-highlight-color: rgba(255,215,0,0.2);
+    }
+    #btn-game-menu:active { opacity: 0.7; }
     #table-area {
       padding: 0;
       align-items: center;
@@ -890,7 +906,7 @@
 
 <!-- ── TOP NAV ── -->
 <div id="top-nav">
-  <div class="nav-logo">PASS THE SATURDAY</div>
+  <div class="nav-logo">PASS THE ACE</div>
   <div class="nav-spacer"></div>
   <div class="nav-profile" id="nav-profile-btn">
     <span class="nav-avatar" id="nav-avatar">🎭</span>
@@ -991,7 +1007,7 @@
           <text x="62" y="64" font-size="11" font-family="Orbitron,sans-serif" font-weight="700" fill="rgba(255,215,0,0.7)" text-anchor="end">A</text>
         </svg>
       </div>
-      <div class="login-title">PASS THE SATURDAY</div>
+      <div class="login-title">PASS THE ACE</div>
       <div class="login-sub">Sign in to play</div>
     </div>
 
@@ -1065,7 +1081,7 @@
           <text x="62" y="64" font-size="11" font-family="Orbitron,sans-serif" font-weight="700" fill="rgba(255,215,0,0.7)" text-anchor="end">A</text>
         </svg>
       </div>
-      <div class="logo-title">PASS THE SATURDAY</div>
+      <div class="logo-title">PASS THE ACE</div>
       <div class="logo-sub">Don't get caught with the lowest card</div>
     </div>
 
@@ -1167,7 +1183,7 @@
   <!-- Top bar -->
   <div class="lobby-topbar">
     <button class="lobby-back" id="btn-lobby-back">← HOME</button>
-    <div class="lobby-topbar-title">PASS THE SATURDAY</div>
+    <div class="lobby-topbar-title">PASS THE ACE</div>
     <div class="lobby-topbar-time" id="lobby-clock"></div>
   </div>
 
