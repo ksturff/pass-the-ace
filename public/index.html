@@ -1149,28 +1149,6 @@
   </div>
 </div>
 
-<!-- ── LOW CHIP MODAL ── -->
-<div id="low-chip-modal" style="
-  display:none; position:fixed; inset:0; z-index:500;
-  background:rgba(0,0,0,0.85); place-items:center;
-" style="display:none;">
-  <div style="
-    background:linear-gradient(135deg,#18140a,#100e06);
-    border:1px solid rgba(255,215,0,0.2);
-    border-radius:16px; padding:28px 24px;
-    width:min(320px,90vw); text-align:center;
-    display:flex; flex-direction:column; gap:14px;
-  ">
-    <div style="font-size:36px;">🪙</div>
-    <div style="font-size:14px; letter-spacing:1px; color:var(--accent);">NOT ENOUGH CHIPS</div>
-    <div id="low-chip-msg" style="font-family:sans-serif; font-size:13px; color:var(--muted); line-height:1.6;">
-      You need more chips to enter.
-    </div>
-    <button id="btn-low-chip-ad" class="btn-primary">📺 Watch Ad for +300 Chips</button>
-    <button id="btn-low-chip-cancel" class="btn-ghost">Cancel</button>
-  </div>
-</div>
-
 <div id="toast"></div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -1322,9 +1300,7 @@ function initAuth() {
 }
 
 // ── Stats tracking ──
-// placement: 1 = winner, 2 = second, 3 = third, 0 = everyone else
-// For solo (vs bots) we only pass won=true/false, placement not tracked — fixed -100 buy-in, no payout
-async function recordGameResult(won, placement=0) {
+async function recordGameResult(won) {
   if (!currentUser) return;
   try {
     await db.collection('users').doc(currentUser.uid).update({
@@ -1332,25 +1308,8 @@ async function recordGameResult(won, placement=0) {
       wins: firebase.firestore.FieldValue.increment(won ? 1 : 0),
       lastPlayed: firebase.firestore.FieldValue.serverTimestamp()
     });
+    // Refresh local profile
     await loadUserProfile(currentUser.uid);
-
-    // Chip economy — solo just costs the buy-in (already deducted on start), no payout
-    // Multiplayer: pay out based on placement
-    if (!isSolo) {
-      let payout = 0;
-      if (placement === 1) payout = 2200;
-      else if (placement === 2) payout = 1400;
-      else if (placement === 3) payout = 900;
-      // participation drip for everyone
-      payout += 50;
-      await updateChipBalance(payout);
-      if (payout > 50) showToast(`+${payout.toLocaleString()} chips!`, '#ffd700', 3000);
-      else showToast(`+50 chips participation bonus`, '#8a7a50', 2500);
-    } else {
-      // Solo: award participation drip only
-      await updateChipBalance(50);
-      showToast('+50 chips for playing', '#8a7a50', 2000);
-    }
   } catch(e) { console.error('stat update failed', e); }
 }
 
@@ -1361,36 +1320,6 @@ async function updateChipBalance(delta) {
   const balEl = document.getElementById('home-chip-balance');
   if (balEl) balEl.textContent = newBalance.toLocaleString();
   return newBalance;
-}
-
-// Returns true if player has enough chips; otherwise shows the low-chip modal and returns false
-function checkChipsAndProceed(cost, onProceed) {
-  const balance = userProfile?.chipBalance ?? 0;
-  if (balance >= cost) {
-    onProceed();
-    return true;
-  }
-  // Not enough — show modal
-  const modal = document.getElementById('low-chip-modal');
-  document.getElementById('low-chip-msg').textContent =
-    `You need ${cost.toLocaleString()} chips to enter but only have ${balance.toLocaleString()}. Watch an ad to get +300 chips.`;
-  modal.style.display = 'grid';
-
-  // Ad button — stubbed for now, swap in real ad SDK later
-  document.getElementById('btn-low-chip-ad').onclick = async () => {
-    modal.style.display = 'none';
-    await updateChipBalance(300);
-    showToast('+300 chips!', '#ffd700', 2500);
-    // Re-check after top-up
-    const newBalance = userProfile?.chipBalance ?? 0;
-    if (newBalance >= cost) onProceed();
-    else showToast('Still not enough chips — watch another ad or come back later', '#ff4d4f', 3000);
-  };
-
-  document.getElementById('btn-low-chip-cancel').onclick = () => {
-    modal.style.display = 'none';
-  };
-  return false;
 }
 
 // ── Profile screen ──
@@ -1691,13 +1620,15 @@ function buildTable(){
   const totalSeats=list.length;
   const positions=getSeatPositions(totalSeats);
 
-  opponents.forEach((p,i)=>{
-    const seatIdx=i+1;
+  opponents.forEach((p)=>{
+    // Use the player's fixed seatIndex so positions never shift when someone is eliminated
+    const seatIdx=p.seatIndex!==undefined?p.seatIndex:list.indexOf(p);
     const pos=positions[seatIdx];
+    if(!pos)return;
     const isLeft=pos.angle*180/Math.PI>=135&&pos.angle*180/Math.PI<=225;
 
     // Card slot
-        const cw=22;const ch=32;
+    const cw=22;const ch=32;
     const cardSlot=document.createElement('div');
     cardSlot.className='player-card-slot';
     cardSlot.id=`cardslot-${p.id}`;
@@ -1729,7 +1660,7 @@ function buildTable(){
     const avatar=document.createElement('div');
     avatar.className='p-avatar';
     avatar.id=`avatar-${p.id}`;
-    avatar.textContent=p.avatar||BOT_AVATARS[i%BOT_AVATARS.length];
+    avatar.textContent=p.avatar||BOT_AVATARS[seatIdx%BOT_AVATARS.length];
     const info=document.createElement('div');
     info.className='p-info';
     const name=document.createElement('div');
@@ -1994,6 +1925,8 @@ function initSocket(){
   socket.on('gameState',state=>{
     players=state.players;currentPlayerId=state.currentPlayerId;myTurn=currentPlayerId===myId;
     isTournamentGame=!!state.isTournament;
+    // Assign stable seatIndex to each player if not already set
+    players.forEach((p,i)=>{ if(p.seatIndex===undefined) p.seatIndex=i; });
     const cur=players.find(p=>p.id===currentPlayerId);
     document.getElementById('turn-banner').textContent=myTurn?'🎯 Your turn!':`${cur?.name??'…'} is thinking…`;
     if(!document.getElementById('screen-game').classList.contains('active')){
@@ -2010,11 +1943,9 @@ function initSocket(){
     document.getElementById('over-winner').textContent=data.winner.name;
     document.getElementById('game-over').classList.add('show');
     if(data.isTournament)myTournamentId=null;
-    // Track stats + chip payouts
-    const iWon=data.winner.id===myId||data.winner.name===(userProfile?.displayName||'');
-    // Determine placement from server data if available, fallback to win/loss
-    const placement = data.placements?.[myId] ?? (iWon ? 1 : 0);
-    recordGameResult(iWon, placement);
+    // Track stats
+    const iWon=data.winner.name===(userProfile?.displayName||'');
+    recordGameResult(iWon);
   });
   socket.on('roomCreated',data=>{myRoomCode=data.code;isHost=true;document.getElementById('waiting-code').textContent=data.code;updateWaitingRoom(data.players);showScreen('screen-waiting');});
   socket.on('joinedRoom',data=>{myRoomCode=data.code;isHost=false;document.getElementById('waiting-code').textContent=data.code;updateWaitingRoom(data.players);showScreen('screen-waiting');});
@@ -2145,10 +2076,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('btn-quick-play').addEventListener('click',()=>{
     const name=userProfile?.displayName||'Player';
     myAvatar=userProfile?.avatar||myAvatar;
-    checkChipsAndProceed(100, async ()=>{
-      await updateChipBalance(-100);
-      startSolo(name,10);
-    });
+    startSolo(name,10);
   });
   document.getElementById('btn-leaderboard').addEventListener('click',()=>openLeaderboard());
   document.getElementById('btn-how-to-play').addEventListener('click',()=>showScreen('screen-howto'));
@@ -2167,20 +2095,14 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('btn-create-room').addEventListener('click',()=>{
     const name=document.getElementById('inp-name-lobby').value.trim()||document.getElementById('inp-name').value.trim();
     if(!name){showToast('Enter your name first','#ff4d4f');return;}
-    checkChipsAndProceed(500, async ()=>{
-      await updateChipBalance(-500);
-      socket.emit('createRoom',{name,seats:selectedSeatsLobby,avatar:myAvatar});
-    });
+    socket.emit('createRoom',{name,seats:selectedSeatsLobby,avatar:myAvatar});
   });
   document.getElementById('btn-join-code').addEventListener('click',()=>{
     const name=document.getElementById('inp-name-lobby').value.trim()||document.getElementById('inp-name').value.trim();
     const code=document.getElementById('inp-room-code').value.trim().toUpperCase();
     if(!name){showToast('Enter your name','#ff4d4f');return;}
     if(!code){showToast('Enter a room code','#ff4d4f');return;}
-    checkChipsAndProceed(500, async ()=>{
-      await updateChipBalance(-500);
-      socket.emit('joinRoom',{name,code,avatar:myAvatar});
-    });
+    socket.emit('joinRoom',{name,code,avatar:myAvatar});
   });
   document.getElementById('inp-room-code').addEventListener('input',function(){this.value=this.value.toUpperCase();});
 
@@ -2212,13 +2134,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   document.getElementById('btn-again').addEventListener('click',()=>{
     document.getElementById('game-over').classList.remove('show');
-    if(isSolo){
-      checkChipsAndProceed(100, async ()=>{
-        await updateChipBalance(-100);
-        soloPlayers.forEach(p=>{p.chips=3;p.eliminated=false;p.card=null;});
-        players=soloPlayers;buildTable();soloStartRound();
-      });
-    } else socket.emit('startGame');
+    if(isSolo){soloPlayers.forEach(p=>{p.chips=3;p.eliminated=false;p.card=null;});players=soloPlayers;buildTable();soloStartRound();}
+    else socket.emit('startGame');
   });
   document.getElementById('btn-game-menu').addEventListener('click',()=>{
     if(confirm('Leave game and return to menu?')){
