@@ -1583,6 +1583,7 @@ function initProfile() {
   document.getElementById('nav-profile-btn').addEventListener('click', openProfile);
 
   document.getElementById('btn-profile-back').addEventListener('click', () => showScreen('screen-home'));
+  document.getElementById('btn-profile-back').addEventListener('touchend', (e) => { e.preventDefault(); showScreen('screen-home'); });
 
   // Edit profile
   document.getElementById('btn-edit-profile').addEventListener('click', () => {
@@ -1711,6 +1712,7 @@ function initLeaderboard() {
     });
   });
   document.getElementById('btn-lb-back').addEventListener('click', () => showScreen('screen-home'));
+  document.getElementById('btn-lb-back').addEventListener('touchend', (e) => { e.preventDefault(); showScreen('screen-home'); });
 }
 
 // Build avatar picker for profile setup
@@ -2424,7 +2426,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('btn-leaderboard').addEventListener('click',()=>openLeaderboard());
   document.getElementById('btn-how-to-play').addEventListener('click',()=>showScreen('screen-howto'));
   document.getElementById('btn-back-howto').addEventListener('click',()=>showScreen('screen-home'));
+  document.getElementById('btn-back-howto').addEventListener('touchend',(e)=>{e.preventDefault();showScreen('screen-home');});
   document.getElementById('btn-lobby-back').addEventListener('click',()=>showScreen('screen-home'));
+  document.getElementById('btn-lobby-back').addEventListener('touchend',(e)=>{e.preventDefault();showScreen('screen-home');});
 
   // Seat selectors
   document.querySelectorAll('#seat-row-lobby .seat-btn').forEach(btn=>{
