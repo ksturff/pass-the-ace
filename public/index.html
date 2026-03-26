@@ -310,12 +310,15 @@
       padding: 0 16px;
       display: flex; align-items: center; gap: 12px;
       height: 48px;
+      position: relative; z-index: 50;
     }
     .lobby-back {
       display:flex; align-items:center; gap:6px;
       cursor:pointer; color:var(--muted); font-size:10px; letter-spacing:1px;
-      background:none; border:none; font-family:'Orbitron',sans-serif; padding:4px 8px;
-      border-radius:6px; transition:all .2s;
+      background:none; border:none; font-family:'Orbitron',sans-serif; padding:8px 12px;
+      border-radius:6px; transition:all .2s; z-index:50; position:relative;
+      -webkit-tap-highlight-color: rgba(0,229,255,0.2);
+      min-width: 70px; min-height: 44px;
     }
     .lobby-back:hover { color:var(--accent); background:rgba(0,229,255,0.06); }
     .lobby-topbar-title { font-size:13px; letter-spacing:2px; color:var(--text); font-weight:700; }
