@@ -74,7 +74,23 @@
     /* ── MOBILE-FIRST GAME LAYOUT ── */
     #top-nav { display: none !important; }
     #screen-game { padding-top: 0 !important; }
-    #game-topbar { display: none !important; }
+    #game-topbar { display: flex !important; }
+    #btn-game-menu {
+      pointer-events: all;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 6px 14px;
+      color: var(--muted);
+      font-size: 10px;
+      font-family: 'Orbitron', sans-serif;
+      cursor: pointer;
+      letter-spacing: 1px;
+      backdrop-filter: blur(4px);
+      min-height: 32px;
+      -webkit-tap-highlight-color: rgba(255,215,0,0.2);
+    }
+    #btn-game-menu:active { opacity: 0.7; }
     #table-area {
       padding: 0;
       align-items: center;
@@ -738,22 +754,6 @@
     .btn-again { padding:12px 24px; border-radius:12px; border:0; cursor:pointer; font-weight:700; font-size:13px; font-family:'Orbitron',sans-serif; background:linear-gradient(90deg,var(--accent2),var(--accent)); color:#001018; }
     .btn-menu-over { padding:12px 24px; border-radius:12px; border:1px solid var(--stroke); cursor:pointer; font-size:13px; font-family:'Orbitron',sans-serif; background:#1a1f24; color:var(--muted); }
 
-    /* ── SIT & STAY SEATS ── */
-    .ss-seat {
-      width:52px; height:52px; border-radius:50%;
-      display:flex; align-items:center; justify-content:center;
-      font-size:22px;
-      border:2px solid rgba(255,255,255,0.08);
-      background:rgba(255,255,255,0.03);
-      transition:all .3s;
-    }
-    .ss-seat.filled {
-      border-color:rgba(255,215,0,0.4);
-      background:rgba(255,215,0,0.06);
-      box-shadow:0 0 12px rgba(255,215,0,0.15);
-    }
-    .ss-seat.empty { opacity:0.3; }
-
     /* ── LEGAL CONSENT MODAL ── */
     #legal-consent-overlay {
       position:fixed; inset:0; z-index:99999;
@@ -890,7 +890,7 @@
 
 <!-- ── TOP NAV ── -->
 <div id="top-nav">
-  <div class="nav-logo">PASS THe ACE</div>
+  <div class="nav-logo">PASS THE SATURDAY</div>
   <div class="nav-spacer"></div>
   <div class="nav-profile" id="nav-profile-btn">
     <span class="nav-avatar" id="nav-avatar">🎭</span>
@@ -991,7 +991,7 @@
           <text x="62" y="64" font-size="11" font-family="Orbitron,sans-serif" font-weight="700" fill="rgba(255,215,0,0.7)" text-anchor="end">A</text>
         </svg>
       </div>
-      <div class="login-title">PASS THE ACE</div>
+      <div class="login-title">PASS THE SATURDAY</div>
       <div class="login-sub">Sign in to play</div>
     </div>
 
@@ -1065,7 +1065,7 @@
           <text x="62" y="64" font-size="11" font-family="Orbitron,sans-serif" font-weight="700" fill="rgba(255,215,0,0.7)" text-anchor="end">A</text>
         </svg>
       </div>
-      <div class="logo-title">PASS THE ACE</div>
+      <div class="logo-title">PASS THE SATURDAY</div>
       <div class="logo-sub">Don't get caught with the lowest card</div>
     </div>
 
@@ -1100,28 +1100,11 @@
     </div>
 
     <div class="home-modes">
-      <!-- TOURNAMENTS — Coming Soon -->
-      <div class="mode-card featured" style="opacity:0.5;cursor:default;position:relative;overflow:hidden;">
+      <button class="mode-card featured" id="btn-tournaments">
         <div class="mode-icon">🏆</div>
         <div class="mode-info">
           <div class="mode-name">TOURNAMENTS</div>
-          <div class="mode-desc">Scheduled games every 15 min — coming soon!</div>
-        </div>
-        <div style="
-          position:absolute; top:8px; right:10px;
-          background:linear-gradient(90deg,#b8860b,#ffd700);
-          color:#1a1000; font-size:8px; font-weight:700;
-          letter-spacing:1.5px; padding:3px 8px; border-radius:20px;
-          font-family:'Orbitron',sans-serif;
-        ">COMING SOON</div>
-      </div>
-
-      <!-- SIT & STAY -->
-      <button class="mode-card" id="btn-sit-and-stay" style="border-color:rgba(255,215,0,0.2);">
-        <div class="mode-icon">🪑</div>
-        <div class="mode-info">
-          <div class="mode-name" style="background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">SIT &amp; STAY</div>
-          <div class="mode-desc">Jump in with real players — bots fill empty seats</div>
+          <div class="mode-desc">Scheduled games every 15 min — join or spectate</div>
         </div>
         <div class="mode-arrow">›</div>
       </button>
@@ -1167,7 +1150,7 @@
   <!-- Top bar -->
   <div class="lobby-topbar">
     <button class="lobby-back" id="btn-lobby-back">← HOME</button>
-    <div class="lobby-topbar-title">PASS THE ACE</div>
+    <div class="lobby-topbar-title">PASS THE SATURDAY</div>
     <div class="lobby-topbar-time" id="lobby-clock"></div>
   </div>
 
@@ -1307,31 +1290,6 @@
         </div>
       </div>
     </div>
-  </div>
-</div>
-
-<!-- ── SIT & STAY WAITING ── -->
-<div id="screen-sit-and-stay-wait" class="screen">
-  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;background:radial-gradient(ellipse 120% 60% at 50% -5%,#1a1200 0%,#0a0800 55%);">
-    <div style="font-size:48px;margin-bottom:16px;">🪑</div>
-    <div style="font-family:'Orbitron',sans-serif;font-size:16px;letter-spacing:3px;background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">SIT &amp; STAY</div>
-    <div style="font-family:sans-serif;font-size:13px;color:var(--muted);margin-bottom:32px;text-align:center;">Finding players for your table…</div>
-
-    <!-- Player slots -->
-    <div id="ss-seats" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:340px;margin-bottom:28px;"></div>
-
-    <!-- Countdown -->
-    <div style="background:linear-gradient(135deg,#18140a,#100e06);border:1px solid rgba(255,215,0,0.12);border-radius:16px;padding:16px 28px;text-align:center;margin-bottom:24px;">
-      <div style="font-family:sans-serif;font-size:11px;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px;">GAME STARTS IN</div>
-      <div id="ss-countdown" style="font-family:'Orbitron',sans-serif;font-size:36px;font-weight:700;background:linear-gradient(90deg,#ffd700,#ffaa00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">20</div>
-      <div style="font-family:sans-serif;font-size:11px;color:var(--muted);letter-spacing:1px;margin-top:4px;">Empty seats filled by bots</div>
-    </div>
-
-    <div id="ss-status" style="font-family:sans-serif;font-size:13px;color:var(--muted);margin-bottom:24px;text-align:center;">
-      Waiting for players…
-    </div>
-
-    <button class="btn-ghost" id="btn-leave-sit-and-stay" style="max-width:200px;">← Leave Queue</button>
   </div>
 </div>
 
@@ -2716,74 +2674,18 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 
   // Home buttons
-  // Tournaments is Coming Soon — button is disabled in HTML, no listener needed
-
-  // ── Sit & Stay ──
-  let ssCountdownInterval = null;
-
-  function renderSsSeats(playerCount) {
-    const seats = document.getElementById('ss-seats');
-    if (!seats) return;
-    seats.innerHTML = '';
-    for (let i = 0; i < 10; i++) {
-      const div = document.createElement('div');
-      div.className = 'ss-seat ' + (i < playerCount ? 'filled' : 'empty');
-      div.textContent = i < playerCount ? '🧑' : '○';
-      seats.appendChild(div);
-    }
-  }
-
-  function startSsCountdown(waitMs) {
-    let remaining = Math.ceil(waitMs / 1000);
-    document.getElementById('ss-countdown').textContent = remaining;
-    if (ssCountdownInterval) clearInterval(ssCountdownInterval);
-    ssCountdownInterval = setInterval(() => {
-      remaining--;
-      const el = document.getElementById('ss-countdown');
-      if (el) el.textContent = Math.max(0, remaining);
-      if (remaining <= 0) clearInterval(ssCountdownInterval);
-    }, 1000);
-  }
-
-  document.getElementById('btn-sit-and-stay').addEventListener('click', () => {
-    const name = userProfile?.displayName || 'Player';
-    myAvatar = userProfile?.avatar || myAvatar;
-    checkChipsAndProceed(100, async () => {
-      await updateChipBalance(-100);
-      showScreen('screen-sit-and-stay-wait');
-      renderSsSeats(1);
-      socket.emit('joinSitAndStay', { name, avatar: myAvatar });
-    });
+  document.getElementById('btn-tournaments').addEventListener('click',()=>{
+    showScreen('screen-lobby');
+    document.querySelectorAll('.lobby-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelector('[data-tab="tournaments"]').classList.add('active');
+    document.getElementById('tab-tournaments').style.display='block';
+    document.getElementById('tab-tables').style.display='none';
+    document.getElementById('lobby-filterbar').style.display='flex';
+    // Always fetch fresh from server
+    socket.emit('getTournaments');
+    // Also render what we have immediately
+    if(currentTournamentList.length) renderTournamentList(currentTournamentList);
   });
-
-  document.getElementById('btn-leave-sit-and-stay').addEventListener('click', () => {
-    socket.emit('leaveSitAndStay');
-    if (ssCountdownInterval) clearInterval(ssCountdownInterval);
-    showScreen('screen-home');
-  });
-
-  // Sit & Stay socket events
-  socket.on('sitAndStayWaiting', ({ playerCount, totalSeats, waitMs }) => {
-    renderSsSeats(playerCount);
-    startSsCountdown(waitMs);
-    const status = document.getElementById('ss-status');
-    if (status) status.textContent = `${playerCount} of ${totalSeats} players found`;
-  });
-
-  socket.on('sitAndStayStatus', ({ playerCount, totalSeats }) => {
-    renderSsSeats(playerCount);
-    const status = document.getElementById('ss-status');
-    if (status) status.textContent = `${playerCount} of ${totalSeats} players found`;
-  });
-
-  socket.on('sitAndStayLaunching', () => {
-    if (ssCountdownInterval) clearInterval(ssCountdownInterval);
-    const status = document.getElementById('ss-status');
-    if (status) status.textContent = 'Starting game…';
-    const countdown = document.getElementById('ss-countdown');
-    if (countdown) countdown.textContent = '🃏';
-  });
-
   document.getElementById('btn-private-room').addEventListener('click',()=>{
     const name=userProfile?.displayName||'';
     if(name)document.getElementById('inp-name-lobby').value=name;
