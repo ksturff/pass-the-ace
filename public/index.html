@@ -474,11 +474,11 @@
 
     .section-label { font-size:9px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; }
 
-    /* ── TICKET SYSTEM ── */
+    /* ── JACK SYSTEM ── */
     .t-grid .col-buyin-ticket { color: #cd7f32; font-weight: 700; font-size: 12px; }
     .t-grid .col-prize-ticket { color: #ffd700; font-weight: 700; font-size: 12px; }
-    .t-grid tbody tr.row-ticket { border-left: 2px solid rgba(205,127,50,0.4); }
-    .t-grid tbody tr.row-ticket:hover { background: rgba(205,127,50,0.06) !important; }
+    .t-grid tbody tr.row-jack { border-left: 2px solid rgba(205,127,50,0.4); }
+    .t-grid tbody tr.row-jack:hover { background: rgba(205,127,50,0.06) !important; }
     .t-grid tbody tr.row-weekly { border-left: 2px solid rgba(255,215,0,0.5); background: rgba(255,215,0,0.02) !important; }
     .t-grid tbody tr.row-weekly:hover { background: rgba(255,215,0,0.07) !important; }
     .t-badge.ticket { background:rgba(205,127,50,0.15); color:#cd7f32; border:1px solid rgba(205,127,50,0.3); }
@@ -490,11 +490,11 @@
       font-size: 12px; color: #cd7f32; font-family: 'Orbitron', sans-serif;
       letter-spacing: 0.5px;
     }
-    .ticket-wallet.gold-wallet {
+    .ticket-wallet.ace-wallet {
       background: rgba(255,215,0,0.08); border-color: rgba(255,215,0,0.3); color: #ffd700;
     }
     .ticket-wallet .tw-count { font-weight: 700; color: #ffd700; }
-    .ticket-wallet.gold-wallet .tw-count { color: #fff; }
+    .ticket-wallet.ace-wallet .tw-count { color: #fff; }
     /* Ticket modal */
     .ticket-modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:300; display:none; place-items:center; }
     .ticket-modal-bg.show { display:grid; }
@@ -505,7 +505,7 @@
       display: flex; flex-direction: column; gap: 14px; text-align: center;
       box-shadow: 0 0 40px rgba(205,127,50,0.15);
     }
-    .ticket-modal.gold-modal {
+    .ticket-modal.ace-modal {
       background: linear-gradient(135deg, #1a1500, #0d0b00);
       border-color: rgba(255,215,0,0.5);
       box-shadow: 0 0 50px rgba(255,215,0,0.2);
@@ -931,13 +931,13 @@
         -webkit-background-clip:text; -webkit-text-fill-color:transparent;
         margin-left:4px; margin-right:12px;
       ">—</span>
-      <div class="ticket-wallet" id="home-ticket-wallet" title="Bronze Tickets — enter ticket tournaments">
-        🎟️ <span style="color:var(--muted);font-size:10px;letter-spacing:1px;">BRONZE</span>
+      <div class="ticket-wallet" id="home-ticket-wallet" title="Jack Tickets — enter ticket tournaments">
+        🎟️ <span style="color:var(--muted);font-size:10px;letter-spacing:1px;">JACK</span>
         <span class="tw-count" id="home-ticket-count">0</span>
       </div>
-      <div class="ticket-wallet gold-wallet" id="home-gold-wallet" title="Gold Tickets — enter Weekly Championship">
-        🏅 <span style="color:rgba(255,215,0,0.6);font-size:10px;letter-spacing:1px;">GOLD</span>
-        <span class="tw-count" id="home-gold-count">0</span>
+      <div class="ticket-wallet ace-wallet" id="home-ace-wallet" title="Ace Tickets — enter Ace Championship">
+        🂡 <span style="color:rgba(255,215,0,0.6);font-size:10px;letter-spacing:1px;">ACE</span>
+        <span class="tw-count" id="home-ace-count">0</span>
       </div>
     </div>
 
@@ -1216,13 +1216,13 @@
   </div>
 </div>
 
-<!-- ── NO TICKET MODAL ── -->
+<!-- ── NO JACK MODAL ── -->
 <div class="ticket-modal-bg" id="no-ticket-modal">
   <div class="ticket-modal">
     <div class="ticket-modal-icon">🎟️</div>
-    <div class="ticket-modal-title">TICKET REQUIRED</div>
+    <div class="ticket-modal-title">JACK REQUIRED</div>
     <div class="ticket-modal-body">
-      You need a <strong>Bronze Ticket</strong> to enter this tournament.<br><br>
+      You need a <strong>Jack Ticket</strong> to enter this tournament.<br><br>
       Win a Quick Play game to have a chance of earning one!<br>
       <span style="font-size:11px;color:var(--muted);">(~30% drop chance on win)</span>
     </div>
@@ -1231,43 +1231,43 @@
   </div>
 </div>
 
-<!-- ── TICKET EARNED MODAL ── -->
+<!-- ── JACK EARNED MODAL ── -->
 <div class="ticket-modal-bg" id="ticket-earned-modal">
   <div class="ticket-modal">
     <div class="ticket-modal-icon" style="animation:pulse 1s ease-in-out 3;">🎟️</div>
-    <div class="ticket-modal-title" style="color:#ffd700;">BRONZE TICKET EARNED!</div>
+    <div class="ticket-modal-title" style="color:#ffd700;">BRONZE JACK EARNED!</div>
     <div class="ticket-modal-body">
-      You won and earned a <strong>🎟️ Bronze Ticket</strong>!<br><br>
+      You won and earned a <strong>🎟️ Jack Ticket</strong>!<br><br>
       Use it in the Tournaments lobby to enter a <strong>Ticket Tournament</strong>.
     </div>
     <button class="btn-primary" id="btn-ticket-earned-ok" style="background:linear-gradient(90deg,#8B4513,#cd7f32);color:#fff;">Nice! 🎉</button>
   </div>
 </div>
 
-<!-- ── GOLD TICKET EARNED MODAL ── -->
-<div class="ticket-modal-bg" id="gold-ticket-earned-modal">
-  <div class="ticket-modal gold-modal">
-    <div class="ticket-modal-icon" style="animation:pulse 0.8s ease-in-out 4;">🏅</div>
-    <div class="ticket-modal-title" style="color:#ffd700;">GOLD TICKET EARNED!</div>
+<!-- ── ACE TICKET EARNED MODAL ── -->
+<div class="ticket-modal-bg" id="ace-ticket-earned-modal">
+  <div class="ticket-modal ace-modal">
+    <div class="ticket-modal-icon" style="animation:pulse 0.8s ease-in-out 4;">🂡</div>
+    <div class="ticket-modal-title" style="color:#ffd700;">ACE TICKET EARNED!</div>
     <div class="ticket-modal-body">
-      You won the Bronze Tournament and earned a <strong>🏅 Gold Ticket</strong>!<br><br>
-      Use it on <strong>Sunday</strong> to enter the <strong>Weekly Championship</strong>.<br>
+      You won the Jack Tournament and earned a <strong>🂡 Ace Ticket</strong>!<br><br>
+      Use it on <strong>Sunday</strong> to enter the <strong>Ace Championship</strong>.<br>
       <span style="font-size:11px;color:var(--muted);">Win the championship to earn a permanent 🏆 trophy on your profile.</span>
     </div>
-    <button class="btn-primary" id="btn-gold-ticket-earned-ok" style="background:linear-gradient(90deg,#b8860b,#ffd700);color:#001018;">Let's go! 🏆</button>
+    <button class="btn-primary" id="btn-ace-ticket-earned-ok" style="background:linear-gradient(90deg,#b8860b,#ffd700);color:#001018;">Let's go! 🏆</button>
   </div>
 </div>
 
-<!-- ── NO GOLD TICKET MODAL ── -->
-<div class="ticket-modal-bg" id="no-gold-ticket-modal">
-  <div class="ticket-modal gold-modal">
-    <div class="ticket-modal-icon">🏅</div>
-    <div class="ticket-modal-title" style="color:#ffd700;">GOLD TICKET REQUIRED</div>
+<!-- ── NO ACE TICKET MODAL ── -->
+<div class="ticket-modal-bg" id="no-ace-ticket-modal">
+  <div class="ticket-modal ace-modal">
+    <div class="ticket-modal-icon">🂡</div>
+    <div class="ticket-modal-title" style="color:#ffd700;">ACE TICKET REQUIRED</div>
     <div class="ticket-modal-body">
-      The <strong>Weekly Championship</strong> requires a <strong>🏅 Gold Ticket</strong>.<br><br>
-      Earn one by winning the <strong>Bronze Ticket Tournament</strong>.
+      The <strong>Ace Championship</strong> requires a <strong>🂡 Ace Ticket</strong>.<br><br>
+      Earn one by winning the <strong>Jack Ticket Tournament</strong>.
     </div>
-    <button class="btn-primary" id="btn-no-gold-ok" style="background:linear-gradient(90deg,#b8860b,#ffd700);color:#001018;">Got it</button>
+    <button class="btn-primary" id="btn-no-ace-ok" style="background:linear-gradient(90deg,#b8860b,#ffd700);color:#001018;">Got it</button>
   </div>
 </div>
 
@@ -1313,65 +1313,65 @@ function updateNavBar() {
   const balEl = document.getElementById('home-chip-balance');
   if (balEl) balEl.textContent = (userProfile.chipBalance ?? 2500).toLocaleString();
   const ticketEl = document.getElementById('home-ticket-count');
-  if (ticketEl) ticketEl.textContent = userProfile.bronzeTickets ?? 0;
-  const goldEl = document.getElementById('home-gold-count');
-  if (goldEl) goldEl.textContent = userProfile.goldTickets ?? 0;
+  if (ticketEl) ticketEl.textContent = userProfile.jackTickets ?? 0;
+  const goldEl = document.getElementById('home-ace-count');
+  if (goldEl) goldEl.textContent = userProfile.aceTickets ?? 0;
 }
 
 // ── Ticket system ──
-async function awardBronzeTicket() {
+async function awardJackTicket() {
   if (!currentUser) return;
-  const newCount = (userProfile?.bronzeTickets ?? 0) + 1;
-  await saveUserProfile(currentUser.uid, { bronzeTickets: newCount });
+  const newCount = (userProfile?.jackTickets ?? 0) + 1;
+  await saveUserProfile(currentUser.uid, { jackTickets: newCount });
   updateNavBar();
   document.getElementById('ticket-earned-modal').classList.add('show');
 }
 
-async function awardGoldTicket() {
+async function awardAceTicket() {
   if (!currentUser) return;
-  const newCount = (userProfile?.goldTickets ?? 0) + 1;
-  await saveUserProfile(currentUser.uid, { goldTickets: newCount });
+  const newCount = (userProfile?.aceTickets ?? 0) + 1;
+  await saveUserProfile(currentUser.uid, { aceTickets: newCount });
   updateNavBar();
-  document.getElementById('gold-ticket-earned-modal').classList.add('show');
+  document.getElementById('ace-ticket-earned-modal').classList.add('show');
 }
 
-async function awardWeeklyTrophy() {
+async function awardAceTrophy() {
   if (!currentUser) return;
   const newCount = (userProfile?.weeklyTrophies ?? 0) + 1;
   await saveUserProfile(currentUser.uid, { weeklyTrophies: newCount });
   updateNavBar();
 }
 
-async function spendBronzeTicket() {
+async function spendJackTicket() {
   if (!currentUser) return false;
-  const count = userProfile?.bronzeTickets ?? 0;
+  const count = userProfile?.jackTickets ?? 0;
   if (count <= 0) return false;
-  await saveUserProfile(currentUser.uid, { bronzeTickets: count - 1 });
+  await saveUserProfile(currentUser.uid, { jackTickets: count - 1 });
   updateNavBar();
   return true;
 }
 
-async function spendGoldTicket() {
+async function spendAceTicket() {
   if (!currentUser) return false;
-  const count = userProfile?.goldTickets ?? 0;
+  const count = userProfile?.aceTickets ?? 0;
   if (count <= 0) return false;
-  await saveUserProfile(currentUser.uid, { goldTickets: count - 1 });
+  await saveUserProfile(currentUser.uid, { aceTickets: count - 1 });
   updateNavBar();
   return true;
 }
 
 function tryEnterTicketTournament(tournamentData, onSuccess) {
-  if (tournamentData.ticketType === 'gold') {
-    const count = userProfile?.goldTickets ?? 0;
+  if (tournamentData.ticketType === 'ace') {
+    const count = userProfile?.aceTickets ?? 0;
     if (count > 0) {
-      spendGoldTicket().then(() => onSuccess());
+      spendAceTicket().then(() => onSuccess());
     } else {
-      document.getElementById('no-gold-ticket-modal').classList.add('show');
+      document.getElementById('no-ace-ticket-modal').classList.add('show');
     }
   } else {
-    const count = userProfile?.bronzeTickets ?? 0;
+    const count = userProfile?.jackTickets ?? 0;
     if (count > 0) {
-      spendBronzeTicket().then(() => onSuccess());
+      spendJackTicket().then(() => onSuccess());
     } else {
       document.getElementById('no-ticket-modal').classList.add('show');
     }
@@ -1485,7 +1485,7 @@ function initAuth() {
 }
 
 // ── Stats tracking ──
-// tournamentType: null (solo/regular), 'bronze' (Bronze Ticket Tournament), 'weekly' (Weekly Championship)
+// tournamentType: null (solo/regular), 'jack' (Jack Ticket Tournament), 'weekly' (Ace Championship)
 async function recordGameResult(won, placement=0, tournamentType=null) {
   if (!currentUser) return;
   try {
@@ -1500,9 +1500,9 @@ async function recordGameResult(won, placement=0, tournamentType=null) {
       await updateChipBalance(payout);
       if (won) {
         showToast(`You won! +${payout} chips 🏆`, '#ffd700', 3000);
-        // ~30% chance to drop a Bronze ticket on solo win
+        // ~30% chance to drop a Jack ticket on solo win
         if (Math.random() < 0.30) {
-          setTimeout(() => awardBronzeTicket(), 1200);
+          setTimeout(() => awardJackTicket(), 1200);
         }
       }
       else showToast('+50 chips for playing', '#8a7a50', 2000);
@@ -1517,14 +1517,14 @@ async function recordGameResult(won, placement=0, tournamentType=null) {
 
       // Ticket tournament rewards
       if (won && placement === 1) {
-        if (tournamentType === 'bronze') {
-          // Won Bronze Tournament → award Gold Ticket
-          setTimeout(() => awardGoldTicket(), 1400);
-        } else if (tournamentType === 'weekly') {
-          // Won Weekly Championship → award permanent trophy
+        if (tournamentType === 'jack') {
+          // Won Jack Tournament → award Ace Ticket
+          setTimeout(() => awardAceTicket(), 1400);
+        } else if (tournamentType === 'ace') {
+          // Won Ace Championship → award permanent trophy
           setTimeout(async () => {
-            await awardWeeklyTrophy();
-            showToast('🏆 Weekly Champion! Trophy added to your profile!', '#ffd700', 5000);
+            await awardAceTrophy();
+            showToast('🏆 Ace Champion! Trophy added to your profile!', '#ffd700', 5000);
           }, 1400);
         }
       }
@@ -1539,9 +1539,9 @@ async function updateChipBalance(delta) {
   const balEl = document.getElementById('home-chip-balance');
   if (balEl) balEl.textContent = newBalance.toLocaleString();
   const ticketEl = document.getElementById('home-ticket-count');
-  if (ticketEl) ticketEl.textContent = userProfile?.bronzeTickets ?? 0;
-  const goldEl = document.getElementById('home-gold-count');
-  if (goldEl) goldEl.textContent = userProfile?.goldTickets ?? 0;
+  if (ticketEl) ticketEl.textContent = userProfile?.jackTickets ?? 0;
+  const goldEl = document.getElementById('home-ace-count');
+  if (goldEl) goldEl.textContent = userProfile?.aceTickets ?? 0;
   return newBalance;
 }
 
@@ -1673,7 +1673,7 @@ async function loadLeaderboard(tab) {
     el.innerHTML = '';
     players.slice(0, 20).forEach((p, i) => {
       const rank = i + 1;
-      const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+      const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'jack' : '';
       const rankDisplay = rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : rank;
       const isMe = p.id === currentUser?.uid;
       const wins = p.wins || 0;
@@ -2031,37 +2031,37 @@ function renderTournamentList(list){
   if(!tbody)return;
   if(!filtered.length){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);font-family:sans-serif;font-size:13px;">No tournaments found</td></tr>`;return;}
   tbody.innerHTML='';
-  // ── Inject Bronze Ticket Tournament row (always shown at top) ──
-  const bronzeTicketRow=document.createElement('tr');
-  const myTickets=userProfile?.bronzeTickets??0;
-  const bronzeRegistered=window._bronzeTicketRegistered||false;
-  bronzeTicketRow.className='row-ticket'+(bronzeRegistered?' row-registered':'');
-  bronzeTicketRow.id='trow-bronze-ticket';
-  bronzeTicketRow.innerHTML=`
+  // ── Inject Jack Ticket Tournament row (always shown at top) ──
+  const jackTicketRow=document.createElement('tr');
+  const myTickets=userProfile?.jackTickets??0;
+  const bronzeRegistered=window._jackTicketRegistered||false;
+  jackTicketRow.className='row-jack'+(bronzeRegistered?' row-registered':'');
+  jackTicketRow.id='trow-jack-ticket';
+  jackTicketRow.innerHTML=`
     <td class="col-start" style="color:#cd7f32;font-weight:700;">DAILY</td>
-    <td class="col-buyin-ticket">🎟️ Bronze</td>
-    <td class="col-name">Bronze Ticket Tournament</td>
-    <td class="col-prize-ticket">🏅 Gold Ticket</td>
-    <td class="col-state"><span class="t-badge ticket">TICKET</span></td>
+    <td class="col-buyin-ticket">🃏 Jack</td>
+    <td class="col-name">Jack Ticket Tournament</td>
+    <td class="col-prize-ticket">🂡 Ace Ticket</td>
+    <td class="col-state"><span class="t-badge ticket">JACK</span></td>
     <td class="col-registered" style="color:#cd7f32;">${myTickets} owned</td>
-    <td class="col-action"><button class="btn-register${bronzeRegistered?' unregister':''}" id="btn-bronze-register" style="border-color:rgba(205,127,50,0.4);background:rgba(205,127,50,0.1);color:#cd7f32;">${bronzeRegistered?'Leave':'Enter'}</button></td>`;
-  bronzeTicketRow.querySelector('#btn-bronze-register').addEventListener('click',e=>{
+    <td class="col-action"><button class="btn-register${bronzeRegistered?' unregister':''}" id="btn-jack-register" style="border-color:rgba(205,127,50,0.4);background:rgba(205,127,50,0.1);color:#cd7f32;">${bronzeRegistered?'Leave':'Enter'}</button></td>`;
+  jackTicketRow.querySelector('#btn-jack-register').addEventListener('click',e=>{
     e.stopPropagation();
     if(bronzeRegistered){
-      window._bronzeTicketRegistered=false;
+      window._jackTicketRegistered=false;
       renderTournamentList(currentTournamentList);
-      showToast('Left Bronze tournament','#8a7a50');
+      showToast('Left Jack tournament','#8a7a50');
     } else {
-      tryEnterTicketTournament({type:'ticket',ticketType:'bronze'},()=>{
-        window._bronzeTicketRegistered=true;
+      tryEnterTicketTournament({type:'ticket',ticketType:'jack'},()=>{
+        window._jackTicketRegistered=true;
         renderTournamentList(currentTournamentList);
-        showToast('🎟️ Bronze ticket used! Registered!','#cd7f32',3000);
+        showToast('🎟️ Jack ticket used! Registered!','#cd7f32',3000);
       });
     }
   });
-  tbody.appendChild(bronzeTicketRow);
+  tbody.appendChild(jackTicketRow);
 
-  // ── Inject Weekly Championship row ──
+  // ── Inject Ace Championship row ──
   const nextSunday = (()=>{
     const now = new Date();
     const d = new Date(now);
@@ -2073,34 +2073,34 @@ function renderTournamentList(list){
   const daysToSunday = Math.floor(msToSunday / 86400000);
   const hoursToSunday = Math.floor((msToSunday % 86400000) / 3600000);
   const countdownStr = daysToSunday > 0 ? `${daysToSunday}d ${hoursToSunday}h` : `${hoursToSunday}h`;
-  const myGoldTickets = userProfile?.goldTickets ?? 0;
-  const weeklyRegistered = window._weeklyRegistered || false;
-  const weeklyRow = document.createElement('tr');
-  weeklyRow.className = 'row-weekly' + (weeklyRegistered ? ' row-registered' : '');
-  weeklyRow.id = 'trow-weekly';
-  weeklyRow.innerHTML = `
+  const myGoldTickets = userProfile?.aceTickets ?? 0;
+  const weeklyRegistered = window._aceRegistered || false;
+  const aceRow = document.createElement('tr');
+  aceRow.className = 'row-weekly' + (weeklyRegistered ? ' row-registered' : '');
+  aceRow.id = 'trow-ace';
+  aceRow.innerHTML = `
     <td class="col-start" style="color:#ffd700;font-weight:700;">SUN 8PM<span class="col-date"> in ${countdownStr}</span></td>
-    <td class="col-buyin-ticket" style="color:#ffd700;">🏅 Gold</td>
-    <td class="col-name" style="color:#ffd700;font-weight:700;">⭐ Weekly Championship</td>
+    <td class="col-buyin-ticket" style="color:#ffd700;">🂡 Ace</td>
+    <td class="col-name" style="color:#ffd700;font-weight:700;">⭐ Ace Championship</td>
     <td class="col-prize-ticket" style="color:#ffd700;">🏆 Trophy</td>
-    <td class="col-state"><span class="t-badge weekly">WEEKLY</span></td>
+    <td class="col-state"><span class="t-badge weekly">ACE</span></td>
     <td class="col-registered" style="color:#ffd700;">${myGoldTickets} owned</td>
-    <td class="col-action"><button class="btn-register${weeklyRegistered?' unregister':''}" id="btn-weekly-register" style="border-color:rgba(255,215,0,0.4);background:rgba(255,215,0,0.1);color:#ffd700;">${weeklyRegistered?'Leave':'Enter'}</button></td>`;
-  weeklyRow.querySelector('#btn-weekly-register').addEventListener('click', e=>{
+    <td class="col-action"><button class="btn-register${weeklyRegistered?' unregister':''}" id="btn-ace-register" style="border-color:rgba(255,215,0,0.4);background:rgba(255,215,0,0.1);color:#ffd700;">${weeklyRegistered?'Leave':'Enter'}</button></td>`;
+  aceRow.querySelector('#btn-ace-register').addEventListener('click', e=>{
     e.stopPropagation();
     if (weeklyRegistered) {
-      window._weeklyRegistered = false;
+      window._aceRegistered = false;
       renderTournamentList(currentTournamentList);
-      showToast('Left Weekly Championship', '#8a7a50');
+      showToast('Left Ace Championship', '#8a7a50');
     } else {
-      tryEnterTicketTournament({type:'ticket', ticketType:'gold'}, ()=>{
-        window._weeklyRegistered = true;
+      tryEnterTicketTournament({type:'ticket', ticketType:'ace'}, ()=>{
+        window._aceRegistered = true;
         renderTournamentList(currentTournamentList);
-        showToast('🏅 Gold ticket used! Registered for Sunday!', '#ffd700', 3500);
+        showToast('🂡 Ace ticket used! Registered for Sunday!', '#ffd700', 3500);
       });
     }
   });
-  tbody.appendChild(weeklyRow);
+  tbody.appendChild(aceRow);
 
   let autoScrolled=false;
   filtered.forEach(t=>{
@@ -2265,8 +2265,8 @@ function initSocket(){
     const iWon=data.winner.id===myId||data.winner.name===(userProfile?.displayName||'');
     const placement=data.placements?.[myId]??(iWon?1:0);
     // Determine tournament type from registration state
-    const tType = window._weeklyRegistered ? 'weekly' : window._bronzeTicketRegistered ? 'bronze' : null;
-    if(iWon && placement===1){ window._weeklyRegistered=false; window._bronzeTicketRegistered=false; }
+    const tType = window._aceRegistered ? 'weekly' : window._jackTicketRegistered ? 'jack' : null;
+    if(iWon && placement===1){ window._aceRegistered=false; window._jackTicketRegistered=false; }
     recordGameResult(iWon, placement, tType);
   });
   socket.on('roomCreated',data=>{myRoomCode=data.code;isHost=true;document.getElementById('waiting-code').textContent=data.code;updateWaitingRoom(data.players);showScreen('screen-waiting');});
@@ -2389,11 +2389,11 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('btn-ticket-earned-ok').addEventListener('click',()=>{
     document.getElementById('ticket-earned-modal').classList.remove('show');
   });
-  document.getElementById('btn-gold-ticket-earned-ok').addEventListener('click',()=>{
-    document.getElementById('gold-ticket-earned-modal').classList.remove('show');
+  document.getElementById('btn-ace-ticket-earned-ok').addEventListener('click',()=>{
+    document.getElementById('ace-ticket-earned-modal').classList.remove('show');
   });
-  document.getElementById('btn-no-gold-ok').addEventListener('click',()=>{
-    document.getElementById('no-gold-ticket-modal').classList.remove('show');
+  document.getElementById('btn-no-ace-ok').addEventListener('click',()=>{
+    document.getElementById('no-ace-ticket-modal').classList.remove('show');
   });
 
   // Home buttons
