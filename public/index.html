@@ -867,6 +867,24 @@
       <input id="inp-name" class="inp" placeholder="Enter your name…" maxlength="14" style="margin-bottom:0;display:none;"/>
     </div>
 
+    <!-- Chip Balance Bar -->
+    <div id="home-chip-bar" style="
+      width:100%; display:flex; align-items:center; justify-content:center;
+      gap:8px; margin-bottom:16px;
+      background:linear-gradient(135deg,#18140a,#100e06);
+      border:1px solid rgba(255,215,0,0.12);
+      border-radius:12px; padding:10px 16px;
+    ">
+      <span style="font-size:18px;">🪙</span>
+      <span style="font-size:13px; color:var(--muted); letter-spacing:1px; font-family:'Orbitron',sans-serif;">CHIPS</span>
+      <span id="home-chip-balance" style="
+        font-size:18px; font-weight:700;
+        background:linear-gradient(90deg,#ffd700,#ffaa00);
+        -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+        margin-left:4px;
+      ">—</span>
+    </div>
+
     <div class="home-modes">
       <button class="mode-card featured" id="btn-tournaments">
         <div class="mode-icon">🏆</div>
@@ -1170,6 +1188,9 @@ function updateNavBar() {
   document.getElementById('nav-avatar').textContent = userProfile.avatar || '🎭';
   document.getElementById('nav-username').textContent = userProfile.displayName || 'Player';
   document.getElementById('top-nav').classList.add('visible');
+  // Update chip balance display on home screen
+  const balEl = document.getElementById('home-chip-balance');
+  if (balEl) balEl.textContent = (userProfile.chipBalance ?? 2500).toLocaleString();
 }
 
 // ── Auth state listener ──
@@ -1184,8 +1205,11 @@ auth.onAuthStateChanged(async user => {
       showScreen('screen-profile-setup');
     } else {
       userProfile = profile;
+      // Give chipBalance to existing users who don't have it yet
+      if (userProfile.chipBalance === undefined) {
+        await saveUserProfile(user.uid, { chipBalance: 2500 });
+      }
       updateNavBar();
-      // Pre-fill name for game
       myAvatar = profile.avatar || AVATARS[0];
       showScreen('screen-home');
     }
@@ -1261,6 +1285,7 @@ function initAuth() {
       email: currentUser.email,
       gamesPlayed: 0,
       wins: 0,
+      chipBalance: 2500,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     myAvatar = avatar;
@@ -1286,6 +1311,15 @@ async function recordGameResult(won) {
     // Refresh local profile
     await loadUserProfile(currentUser.uid);
   } catch(e) { console.error('stat update failed', e); }
+}
+
+async function updateChipBalance(delta) {
+  if (!currentUser) return;
+  const newBalance = Math.max(0, (userProfile?.chipBalance ?? 2500) + delta);
+  await saveUserProfile(currentUser.uid, { chipBalance: newBalance });
+  const balEl = document.getElementById('home-chip-balance');
+  if (balEl) balEl.textContent = newBalance.toLocaleString();
+  return newBalance;
 }
 
 // ── Profile screen ──
