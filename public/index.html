@@ -2237,40 +2237,52 @@ function animateDealCards(onDone){
 }
 
 // ── Card pass animation ──
+// Uses the same approach as animateDealCards: card is placed in game-table
+// at the FROM position using left/top, then translated to the TO position.
+// For my-card-canvas (which is outside game-table), we convert its
+// viewport coords into table-relative coords the same way animateDealCards does.
 function animateCardPass(fromId, toId, onDone){
-  // Use raw viewport coords so we can reach both on-table bot slots
-  // and my-card-canvas which lives outside game-table in hand-area
-  function getCardCenter(id){
-    const el = id===myId
-      ? document.getElementById('my-card-canvas')
-      : document.getElementById(`cardwrap-${id}`);
+  const table=document.getElementById('game-table');
+  const tableRect=table.getBoundingClientRect();
+
+  function getTableCenter(id){
+    let el;
+    if(id===myId) el=document.getElementById('my-card-canvas');
+    else el=document.getElementById(`cardwrap-${id}`);
     if(!el)return null;
     const r=el.getBoundingClientRect();
-    return {x:r.left+r.width/2, y:r.top+r.height/2};
+    // Convert viewport coords to coords relative to game-table, same as deal animation
+    return {
+      x: r.left - tableRect.left + r.width/2,
+      y: r.top  - tableRect.top  + r.height/2
+    };
   }
 
-  const from=getCardCenter(fromId);
-  const to=getCardCenter(toId);
+  const from=getTableCenter(fromId);
+  const to=getTableCenter(toId);
   if(!from||!to){if(onDone)onDone();return;}
 
-  // position:fixed on body so coords are in viewport space
+  const w=22, h=32;
   const fly=document.createElement('div');
-  fly.style.cssText=`position:fixed;width:44px;height:64px;
+  // Start at FROM position — same pattern as deal animation
+  fly.style.cssText=`position:absolute;width:${w}px;height:${h}px;
     left:${from.x}px;top:${from.y}px;
-    transform:translate(-50%,-50%);z-index:9999;pointer-events:none;
-    border-radius:5px;box-shadow:0 0 0 2px var(--accent),0 4px 16px rgba(0,0,0,0.9);`;
+    transform:translate(-50%,-50%);
+    z-index:50;pointer-events:none;border-radius:3px;
+    box-shadow:0 0 0 2px var(--accent),0 4px 12px rgba(0,0,0,0.8);overflow:hidden;`;
   const fc=document.createElement('canvas');
-  fc.width=44;fc.height=64;fc.style.cssText='width:44px;height:64px;display:block;border-radius:5px;';
-  drawCardFallback(fc.getContext('2d'),null,22,32,44,64,false);
+  fc.width=w;fc.height=h;fc.style.cssText=`width:${w}px;height:${h}px;display:block;`;
+  drawCardFallback(fc.getContext('2d'),null,w/2,h/2,w,h,false);
   fly.appendChild(fc);
-  document.body.appendChild(fly);
+  table.appendChild(fly);
 
+  // Translate from FROM to TO, exactly like the deal animation does
   const dx=to.x-from.x, dy=to.y-from.y;
-  requestAnimationFrame(()=>{
-    fly.style.transition='transform 0.55s cubic-bezier(0.22,1,0.36,1)';
-    fly.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.2)`;
-    setTimeout(()=>{fly.remove();if(onDone)onDone();},600);
-  });
+  setTimeout(()=>{
+    fly.style.transition='transform 0.6s cubic-bezier(0.22,1,0.36,1)';
+    fly.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    setTimeout(()=>{fly.remove();if(onDone)onDone();},650);
+  }, 16);
 }
 
 function updateTable(revealAll=false){
