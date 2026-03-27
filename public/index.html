@@ -2238,37 +2238,32 @@ function animateDealCards(onDone){
 
 // ── Card pass animation ──
 function animateCardPass(fromId, toId, onDone){
-  const table=document.getElementById('game-table');
-  const tw=table.offsetWidth, th=table.offsetHeight;
-  const tableRect=table.getBoundingClientRect();
-
+  // Use raw viewport coords so we can reach both on-table bot slots
+  // and my-card-canvas which lives outside game-table in hand-area
   function getCardCenter(id){
-    if(id===myId){
-      const el=document.getElementById('my-card-canvas');
-      if(!el)return null;
-      const r=el.getBoundingClientRect();
-      return {x:r.left-tableRect.left+r.width/2, y:r.top-tableRect.top+r.height/2};
-    }
-    const el=document.getElementById(`cardwrap-${id}`);
+    const el = id===myId
+      ? document.getElementById('my-card-canvas')
+      : document.getElementById(`cardwrap-${id}`);
     if(!el)return null;
     const r=el.getBoundingClientRect();
-    return {x:r.left-tableRect.left+r.width/2, y:r.top-tableRect.top+r.height/2};
+    return {x:r.left+r.width/2, y:r.top+r.height/2};
   }
 
   const from=getCardCenter(fromId);
   const to=getCardCenter(toId);
   if(!from||!to){if(onDone)onDone();return;}
 
+  // position:fixed on body so coords are in viewport space
   const fly=document.createElement('div');
-  fly.style.cssText=`position:absolute;width:44px;height:64px;
+  fly.style.cssText=`position:fixed;width:44px;height:64px;
     left:${from.x}px;top:${from.y}px;
-    transform:translate(-50%,-50%);z-index:50;pointer-events:none;
+    transform:translate(-50%,-50%);z-index:9999;pointer-events:none;
     border-radius:5px;box-shadow:0 0 0 2px var(--accent),0 4px 16px rgba(0,0,0,0.9);`;
   const fc=document.createElement('canvas');
   fc.width=44;fc.height=64;fc.style.cssText='width:44px;height:64px;display:block;border-radius:5px;';
   drawCardFallback(fc.getContext('2d'),null,22,32,44,64,false);
   fly.appendChild(fc);
-  table.appendChild(fly);
+  document.body.appendChild(fly);
 
   const dx=to.x-from.x, dy=to.y-from.y;
   requestAnimationFrame(()=>{
