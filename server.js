@@ -20,6 +20,16 @@ const RANKS = [2,3,4,5,6,7,8,9,10,'J','Q','K','A'];
 const RANK_VALUE = {2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,J:11,Q:12,K:13,A:1};
 const CHIPS_START = 3;
 const BOT_DELAY_MS = 1200;
+const INACTIVITY_MS = 15000; // 15 seconds before auto-keep
+
+function setInactivityTimer(gs, autoActFn) {
+  clearInactivityTimer(gs);
+  gs.inactivityTimer = setTimeout(() => { autoActFn(); }, INACTIVITY_MS);
+}
+
+function clearInactivityTimer(gs) {
+  if (gs?.inactivityTimer) { clearTimeout(gs.inactivityTimer); gs.inactivityTimer = null; }
+}
 const MAX_PLAYERS_MICRO    = 10;
 const MAX_PLAYERS_DAILY    = 50;
 const MAX_PLAYERS_SATURDAY = 200;
@@ -324,18 +334,22 @@ function startRound(room) {
   const gs = room.gameState;
   if (!gs) return;
   clearBotTimer(gs);
+  clearInactivityTimer(gs);
   gs.deck = makeDeck();
   gs.turnsTaken = 0;
   gs.phase = 'playing';
   alivePlayers(room.players).forEach(p => { p.card = gs.deck.pop(); });
   gs.currentIndex = nextAliveIndex(room.players, gs.dealerIndex, 1);
   broadcastGameState(room.players, gs, room.code, false);
-  scheduleIfBot(gs, room.players, () => botAct(room));
+  const curP = room.players[gs.currentIndex];
+  if (curP?.isBot) scheduleIfBot(gs, room.players, () => botAct(room));
+  else setInactivityTimer(gs, () => handleKeep(room));
 }
 
 function endRound(room) {
   const gs = room.gameState;
   clearBotTimer(gs);
+  clearInactivityTimer(gs);
   gs.phase = 'roundEnd';
   const alive = alivePlayers(room.players);
   const minVal = Math.min(...alive.map(p => cardValue(p.card)));
@@ -360,18 +374,22 @@ function endRound(room) {
 function advanceTurn(room) {
   const gs = room.gameState;
   if (!gs || gs.phase !== 'playing') return;
+  clearInactivityTimer(gs);
   gs.turnsTaken++;
   if (gs.turnsTaken >= alivePlayers(room.players).length) { endRound(room); return; }
   gs.currentIndex = nextAliveIndex(room.players, gs.currentIndex, 1);
   broadcastGameState(room.players, gs, room.code, false);
-  scheduleIfBot(gs, room.players, () => botAct(room));
+  const curP = room.players[gs.currentIndex];
+  if (curP?.isBot) scheduleIfBot(gs, room.players, () => botAct(room));
+  else setInactivityTimer(gs, () => handleKeep(room));
 }
 
-function handleKeep(room) { advanceTurn(room); }
+function handleKeep(room) { clearInactivityTimer(room.gameState); advanceTurn(room); }
 
 function handlePass(room) {
   const gs = room.gameState;
   if (!gs || gs.phase !== 'playing') return;
+  clearInactivityTimer(gs);
   const fromIdx = gs.currentIndex;
   const toIdx = nextAliveIndex(room.players, fromIdx, 1);
   const fromP = room.players[fromIdx];
@@ -415,18 +433,22 @@ function startTournamentRound(t) {
   const gs = t.gameState;
   if (!gs) return;
   clearBotTimer(gs);
+  clearInactivityTimer(gs);
   gs.deck = makeDeck();
   gs.turnsTaken = 0;
   gs.phase = 'playing';
   alivePlayers(t.allPlayers).forEach(p => { p.card = gs.deck.pop(); });
   gs.currentIndex = nextAliveIndex(t.allPlayers, gs.dealerIndex, 1);
   broadcastGameState(t.allPlayers, gs, t.id, true);
-  scheduleIfBot(gs, t.allPlayers, () => tournamentBotAct(t));
+  const curP = t.allPlayers[gs.currentIndex];
+  if (curP?.isBot) scheduleIfBot(gs, t.allPlayers, () => tournamentBotAct(t));
+  else setInactivityTimer(gs, () => advanceTournamentTurn(t));
 }
 
 function endTournamentRound(t) {
   const gs = t.gameState;
   clearBotTimer(gs);
+  clearInactivityTimer(gs);
   gs.phase = 'roundEnd';
   const alive = alivePlayers(t.allPlayers);
   const minVal = Math.min(...alive.map(p => cardValue(p.card)));
@@ -492,11 +514,14 @@ function endTournamentRound(t) {
 function advanceTournamentTurn(t) {
   const gs = t.gameState;
   if (!gs || gs.phase !== 'playing') return;
+  clearInactivityTimer(gs);
   gs.turnsTaken++;
   if (gs.turnsTaken >= alivePlayers(t.allPlayers).length) { endTournamentRound(t); return; }
   gs.currentIndex = nextAliveIndex(t.allPlayers, gs.currentIndex, 1);
   broadcastGameState(t.allPlayers, gs, t.id, true);
-  scheduleIfBot(gs, t.allPlayers, () => tournamentBotAct(t));
+  const curP = t.allPlayers[gs.currentIndex];
+  if (curP?.isBot) scheduleIfBot(gs, t.allPlayers, () => tournamentBotAct(t));
+  else setInactivityTimer(gs, () => advanceTournamentTurn(t));
 }
 
 function tournamentBotAct(t) {
@@ -596,6 +621,7 @@ io.on('connection', socket => {
     const cur = t.allPlayers[t.gameState.currentIndex];
     if (cur?.id !== socket.id) return;
     clearBotTimer(t.gameState);
+    clearInactivityTimer(t.gameState);
     advanceTournamentTurn(t);
   });
 
@@ -607,6 +633,7 @@ io.on('connection', socket => {
     const cur = t.allPlayers[gs.currentIndex];
     if (cur?.id !== socket.id) return;
     clearBotTimer(gs);
+    clearInactivityTimer(gs);
     const toIdx = nextAliveIndex(t.allPlayers, gs.currentIndex, 1);
     const toP = t.allPlayers[toIdx];
     if (cur.card?.rank === 'K') { advanceTournamentTurn(t); return; }
