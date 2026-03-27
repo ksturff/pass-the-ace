@@ -1119,28 +1119,12 @@
     </div>
 
     <div class="home-modes">
-      <!-- TOURNAMENTS — Coming Soon -->
-      <div class="mode-card featured" style="opacity:0.5;cursor:default;position:relative;overflow:hidden;">
+      <!-- TOURNAMENTS — main hub -->
+      <button class="mode-card featured" id="btn-tournaments" style="border-color:rgba(255,215,0,0.25);">
         <div class="mode-icon">🏆</div>
         <div class="mode-info">
-          <div class="mode-name">TOURNAMENTS</div>
-          <div class="mode-desc">Scheduled games every 15 min — coming soon!</div>
-        </div>
-        <div style="
-          position:absolute; top:8px; right:10px;
-          background:linear-gradient(90deg,#b8860b,#ffd700);
-          color:#1a1000; font-size:8px; font-weight:700;
-          letter-spacing:1.5px; padding:3px 8px; border-radius:20px;
-          font-family:'Orbitron',sans-serif;
-        ">COMING SOON</div>
-      </div>
-
-      <!-- MICRO TOURNAMENTS (was Sit & Stay) -->
-      <button class="mode-card featured" id="btn-sit-and-stay" style="border-color:rgba(255,215,0,0.25);">
-        <div class="mode-icon">🪑</div>
-        <div class="mode-info">
-          <div class="mode-name" style="background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">MICRO TOURNAMENTS</div>
-          <div class="mode-desc">Every 3 min — real players + bots fill empty seats</div>
+          <div class="mode-name" style="background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">TOURNAMENTS</div>
+          <div class="mode-desc">Micro every 3 min · Daily · Saturday Championship</div>
         </div>
         <div class="mode-arrow">›</div>
       </button>
@@ -2674,32 +2658,25 @@ function initSocket(){
 
   socket.on('gameState',state=>{
     const wasActive=document.getElementById('screen-game').classList.contains('active');
-    const hadPlayers=players.length>0;
     players=state.players;currentPlayerId=state.currentPlayerId;myTurn=currentPlayerId===myId;
     isTournamentGame=!!state.isTournament;
     players.forEach((p,i)=>{ if(p.seatIndex===undefined) p.seatIndex=i; });
     const cur=players.find(p=>p.id===currentPlayerId);
     document.getElementById('turn-banner').textContent=myTurn?'🎯 Your turn!':`${cur?.name??'…'} is thinking…`;
     if(!wasActive){
+      // First time entering game screen — build table then deal
       loadAssets().then(()=>{
         showScreen('screen-game');
         requestAnimationFrame(()=>{
           buildTable();
-          // Deal animation on first game state
-          animateDealCards(()=>updateTable());
+          setTimeout(()=>animateDealCards(()=>updateTable()), 100);
         });
       });
-    } else if(!hadPlayers){
-      buildTable();
+    } else if(state.isNewRound){
+      // New round starting — animate deal
       animateDealCards(()=>updateTable());
     } else {
-      // New round — check if cards are freshly dealt (all players have cards)
-      const allHaveCards=players.filter(p=>!p.eliminated).every(p=>p.card);
-      if(allHaveCards && state.isNewRound){
-        animateDealCards(()=>updateTable());
-      } else {
-        updateTable();
-      }
+      updateTable();
     }
   });
   socket.on('kingBlocked',()=>showKingToast());
@@ -2750,14 +2727,23 @@ function startSolo(name,seats){
     chips:3,eliminated:false,card:null,seatIndex:i,isHuman:i===0
   }));
   myId='human';soloDealerIndex=0;players=soloPlayers;
-  loadAssets().then(()=>{showScreen('screen-game');requestAnimationFrame(()=>{buildTable();soloStartRound();});});
+  loadAssets().then(()=>{
+    showScreen('screen-game');
+    requestAnimationFrame(()=>{
+      buildTable();
+      // Small delay to let DOM settle before animating
+      setTimeout(()=>soloStartRound(), 100);
+    });
+  });
 }
 function soloStartRound(){
   const deck=(()=>{const d=[];for(const s of SUITS)for(const r of RANKS)d.push({rank:r,suit:s});for(let i=d.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[d[i],d[j]]=[d[j],d[i]];}return d;})();
   soloTurnsTaken=0;soloAlive().forEach(p=>{p.card=deck.pop();});
   soloCurrentIndex=soloNextAlive(soloDealerIndex,1);
   currentPlayerId=soloPlayers[soloCurrentIndex].id;
-  players=soloPlayers;updateTable();soloProcessTurn();
+  players=soloPlayers;
+  // Deal animation before showing turn
+  animateDealCards(()=>{ updateTable(); soloProcessTurn(); });
 }
 function soloProcessTurn(){
   const p=soloPlayers[soloCurrentIndex];
@@ -2773,20 +2759,33 @@ function soloPass(){
   const fromP=soloPlayers[soloCurrentIndex];const toIdx=soloNextAlive(soloCurrentIndex,1);const toP=soloPlayers[toIdx];
   if(toP?.card?.rank==='K'){showKingToast();soloKeep();return;}
   if(fromP?.card?.rank==='K'){soloKeep();return;}
-  [fromP.card,toP.card]=[toP.card,fromP.card];updateTable();soloAdvance();
+  // Pass animation then swap
+  animateCardPass(fromP.id, toP.id, ()=>{
+    [fromP.card,toP.card]=[toP.card,fromP.card];
+    updateTable();soloAdvance();
+  });
 }
 function soloBotAct(){
   const p=soloPlayers[soloCurrentIndex];const val=soloCardValue(p.card);
   const toIdx=soloNextAlive(soloCurrentIndex,1);const toP=soloPlayers[toIdx];
   const blocked=toP?.card?.rank==='K'||p.card?.rank==='K';
   const wantPass=!blocked&&(val<=4||(val<=8&&Math.random()<0.55));
-  if(wantPass){[p.card,toP.card]=[toP.card,p.card];}
-  soloAdvance();
+  if(wantPass){
+    animateCardPass(p.id, toP.id, ()=>{
+      [p.card,toP.card]=[toP.card,p.card];
+      soloAdvance();
+    });
+  } else {
+    soloAdvance();
+  }
 }
 function soloEndRound(){
   updateTable(true);
   const alive=soloAlive();const minVal=Math.min(...alive.map(p=>soloCardValue(p.card)));
   const losers=alive.filter(p=>soloCardValue(p.card)===minVal);
+  // Deck exchange animation for last player
+  const lastP=soloPlayers[soloCurrentIndex];
+  if(lastP&&!lastP.eliminated) animateDeckExchange(lastP.id);
   losers.forEach(p=>{p.chips--;if(p.chips<=0)p.eliminated=true;});
   myTurn=false;updateTable(true);
   // Check if game is over
@@ -2803,7 +2802,8 @@ function soloContinue(){
   const alive=soloAlive();
   if(alive.length<=1){document.getElementById('over-winner').textContent=alive[0]?.name??'???';document.getElementById('game-over').classList.add('show');return;}
   soloDealerIndex=soloNextAlive(soloDealerIndex,1);
-  soloPlayers.forEach(p=>p.card=null);players=soloPlayers;buildTable();soloStartRound();
+  soloPlayers.forEach(p=>p.card=null);players=soloPlayers;buildTable();
+  setTimeout(()=>soloStartRound(), 100);
 }
 
 // ── Deck exchange animation ──
