@@ -2217,7 +2217,10 @@ function animateDealCards(onDone){
       box-shadow:0 4px 12px rgba(0,0,0,0.8);overflow:hidden;`;
     const fc=document.createElement('canvas');
     fc.width=22;fc.height=32;fc.style.cssText='width:22px;height:32px;display:block;';
-    drawCardFallback(fc.getContext('2d'),null,11,16,22,32,false); // back
+    const fcCtx=fc.getContext('2d');
+    const backImg=cardImages['back'];
+    if(backImg&&backImg.complete&&backImg.naturalWidth>0)fcCtx.drawImage(backImg,0,0,22,32);
+    else drawCardFallback(fcCtx,null,11,16,22,32,false);
     fly.appendChild(fc);
     table.appendChild(fly);
 
@@ -2272,7 +2275,10 @@ function animateCardPass(fromId, toId, onDone){
     box-shadow:0 0 0 2px var(--accent),0 4px 12px rgba(0,0,0,0.8);overflow:hidden;`;
   const fc=document.createElement('canvas');
   fc.width=w;fc.height=h;fc.style.cssText=`width:${w}px;height:${h}px;display:block;`;
-  drawCardFallback(fc.getContext('2d'),null,w/2,h/2,w,h,false);
+  const fcCtx2=fc.getContext('2d');
+  const backImg2=cardImages['back'];
+  if(backImg2&&backImg2.complete&&backImg2.naturalWidth>0)fcCtx2.drawImage(backImg2,0,0,w,h);
+  else drawCardFallback(fcCtx2,null,w/2,h/2,w,h,false);
   fly.appendChild(fc);
   table.appendChild(fly);
 
