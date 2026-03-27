@@ -3026,19 +3026,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     }, 1000);
   }
 
-  document.getElementById('btn-sit-and-stay').addEventListener('click', () => {
-    // Micro Tournaments — go to lobby tournaments tab
-    showScreen('screen-lobby');
-    document.querySelectorAll('.lobby-tab').forEach(t=>t.classList.remove('active'));
-    document.querySelector('[data-tab="tournaments"]').classList.add('active');
-    document.getElementById('tab-tournaments').style.display='block';
-    document.getElementById('tab-tables').style.display='none';
-    document.getElementById('lobby-filterbar').style.display='flex';
-    socket.emit('getTournaments');
-    if(currentTournamentList.length) renderTournamentList(currentTournamentList);
-  });
-
-  document.getElementById('btn-leave-sit-and-stay').addEventListener('click', () => {
+  const btnLeaveSAS = document.getElementById('btn-leave-sit-and-stay');
+  if (btnLeaveSAS) btnLeaveSAS.addEventListener('click', () => {
     socket.emit('leaveSitAndStay');
     if (ssCountdownInterval) clearInterval(ssCountdownInterval);
     showScreen('screen-home');
