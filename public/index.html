@@ -6,9 +6,6 @@
   <meta name="screen-orientation" content="landscape"/>
   <title>Pass the Ace</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Playfair+Display:wght@700&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet"/>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -3085,6 +3082,16 @@ document.addEventListener('DOMContentLoaded',()=>{
       await updateChipBalance(-100);
       startSolo(name,10);
     });
+  });
+  document.getElementById('btn-tournaments').addEventListener('click', () => {
+    showScreen('screen-lobby');
+    document.querySelectorAll('.lobby-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('[data-tab="tournaments"]').classList.add('active');
+    document.getElementById('tab-tournaments').style.display = 'block';
+    document.getElementById('tab-tables').style.display = 'none';
+    document.getElementById('lobby-filterbar').style.display = 'flex';
+    socket.emit('getTournaments');
+    if (currentTournamentList.length) renderTournamentList(currentTournamentList);
   });
   document.getElementById('btn-leaderboard').addEventListener('click',()=>openLeaderboard());
   document.getElementById('btn-how-to-play').addEventListener('click',()=>showScreen('screen-howto'));
