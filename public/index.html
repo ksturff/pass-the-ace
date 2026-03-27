@@ -2192,10 +2192,11 @@ function animateDealCards(onDone){
   const tw=table.offsetWidth, th=table.offsetHeight;
   const cx=tw/2, cy=th/2; // deck position = centre of table
   let count=0;
-  const total=list.length;
+  const activePlayers=list.filter(p=>!p.eliminated);
+  const total=activePlayers.length;
   let doneCalled=false;
   function callDone(){ if(!doneCalled){doneCalled=true;if(onDone)onDone();} }
-  list.forEach((p,i)=>{
+  activePlayers.forEach((p,i)=>{
     const isMe=p.id===myId;
     let targetEl;
     if(isMe){
