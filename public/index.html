@@ -3202,6 +3202,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 
 <!-- ── AUDIO SYSTEM ── -->
+<script>window.PTA_MUSIC_SRC = 'Vibing Over Venus.mp3';</script>
 <script>
 // ─────────────────────────────────────────────
 //  Audio engine — Web Audio API synth + music
@@ -3407,9 +3408,10 @@ const Audio = (() => {
 })();
 
 // ── Hook: button clicks ──
+const CLICK_EXCLUDED = new Set(['btn-mute','btn-keep','btn-pass','btn-continue','btn-again','btn-menu','btn-game-menu']);
 document.addEventListener('click', e => {
   const btn = e.target.closest('button, .mode-card, .av-opt, .seat-btn, .lb-tab, .lobby-tab, .btn-register');
-  if (btn && btn.id !== 'btn-mute') Audio.sfx.click();
+  if (btn && !CLICK_EXCLUDED.has(btn.id)) Audio.sfx.click();
 });
 
 // ── Hook: your turn ──
