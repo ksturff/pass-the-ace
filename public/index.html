@@ -2190,9 +2190,11 @@ function animateDealCards(onDone){
   const list=isSolo?soloPlayers:players;
   const table=document.getElementById('game-table');
   const tw=table.offsetWidth, th=table.offsetHeight;
-  const cx=tw/2, cy=th/2; // deck position = centre of table
+  const cx=tw/2, cy=th/2;
   let count=0;
   const total=list.length;
+  let doneCalled=false;
+  function callDone(){ if(!doneCalled){doneCalled=true;if(onDone)onDone();} }
   list.forEach((p,i)=>{
     const isMe=p.id===myId;
     let targetEl;
@@ -2202,20 +2204,19 @@ function animateDealCards(onDone){
     } else {
       targetEl=document.getElementById(`cardwrap-${p.id}`);
     }
-    if(!targetEl)return;
+    if(!targetEl){count++;if(count>=total)callDone();return;}
     const rect=targetEl.getBoundingClientRect();
     const tableRect=table.getBoundingClientRect();
     const destX=rect.left-tableRect.left+rect.width/2;
     const destY=rect.top-tableRect.top+rect.height/2;
 
-    // Flying card element
     const fly=document.createElement('div');
     fly.style.cssText=`position:absolute;width:22px;height:32px;left:${cx}px;top:${cy}px;
       transform:translate(-50%,-50%);z-index:50;pointer-events:none;border-radius:3px;
       box-shadow:0 4px 12px rgba(0,0,0,0.8);overflow:hidden;`;
     const fc=document.createElement('canvas');
     fc.width=22;fc.height=32;fc.style.cssText='width:22px;height:32px;display:block;';
-    drawCardFallback(fc.getContext('2d'),null,11,16,22,32,false); // back
+    drawCardFallback(fc.getContext('2d'),null,11,16,22,32,false);
     fly.appendChild(fc);
     table.appendChild(fly);
 
@@ -2227,12 +2228,12 @@ function animateDealCards(onDone){
       setTimeout(()=>{
         fly.remove();
         count++;
-        if(count>=total&&onDone) onDone();
+        if(count>=total) callDone();
       },650);
     },delay);
   });
-  // Fallback — call onDone even if some elements missing
-  setTimeout(()=>{ if(onDone) onDone(); },total*80+700);
+  // Fallback — only fires if callDone hasn't already been called
+  setTimeout(()=>callDone(), total*80+700);
 }
 
 // ── Card pass animation ──
