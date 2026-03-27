@@ -109,7 +109,6 @@
     #hand-buttons { min-width: 100px; gap: 6px; }
     #turn-banner { bottom: 96px; font-size: 11px; padding: 5px 14px; }
     #my-chips-dots .p-chip-dot { width: 7px; height: 7px; }
-    #rotate-prompt { display: none !important; }
 
     /* ── PROFILE SCREEN ── */
     #screen-profile {
@@ -691,9 +690,23 @@
     .p-chip-dot.empty { background:#1a1508; border:1px solid rgba(200,162,60,0.12); box-shadow:none; }
 
     .player-card-slot { position:absolute; transform:translate(-50%,-50%); z-index:4; pointer-events:none; }
-    .p-card-wrap { overflow:hidden; position:relative; border-radius:3px; }
+    .p-card-wrap { overflow:visible; position:relative; border-radius:3px; }
     .p-card-wrap canvas { display:block; border-radius:3px; box-shadow:0 3px 10px rgba(0,0,0,0.7); }
     .p-card-wrap.active-glow canvas { box-shadow:0 0 0 2px var(--accent), 0 0 14px rgba(200,162,60,0.55); }
+
+    /* ── Card animations ── */
+    @keyframes dealCard {
+      0%   { transform: translate(var(--deal-x), var(--deal-y)) scale(0.4) rotate(var(--deal-rot)); opacity:0; }
+      60%  { opacity: 1; }
+      100% { transform: translate(0,0) scale(1) rotate(0deg); opacity:1; }
+    }
+    @keyframes passCard {
+      0%   { transform: translate(0,0) scale(1); z-index:20; }
+      40%  { transform: translate(calc(var(--pass-x)*0.5), calc(var(--pass-y)*0.5)) scale(1.15); z-index:20; }
+      100% { transform: translate(var(--pass-x), var(--pass-y)) scale(1); z-index:20; }
+    }
+    .card-dealing { animation: dealCard 0.6s cubic-bezier(0.22,1,0.36,1) forwards; }
+    .card-passing  { animation: passCard 0.6s cubic-bezier(0.22,1,0.36,1) forwards; }
 
     #hand-area {
       flex-shrink:0; height:clamp(130px,22vw,165px);
@@ -1122,12 +1135,12 @@
         ">COMING SOON</div>
       </div>
 
-      <!-- SIT & STAY -->
-      <button class="mode-card" id="btn-sit-and-stay" style="border-color:rgba(255,215,0,0.2);">
+      <!-- MICRO TOURNAMENTS (was Sit & Stay) -->
+      <button class="mode-card featured" id="btn-sit-and-stay" style="border-color:rgba(255,215,0,0.25);">
         <div class="mode-icon">🪑</div>
         <div class="mode-info">
-          <div class="mode-name" style="background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">SIT &amp; STAY</div>
-          <div class="mode-desc">Jump in with real players — bots fill empty seats</div>
+          <div class="mode-name" style="background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">MICRO TOURNAMENTS</div>
+          <div class="mode-desc">Every 3 min — real players + bots fill empty seats</div>
         </div>
         <div class="mode-arrow">›</div>
       </button>
@@ -1181,6 +1194,19 @@
   <div class="lobby-tabs">
     <button class="lobby-tab active" data-tab="tournaments">Tournaments</button>
     <button class="lobby-tab" data-tab="tables">Private Tables</button>
+  </div>
+
+  <!-- Micro countdown banner -->
+  <div id="micro-countdown-bar" style="
+    flex-shrink:0; background:linear-gradient(90deg,rgba(200,162,60,0.08),rgba(200,162,60,0.04));
+    border-bottom:1px solid rgba(200,162,60,0.15);
+    padding:8px 16px; display:flex; align-items:center; gap:10px;
+  ">
+    <span style="font-size:14px;">🪑</span>
+    <span style="font-family:'Orbitron',sans-serif;font-size:10px;color:var(--muted);letter-spacing:1px;">NEXT MICRO</span>
+    <span id="micro-countdown" style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--accent);">—:——</span>
+    <span style="flex:1"></span>
+    <span id="micro-player-count" style="font-family:sans-serif;font-size:11px;color:var(--muted);"></span>
   </div>
 
   <!-- Filter bar (tournaments) -->
@@ -2178,6 +2204,98 @@ function buildTable(){
   document.getElementById('my-avatar-display').textContent=myAvatar;
 }
 
+// ── Card deal animation ──
+function animateDealCards(onDone){
+  const list=isSolo?soloPlayers:players;
+  const table=document.getElementById('game-table');
+  const tw=table.offsetWidth, th=table.offsetHeight;
+  const cx=tw/2, cy=th/2; // deck position = centre of table
+  let count=0;
+  const total=list.length;
+  list.forEach((p,i)=>{
+    const isMe=p.id===myId;
+    let targetEl;
+    if(isMe){
+      const hc=document.getElementById('my-card-canvas');
+      targetEl=hc;
+    } else {
+      targetEl=document.getElementById(`cardwrap-${p.id}`);
+    }
+    if(!targetEl)return;
+    const rect=targetEl.getBoundingClientRect();
+    const tableRect=table.getBoundingClientRect();
+    const destX=rect.left-tableRect.left+rect.width/2;
+    const destY=rect.top-tableRect.top+rect.height/2;
+
+    // Flying card element
+    const fly=document.createElement('div');
+    fly.style.cssText=`position:absolute;width:22px;height:32px;left:${cx}px;top:${cy}px;
+      transform:translate(-50%,-50%);z-index:50;pointer-events:none;border-radius:3px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.8);overflow:hidden;`;
+    const fc=document.createElement('canvas');
+    fc.width=22;fc.height=32;fc.style.cssText='width:22px;height:32px;display:block;';
+    drawCardFallback(fc.getContext('2d'),null,11,16,22,32,false); // back
+    fly.appendChild(fc);
+    table.appendChild(fly);
+
+    const dx=destX-cx, dy=destY-cy;
+    const delay=i*80;
+    setTimeout(()=>{
+      fly.style.transition=`transform 0.6s cubic-bezier(0.22,1,0.36,1), opacity 0.6s`;
+      fly.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+      setTimeout(()=>{
+        fly.remove();
+        count++;
+        if(count>=total&&onDone) onDone();
+      },650);
+    },delay);
+  });
+  // Fallback — call onDone even if some elements missing
+  setTimeout(()=>{ if(onDone) onDone(); },total*80+700);
+}
+
+// ── Card pass animation ──
+function animateCardPass(fromId, toId, onDone){
+  const table=document.getElementById('game-table');
+  const tw=table.offsetWidth, th=table.offsetHeight;
+  const tableRect=table.getBoundingClientRect();
+
+  function getCardCenter(id){
+    if(id===myId){
+      const el=document.getElementById('my-card-canvas');
+      if(!el)return null;
+      const r=el.getBoundingClientRect();
+      return {x:r.left-tableRect.left+r.width/2, y:r.top-tableRect.top+r.height/2};
+    }
+    const el=document.getElementById(`cardwrap-${id}`);
+    if(!el)return null;
+    const r=el.getBoundingClientRect();
+    return {x:r.left-tableRect.left+r.width/2, y:r.top-tableRect.top+r.height/2};
+  }
+
+  const from=getCardCenter(fromId);
+  const to=getCardCenter(toId);
+  if(!from||!to){if(onDone)onDone();return;}
+
+  const fly=document.createElement('div');
+  fly.style.cssText=`position:absolute;width:22px;height:32px;
+    left:${from.x}px;top:${from.y}px;
+    transform:translate(-50%,-50%);z-index:50;pointer-events:none;
+    border-radius:3px;box-shadow:0 0 0 2px var(--accent),0 4px 12px rgba(0,0,0,0.8);`;
+  const fc=document.createElement('canvas');
+  fc.width=22;fc.height=32;fc.style.cssText='width:22px;height:32px;display:block;';
+  drawCardFallback(fc.getContext('2d'),null,11,16,22,32,false);
+  fly.appendChild(fc);
+  table.appendChild(fly);
+
+  const dx=to.x-from.x, dy=to.y-from.y;
+  requestAnimationFrame(()=>{
+    fly.style.transition='transform 0.6s cubic-bezier(0.22,1,0.36,1)';
+    fly.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.15)`;
+    setTimeout(()=>{fly.remove();if(onDone)onDone();},650);
+  });
+}
+
 function updateTable(revealAll=false){
   const list=isSolo?soloPlayers:players;
   const opponents=list.filter(p=>p.id!==myId);
@@ -2555,17 +2673,45 @@ function initSocket(){
   });
 
   socket.on('gameState',state=>{
+    const wasActive=document.getElementById('screen-game').classList.contains('active');
+    const hadPlayers=players.length>0;
     players=state.players;currentPlayerId=state.currentPlayerId;myTurn=currentPlayerId===myId;
     isTournamentGame=!!state.isTournament;
-    // Assign stable seatIndex to each player if not already set
     players.forEach((p,i)=>{ if(p.seatIndex===undefined) p.seatIndex=i; });
     const cur=players.find(p=>p.id===currentPlayerId);
     document.getElementById('turn-banner').textContent=myTurn?'🎯 Your turn!':`${cur?.name??'…'} is thinking…`;
-    if(!document.getElementById('screen-game').classList.contains('active')){
-      loadAssets().then(()=>{showScreen('screen-game');requestAnimationFrame(()=>{buildTable();updateTable();});});
-    }else{updateTable();}
+    if(!wasActive){
+      loadAssets().then(()=>{
+        showScreen('screen-game');
+        requestAnimationFrame(()=>{
+          buildTable();
+          // Deal animation on first game state
+          animateDealCards(()=>updateTable());
+        });
+      });
+    } else if(!hadPlayers){
+      buildTable();
+      animateDealCards(()=>updateTable());
+    } else {
+      // New round — check if cards are freshly dealt (all players have cards)
+      const allHaveCards=players.filter(p=>!p.eliminated).every(p=>p.card);
+      if(allHaveCards && state.isNewRound){
+        animateDealCards(()=>updateTable());
+      } else {
+        updateTable();
+      }
+    }
   });
   socket.on('kingBlocked',()=>showKingToast());
+  socket.on('cardPassed',data=>{
+    // Animate the card moving from one player to another
+    const {fromId, toId} = data;
+    animateCardPass(fromId, toId, ()=>updateTable());
+  });
+  socket.on('deckExchange',data=>{
+    // Animate last player's card going to the deck (centre) and a new one coming back
+    animateDeckExchange(data.playerId);
+  });
   socket.on('roundEnded',data=>{
     data.players.forEach(updated=>{const p=players.find(p=>p.id===updated.id);if(p){p.chips=updated.chips;p.eliminated=updated.eliminated;if(updated.card)p.card=updated.card;}});
     myTurn=false;updateTable(true);showRoundResult(data);
@@ -2660,7 +2806,62 @@ function soloContinue(){
   soloPlayers.forEach(p=>p.card=null);players=soloPlayers;buildTable();soloStartRound();
 }
 
-// ── Lobby tabs ──
+// ── Deck exchange animation ──
+// Last player swaps card with the deck (centre of table)
+function animateDeckExchange(playerId){
+  const table=document.getElementById('game-table');
+  const tableRect=table.getBoundingClientRect();
+  const cx=table.offsetWidth/2, cy=table.offsetHeight/2;
+
+  function getCardCenter(id){
+    if(id===myId){
+      const el=document.getElementById('my-card-canvas');
+      if(!el)return null;
+      const r=el.getBoundingClientRect();
+      return {x:r.left-tableRect.left+r.width/2, y:r.top-tableRect.top+r.height/2};
+    }
+    const el=document.getElementById(`cardwrap-${id}`);
+    if(!el)return null;
+    const r=el.getBoundingClientRect();
+    return {x:r.left-tableRect.left+r.width/2, y:r.top-tableRect.top+r.height/2};
+  }
+
+  const playerPos=getCardCenter(playerId);
+  if(!playerPos)return;
+
+  function makeCard(x,y){
+    const fly=document.createElement('div');
+    fly.style.cssText=`position:absolute;width:22px;height:32px;
+      left:${x}px;top:${y}px;
+      transform:translate(-50%,-50%);z-index:50;pointer-events:none;
+      border-radius:3px;box-shadow:0 4px 12px rgba(0,0,0,0.8);`;
+    const fc=document.createElement('canvas');
+    fc.width=22;fc.height=32;fc.style.cssText='width:22px;height:32px;display:block;border-radius:3px;';
+    drawCardFallback(fc.getContext('2d'),null,11,16,22,32,false);
+    fly.appendChild(fc);
+    table.appendChild(fly);
+    return fly;
+  }
+
+  // Player card flies to deck
+  const outCard=makeCard(playerPos.x, playerPos.y);
+  const dx=cx-playerPos.x, dy=cy-playerPos.y;
+  requestAnimationFrame(()=>{
+    outCard.style.transition='transform 0.5s cubic-bezier(0.22,1,0.36,1)';
+    outCard.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.7)`;
+    setTimeout(()=>{
+      outCard.remove();
+      // New card flies from deck back to player
+      const inCard=makeCard(cx, cy);
+      inCard.style.boxShadow='0 0 0 2px var(--accent), 0 4px 12px rgba(0,0,0,0.8)';
+      requestAnimationFrame(()=>{
+        inCard.style.transition='transform 0.5s cubic-bezier(0.22,1,0.36,1)';
+        inCard.style.transform=`translate(calc(-50% + ${-dx}px), calc(-50% + ${-dy}px))`;
+        setTimeout(()=>inCard.remove(), 550);
+      });
+    },550);
+  });
+}
 function initLobbyTabs(){
   document.querySelectorAll('.lobby-tab').forEach(tab=>{
     tab.addEventListener('click',()=>{
@@ -2673,8 +2874,29 @@ function initLobbyTabs(){
       document.getElementById('t-detail-panel').classList.toggle('visible',isTournaments&&!!selectedTournamentId);
     });
   });
-  // Filter change
   document.getElementById('filter-state')?.addEventListener('change',()=>renderTournamentList(currentTournamentList));
+
+  // ── Micro tournament countdown ──
+  function updateMicroCountdown(){
+    const now=Date.now();
+    const nextMicro=currentTournamentList
+      .filter(t=>t.type==='micro'&&t.status==='registering'&&t.startTime>now)
+      .sort((a,b)=>a.startTime-b.startTime)[0];
+    const el=document.getElementById('micro-countdown');
+    const playerEl=document.getElementById('micro-player-count');
+    if(!el)return;
+    if(!nextMicro){el.textContent='—:——';return;}
+    const ms=Math.max(0,nextMicro.startTime-now);
+    const m=Math.floor(ms/60000);
+    const s=Math.floor((ms%60000)/1000);
+    el.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    if(playerEl)playerEl.textContent=nextMicro.playerCount>0?`${nextMicro.playerCount} registered`:'';
+    // Pulse red when under 30s
+    el.style.color=ms<30000?'#ff4d4f':'var(--accent)';
+  }
+  updateMicroCountdown();
+  setInterval(updateMicroCountdown,1000);
+
   // Clock
   function updateClock(){
     const now=new Date();
@@ -2808,14 +3030,15 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 
   document.getElementById('btn-sit-and-stay').addEventListener('click', () => {
-    const name = userProfile?.displayName || 'Player';
-    myAvatar = userProfile?.avatar || myAvatar;
-    checkChipsAndProceed(100, async () => {
-      await updateChipBalance(-100);
-      showScreen('screen-sit-and-stay-wait');
-      renderSsSeats(1);
-      socket.emit('joinSitAndStay', { name, avatar: myAvatar });
-    });
+    // Micro Tournaments — go to lobby tournaments tab
+    showScreen('screen-lobby');
+    document.querySelectorAll('.lobby-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelector('[data-tab="tournaments"]').classList.add('active');
+    document.getElementById('tab-tournaments').style.display='block';
+    document.getElementById('tab-tables').style.display='none';
+    document.getElementById('lobby-filterbar').style.display='flex';
+    socket.emit('getTournaments');
+    if(currentTournamentList.length) renderTournamentList(currentTournamentList);
   });
 
   document.getElementById('btn-leave-sit-and-stay').addEventListener('click', () => {

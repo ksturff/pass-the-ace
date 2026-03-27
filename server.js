@@ -20,90 +20,12 @@ const RANKS = [2,3,4,5,6,7,8,9,10,'J','Q','K','A'];
 const RANK_VALUE = {2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,J:11,Q:12,K:13,A:1};
 const CHIPS_START = 3;
 const BOT_DELAY_MS = 1200;
-const INACTIVITY_MS = 15000; // 15 seconds before auto-keep
-
-function setInactivityTimer(gs, autoActFn) {
-  clearInactivityTimer(gs);
-  gs.inactivityTimer = setTimeout(() => { autoActFn(); }, INACTIVITY_MS);
-}
-
-function clearInactivityTimer(gs) {
-  if (gs?.inactivityTimer) { clearTimeout(gs.inactivityTimer); gs.inactivityTimer = null; }
-}
 const MAX_PLAYERS_MICRO    = 10;
 const MAX_PLAYERS_DAILY    = 50;
 const MAX_PLAYERS_SATURDAY = 200;
-const TOURNAMENT_INTERVAL_MS = 15 * 60 * 1000;
+const TOURNAMENT_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
 const BOT_NAMES = ['Alex','Sam','Jordan','Taylor','Morgan','Casey','Riley','Quinn','Avery','Blake'];
 const BOT_AVATARS = ['🐺','🦁','🐯','🦅','🐉','🦈','👾','🤖','💀','🦂'];
-
-// ─────────────────────────────────────────
-//  SIT & STAY
-// ─────────────────────────────────────────
-const SIT_AND_STAY_SEATS    = 10;
-const SIT_AND_STAY_WAIT_MS  = 20000; // 20 seconds before bots fill empty seats
-const sitAndStayQueue       = [];    // players waiting to be seated
-let   sitAndStayTimer       = null;  // countdown timer handle
-let   sitAndStayGame        = null;  // active sit&stay room (one at a time; new one created when game starts)
-const SIT_AND_STAY_CODE     = 'SITANDSTAY';
-
-function getSitAndStayRoom() {
-  if (!sitAndStayGame) {
-    sitAndStayGame = {
-      code: SIT_AND_STAY_CODE,
-      players: [],
-      gameState: null,
-      options: { seats: SIT_AND_STAY_SEATS },
-      type: 'sitAndStay'
-    };
-  }
-  return sitAndStayGame;
-}
-
-function sitAndStayPlayerCount() {
-  return getSitAndStayRoom().players.filter(p => !p.isBot).length;
-}
-
-function broadcastSitAndStayStatus() {
-  const room = getSitAndStayRoom();
-  const realCount = room.players.filter(p => !p.isBot).length;
-  io.to(SIT_AND_STAY_CODE).emit('sitAndStayStatus', {
-    playerCount: realCount,
-    totalSeats: SIT_AND_STAY_SEATS,
-    waitMs: SIT_AND_STAY_WAIT_MS
-  });
-}
-
-function startSitAndStayCountdown() {
-  if (sitAndStayTimer) return; // already counting
-  sitAndStayTimer = setTimeout(() => {
-    sitAndStayTimer = null;
-    launchSitAndStay();
-  }, SIT_AND_STAY_WAIT_MS);
-}
-
-function launchSitAndStay() {
-  const room = getSitAndStayGame();
-  if (room.players.filter(p => !p.isBot).length === 0) return; // nobody left
-  // Fill remaining seats with bots
-  let botIdx = 0;
-  while (room.players.length < SIT_AND_STAY_SEATS) {
-    room.players.push({
-      id: `bot_ss_${Date.now()}_${botIdx}`,
-      name: BOT_NAMES[botIdx % BOT_NAMES.length],
-      avatar: BOT_AVATARS[botIdx % BOT_AVATARS.length],
-      chips: CHIPS_START, eliminated: false, card: null,
-      seatIndex: room.players.length, isBot: true
-    });
-    botIdx++;
-  }
-  io.to(SIT_AND_STAY_CODE).emit('sitAndStayLaunching');
-  startGame(room);
-  // Reset for next group
-  sitAndStayGame = null;
-}
-
-function getSitAndStayGame() { return getSitAndStayRoom(); }
 
 // ─────────────────────────────────────────
 //  SELF-PING — keeps Render free tier alive
@@ -228,10 +150,15 @@ setInterval(() => {
   const now = Date.now();
   for (const t of tournaments.values()) {
     if (t.status === 'registering' && now >= t.startTime) {
+      // Skip micro tournaments with no human players
+      if (t.type === 'micro' && t.players.length === 0) {
+        t.status = 'finished';
+        console.log(`[micro] No players — skipping ${t.id}`);
+        continue;
+      }
       startTournament(t);
     }
   }
-  // Broadcast updated tournament list
   io.emit('tournamentList', getPublicTournaments());
 }, 10000);
 
@@ -300,7 +227,7 @@ function nextAliveIndex(playerList, from, step = 1) {
 }
 
 // Emit game state — each player only sees their own card
-function broadcastGameState(playerList, gs, roomOrTournamentId, isTournament = false) {
+function broadcastGameState(playerList, gs, roomOrTournamentId, isTournament = false, isNewRound = false) {
   playerList.forEach(player => {
     if (player.isBot) return;
     const sanitized = playerList.map(p => ({
@@ -315,6 +242,7 @@ function broadcastGameState(playerList, gs, roomOrTournamentId, isTournament = f
       currentPlayerId: playerList[gs.currentIndex]?.id,
       phase: gs.phase,
       isTournament,
+      isNewRound,
       tournamentId: isTournament ? roomOrTournamentId : null
     });
   });
@@ -334,24 +262,27 @@ function startRound(room) {
   const gs = room.gameState;
   if (!gs) return;
   clearBotTimer(gs);
-  clearInactivityTimer(gs);
   gs.deck = makeDeck();
   gs.turnsTaken = 0;
   gs.phase = 'playing';
   alivePlayers(room.players).forEach(p => { p.card = gs.deck.pop(); });
   gs.currentIndex = nextAliveIndex(room.players, gs.dealerIndex, 1);
-  broadcastGameState(room.players, gs, room.code, false);
-  const curP = room.players[gs.currentIndex];
-  if (curP?.isBot) scheduleIfBot(gs, room.players, () => botAct(room));
-  else setInactivityTimer(gs, () => handleKeep(room));
+  broadcastGameState(room.players, gs, room.code, false, true); // isNewRound=true
+  scheduleIfBot(gs, room.players, () => botAct(room));
 }
 
 function endRound(room) {
   const gs = room.gameState;
   clearBotTimer(gs);
-  clearInactivityTimer(gs);
   gs.phase = 'roundEnd';
+
+  // Emit deck exchange animation — last alive player swaps with deck
   const alive = alivePlayers(room.players);
+  const lastPlayer = room.players[gs.currentIndex] || alive[alive.length - 1];
+  if (lastPlayer) {
+    io.to(room.code).emit('deckExchange', { playerId: lastPlayer.id });
+  }
+
   const minVal = Math.min(...alive.map(p => cardValue(p.card)));
   const losers = alive.filter(p => cardValue(p.card) === minVal);
   losers.forEach(p => { p.chips--; if (p.chips <= 0) p.eliminated = true; });
@@ -374,22 +305,18 @@ function endRound(room) {
 function advanceTurn(room) {
   const gs = room.gameState;
   if (!gs || gs.phase !== 'playing') return;
-  clearInactivityTimer(gs);
   gs.turnsTaken++;
   if (gs.turnsTaken >= alivePlayers(room.players).length) { endRound(room); return; }
   gs.currentIndex = nextAliveIndex(room.players, gs.currentIndex, 1);
   broadcastGameState(room.players, gs, room.code, false);
-  const curP = room.players[gs.currentIndex];
-  if (curP?.isBot) scheduleIfBot(gs, room.players, () => botAct(room));
-  else setInactivityTimer(gs, () => handleKeep(room));
+  scheduleIfBot(gs, room.players, () => botAct(room));
 }
 
-function handleKeep(room) { clearInactivityTimer(room.gameState); advanceTurn(room); }
+function handleKeep(room) { advanceTurn(room); }
 
 function handlePass(room) {
   const gs = room.gameState;
   if (!gs || gs.phase !== 'playing') return;
-  clearInactivityTimer(gs);
   const fromIdx = gs.currentIndex;
   const toIdx = nextAliveIndex(room.players, fromIdx, 1);
   const fromP = room.players[fromIdx];
@@ -402,7 +329,7 @@ function handlePass(room) {
     return;
   }
   [fromP.card, toP.card] = [toP.card, fromP.card];
-  io.to(room.code).emit('cardPassed', { fromIndex: fromIdx, toIndex: toIdx });
+  io.to(room.code).emit('cardPassed', { fromId: fromP.id, toId: toP.id });
   advanceTurn(room);
 }
 
@@ -433,24 +360,28 @@ function startTournamentRound(t) {
   const gs = t.gameState;
   if (!gs) return;
   clearBotTimer(gs);
-  clearInactivityTimer(gs);
   gs.deck = makeDeck();
   gs.turnsTaken = 0;
   gs.phase = 'playing';
   alivePlayers(t.allPlayers).forEach(p => { p.card = gs.deck.pop(); });
   gs.currentIndex = nextAliveIndex(t.allPlayers, gs.dealerIndex, 1);
-  broadcastGameState(t.allPlayers, gs, t.id, true);
-  const curP = t.allPlayers[gs.currentIndex];
-  if (curP?.isBot) scheduleIfBot(gs, t.allPlayers, () => tournamentBotAct(t));
-  else setInactivityTimer(gs, () => advanceTournamentTurn(t));
+  broadcastGameState(t.allPlayers, gs, t.id, true, true); // isNewRound=true
+  scheduleIfBot(gs, t.allPlayers, () => tournamentBotAct(t));
 }
 
 function endTournamentRound(t) {
   const gs = t.gameState;
   clearBotTimer(gs);
-  clearInactivityTimer(gs);
   gs.phase = 'roundEnd';
   const alive = alivePlayers(t.allPlayers);
+
+  // Deck exchange animation — last player swaps with deck
+  const lastPlayer = t.allPlayers[gs.currentIndex] || alive[alive.length - 1];
+  if (lastPlayer) {
+    t.allPlayers.filter(p => !p.isBot).forEach(p =>
+      io.to(p.id).emit('deckExchange', { playerId: lastPlayer.id })
+    );
+  }
   const minVal = Math.min(...alive.map(p => cardValue(p.card)));
   const losers = alive.filter(p => cardValue(p.card) === minVal);
   losers.forEach(p => {
@@ -514,14 +445,11 @@ function endTournamentRound(t) {
 function advanceTournamentTurn(t) {
   const gs = t.gameState;
   if (!gs || gs.phase !== 'playing') return;
-  clearInactivityTimer(gs);
   gs.turnsTaken++;
   if (gs.turnsTaken >= alivePlayers(t.allPlayers).length) { endTournamentRound(t); return; }
   gs.currentIndex = nextAliveIndex(t.allPlayers, gs.currentIndex, 1);
   broadcastGameState(t.allPlayers, gs, t.id, true);
-  const curP = t.allPlayers[gs.currentIndex];
-  if (curP?.isBot) scheduleIfBot(gs, t.allPlayers, () => tournamentBotAct(t));
-  else setInactivityTimer(gs, () => advanceTournamentTurn(t));
+  scheduleIfBot(gs, t.allPlayers, () => tournamentBotAct(t));
 }
 
 function tournamentBotAct(t) {
@@ -621,7 +549,6 @@ io.on('connection', socket => {
     const cur = t.allPlayers[t.gameState.currentIndex];
     if (cur?.id !== socket.id) return;
     clearBotTimer(t.gameState);
-    clearInactivityTimer(t.gameState);
     advanceTournamentTurn(t);
   });
 
@@ -633,7 +560,6 @@ io.on('connection', socket => {
     const cur = t.allPlayers[gs.currentIndex];
     if (cur?.id !== socket.id) return;
     clearBotTimer(gs);
-    clearInactivityTimer(gs);
     const toIdx = nextAliveIndex(t.allPlayers, gs.currentIndex, 1);
     const toP = t.allPlayers[toIdx];
     if (cur.card?.rank === 'K') { advanceTournamentTurn(t); return; }
@@ -643,6 +569,10 @@ io.on('connection', socket => {
       return;
     }
     [cur.card, toP.card] = [toP.card, cur.card];
+    // Emit cardPassed with player IDs for animation
+    t.allPlayers.filter(p => !p.isBot).forEach(p =>
+      io.to(p.id).emit('cardPassed', { fromId: cur.id, toId: toP.id })
+    );
     advanceTournamentTurn(t);
   });
 
@@ -708,53 +638,6 @@ io.on('connection', socket => {
     handlePass(room);
   });
 
-  // ── Sit & Stay events
-  socket.on('joinSitAndStay', ({ name, avatar }) => {
-    const room = getSitAndStayGame();
-    // Already in game or already queued
-    if (room.players.find(p => p.id === socket.id)) return;
-    if (room.gameState) {
-      socket.emit('error', 'A Sit & Stay game is already in progress. Please wait a moment.');
-      return;
-    }
-    const player = {
-      id: socket.id, name, avatar: avatar || '🎭',
-      chips: CHIPS_START, eliminated: false, card: null,
-      seatIndex: room.players.length, isBot: false
-    };
-    room.players.push(player);
-    socket.join(SIT_AND_STAY_CODE);
-    socket.data.sitAndStayCode = SIT_AND_STAY_CODE;
-    broadcastSitAndStayStatus();
-
-    // If table is full, launch immediately
-    if (room.players.length >= SIT_AND_STAY_SEATS) {
-      if (sitAndStayTimer) { clearTimeout(sitAndStayTimer); sitAndStayTimer = null; }
-      launchSitAndStay();
-    } else {
-      // First player starts the countdown
-      startSitAndStayCountdown();
-      socket.emit('sitAndStayWaiting', {
-        playerCount: room.players.filter(p => !p.isBot).length,
-        totalSeats: SIT_AND_STAY_SEATS,
-        waitMs: SIT_AND_STAY_WAIT_MS
-      });
-    }
-  });
-
-  socket.on('leaveSitAndStay', () => {
-    const room = getSitAndStayGame();
-    room.players = room.players.filter(p => p.id !== socket.id);
-    socket.leave(SIT_AND_STAY_CODE);
-    socket.data.sitAndStayCode = null;
-    broadcastSitAndStayStatus();
-    // If nobody left, cancel the timer
-    if (room.players.filter(p => !p.isBot).length === 0) {
-      if (sitAndStayTimer) { clearTimeout(sitAndStayTimer); sitAndStayTimer = null; }
-      sitAndStayGame = null;
-    }
-  });
-
   socket.on('disconnect', () => {
     const code = socket.data.roomCode;
     if (code) {
@@ -772,18 +655,6 @@ io.on('connection', socket => {
       if (t && t.status === 'registering') {
         t.players = t.players.filter(p => p.id !== socket.id);
         io.emit('tournamentList', getPublicTournaments());
-      }
-    }
-    // Sit & Stay cleanup
-    if (socket.data.sitAndStayCode) {
-      const room = getSitAndStayGame();
-      if (room && !room.gameState) {
-        room.players = room.players.filter(p => p.id !== socket.id);
-        broadcastSitAndStayStatus();
-        if (room.players.filter(p => !p.isBot).length === 0) {
-          if (sitAndStayTimer) { clearTimeout(sitAndStayTimer); sitAndStayTimer = null; }
-          sitAndStayGame = null;
-        }
       }
     }
   });
