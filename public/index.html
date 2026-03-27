@@ -2190,7 +2190,7 @@ function animateDealCards(onDone){
   const list=isSolo?soloPlayers:players;
   const table=document.getElementById('game-table');
   const tw=table.offsetWidth, th=table.offsetHeight;
-  const cx=tw/2, cy=th/2;
+  const cx=tw/2, cy=th/2; // deck position = centre of table
   let count=0;
   const total=list.length;
   let doneCalled=false;
@@ -2204,19 +2204,20 @@ function animateDealCards(onDone){
     } else {
       targetEl=document.getElementById(`cardwrap-${p.id}`);
     }
-    if(!targetEl){count++;if(count>=total)callDone();return;}
+    if(!targetEl)return;
     const rect=targetEl.getBoundingClientRect();
     const tableRect=table.getBoundingClientRect();
     const destX=rect.left-tableRect.left+rect.width/2;
     const destY=rect.top-tableRect.top+rect.height/2;
 
+    // Flying card element
     const fly=document.createElement('div');
     fly.style.cssText=`position:absolute;width:22px;height:32px;left:${cx}px;top:${cy}px;
       transform:translate(-50%,-50%);z-index:50;pointer-events:none;border-radius:3px;
       box-shadow:0 4px 12px rgba(0,0,0,0.8);overflow:hidden;`;
     const fc=document.createElement('canvas');
     fc.width=22;fc.height=32;fc.style.cssText='width:22px;height:32px;display:block;';
-    drawCardFallback(fc.getContext('2d'),null,11,16,22,32,false);
+    drawCardFallback(fc.getContext('2d'),null,11,16,22,32,false); // back
     fly.appendChild(fc);
     table.appendChild(fly);
 
@@ -2232,7 +2233,6 @@ function animateDealCards(onDone){
       },650);
     },delay);
   });
-  // Fallback — only fires if callDone hasn't already been called
   setTimeout(()=>callDone(), total*80+700);
 }
 
@@ -2260,21 +2260,21 @@ function animateCardPass(fromId, toId, onDone){
   if(!from||!to){if(onDone)onDone();return;}
 
   const fly=document.createElement('div');
-  fly.style.cssText=`position:absolute;width:22px;height:32px;
+  fly.style.cssText=`position:absolute;width:44px;height:64px;
     left:${from.x}px;top:${from.y}px;
     transform:translate(-50%,-50%);z-index:50;pointer-events:none;
-    border-radius:3px;box-shadow:0 0 0 2px var(--accent),0 4px 12px rgba(0,0,0,0.8);`;
+    border-radius:5px;box-shadow:0 0 0 2px var(--accent),0 4px 16px rgba(0,0,0,0.9);`;
   const fc=document.createElement('canvas');
-  fc.width=22;fc.height=32;fc.style.cssText='width:22px;height:32px;display:block;';
-  drawCardFallback(fc.getContext('2d'),null,11,16,22,32,false);
+  fc.width=44;fc.height=64;fc.style.cssText='width:44px;height:64px;display:block;border-radius:5px;';
+  drawCardFallback(fc.getContext('2d'),null,22,32,44,64,false);
   fly.appendChild(fc);
   table.appendChild(fly);
 
   const dx=to.x-from.x, dy=to.y-from.y;
   requestAnimationFrame(()=>{
-    fly.style.transition='transform 0.6s cubic-bezier(0.22,1,0.36,1)';
-    fly.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.15)`;
-    setTimeout(()=>{fly.remove();if(onDone)onDone();},650);
+    fly.style.transition='transform 0.55s cubic-bezier(0.22,1,0.36,1)';
+    fly.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.2)`;
+    setTimeout(()=>{fly.remove();if(onDone)onDone();},600);
   });
 }
 
