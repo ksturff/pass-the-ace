@@ -1076,22 +1076,48 @@
       <div class="logo-icon">
         <svg width="72" height="72" viewBox="0 0 72 72">
           <defs>
-            <radialGradient id="aceGlow" cx="50%" cy="40%" r="60%">
-              <stop offset="0%" stop-color="rgba(0,229,255,0.15)"/>
-              <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
-            </radialGradient>
-          </defs>
-          <rect width="72" height="72" fill="url(#aceGlow)"/>
-          <!-- Card back pattern -->
-          <text x="36" y="52" text-anchor="middle" font-size="48" font-family="serif" fill="url(#aceSuit)" opacity="0.9">♠</text>
-          <defs>
-            <linearGradient id="aceSuit" x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id="logoGold" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stop-color="#b8860b"/>
               <stop offset="100%" stop-color="#ffd700"/>
             </linearGradient>
+            <linearGradient id="logoCardFace" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#faf6ee"/>
+              <stop offset="100%" stop-color="#e8dfc8"/>
+            </linearGradient>
+            <radialGradient id="logoGlow" cx="50%" cy="45%" r="55%">
+              <stop offset="0%" stop-color="rgba(200,162,60,0.18)"/>
+              <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+            </radialGradient>
+            <filter id="logoShadow">
+              <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.7)"/>
+            </filter>
           </defs>
-          <text x="10" y="18" font-size="11" font-family="Orbitron,sans-serif" font-weight="700" fill="rgba(255,215,0,0.7)">A</text>
-          <text x="62" y="64" font-size="11" font-family="Orbitron,sans-serif" font-weight="700" fill="rgba(255,215,0,0.7)" text-anchor="end">A</text>
+          <!-- Glow background -->
+          <rect width="72" height="72" fill="url(#logoGlow)"/>
+          <!-- Back card (left, rotated) -->
+          <g transform="rotate(-18 36 44)" filter="url(#logoShadow)">
+            <rect x="14" y="18" width="28" height="38" rx="3" fill="#0e0c06" stroke="rgba(200,162,60,0.5)" stroke-width="1"/>
+            <rect x="16" y="20" width="24" height="34" rx="2" fill="none" stroke="rgba(200,162,60,0.25)" stroke-width="0.7"/>
+            <text x="28" y="41" text-anchor="middle" font-size="14" font-family="serif" fill="rgba(200,162,60,0.35)">♠</text>
+          </g>
+          <!-- Back card (right, rotated) -->
+          <g transform="rotate(18 36 44)" filter="url(#logoShadow)">
+            <rect x="30" y="18" width="28" height="38" rx="3" fill="#0e0c06" stroke="rgba(200,162,60,0.5)" stroke-width="1"/>
+            <rect x="32" y="20" width="24" height="34" rx="2" fill="none" stroke="rgba(200,162,60,0.25)" stroke-width="0.7"/>
+            <text x="44" y="41" text-anchor="middle" font-size="14" font-family="serif" fill="rgba(200,162,60,0.35)">♠</text>
+          </g>
+          <!-- Front ace card (center) -->
+          <g filter="url(#logoShadow)">
+            <rect x="22" y="14" width="28" height="40" rx="3" fill="url(#logoCardFace)" stroke="rgba(0,0,0,0.15)" stroke-width="0.5"/>
+            <text x="25.5" y="22" font-size="7" font-family="serif" font-weight="bold" fill="#111">A</text>
+            <text x="25.5" y="29" font-size="6" font-family="serif" fill="#111">♠</text>
+            <text x="36" y="40" text-anchor="middle" font-size="20" font-family="serif" fill="#111">♠</text>
+            <text x="46.5" y="51" font-size="7" font-family="serif" font-weight="bold" fill="#111" text-anchor="end">A</text>
+            <text x="46.5" y="57" font-size="6" font-family="serif" fill="#111" text-anchor="end">♠</text>
+          </g>
+          <!-- Gold A badge -->
+          <circle cx="56" cy="16" r="9" fill="url(#logoGold)" opacity="0.95"/>
+          <text x="56" y="20" text-anchor="middle" font-size="10" font-family="Orbitron,sans-serif" font-weight="bold" fill="#080600">A</text>
         </svg>
       </div>
       <div class="logo-title">PASS THE ACE</div>
@@ -1134,7 +1160,7 @@
         <div class="mode-icon">🏆</div>
         <div class="mode-info">
           <div class="mode-name" style="background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">TOURNAMENTS</div>
-          <div class="mode-desc">Micro every 3 min · Daily · Saturday Championship</div>
+          <div class="mode-desc">Sit & Stay every 3 min · Daily · Saturday Championship</div>
         </div>
         <div class="mode-arrow">›</div>
       </button>
@@ -1197,7 +1223,7 @@
     padding:8px 16px; display:flex; align-items:center; gap:10px;
   ">
     <span style="font-size:14px;">🪑</span>
-    <span style="font-family:'Orbitron',sans-serif;font-size:10px;color:var(--muted);letter-spacing:1px;">NEXT MICRO</span>
+    <span style="font-family:'Orbitron',sans-serif;font-size:10px;color:var(--muted);letter-spacing:1px;">NEXT SIT & STAY</span>
     <span id="micro-countdown" style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--accent);">—:——</span>
     <span style="flex:1"></span>
     <span id="micro-player-count" style="font-family:sans-serif;font-size:11px;color:var(--muted);"></span>
@@ -1315,11 +1341,11 @@
     </div>
     <div class="howto-step">
       <div class="howto-num">4</div>
-      <div class="howto-text">At the end of each round, the player(s) holding the <strong>LOWEST CARD</strong> lose one life.</div>
+      <div class="howto-text">At the end of each round, the player(s) holding the <strong>LOWEST CARD</strong> lose one chip.</div>
     </div>
     <div class="howto-step">
       <div class="howto-num">5</div>
-      <div class="howto-text">Every player starts with <strong>3 LIVES</strong>. Lose all three and you're eliminated. Last player standing wins!</div>
+      <div class="howto-text">Every player starts with <strong>3 CHIPS</strong>. Lose all three and you're eliminated. Last player standing wins!</div>
     </div>
     <div class="howto-step">
       <div class="howto-num">★</div>
@@ -1372,14 +1398,14 @@
       <svg id="table-bg" viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <radialGradient id="feltGrad" cx="50%" cy="42%" r="58%">
-            <stop offset="0%" stop-color="#1e4a2e"/>
-            <stop offset="55%" stop-color="#142e1c"/>
-            <stop offset="100%" stop-color="#0c1f12"/>
+            <stop offset="0%" stop-color="#3a1a2a"/>
+            <stop offset="55%" stop-color="#241018"/>
+            <stop offset="100%" stop-color="#150910"/>
           </radialGradient>
           <radialGradient id="railGrad" cx="50%" cy="30%" r="70%">
-            <stop offset="0%" stop-color="#5c4418"/>
-            <stop offset="50%" stop-color="#2a1e08"/>
-            <stop offset="100%" stop-color="#1a1306"/>
+            <stop offset="0%" stop-color="#3a2510"/>
+            <stop offset="50%" stop-color="#1c1208"/>
+            <stop offset="100%" stop-color="#100a04"/>
           </radialGradient>
           <filter id="feltGlow" x="-10%" y="-10%" width="120%" height="120%">
             <feGaussianBlur stdDeviation="4" result="blur"/>
@@ -1411,8 +1437,8 @@
         <rect x="28" y="28" width="644" height="344" rx="172" fill="rgba(0,0,0,0.25)" opacity="0.5"/>
         <rect x="28" y="28" width="644" height="344" rx="172" fill="url(#feltGrad)" opacity="0.6"/>
         <!-- Center logo watermark -->
-        <text x="350" y="185" text-anchor="middle" font-size="72" font-family="serif" fill="rgba(200,162,60,0.07)">♠</text>
-        <text x="350" y="222" text-anchor="middle" font-size="10" font-family="Georgia,serif" letter-spacing="5" fill="rgba(200,162,60,0.12)">PASS THE ACE</text>
+        <text x="350" y="185" text-anchor="middle" font-size="72" font-family="serif" fill="rgba(0,0,0,0.35)">♠</text>
+        <text x="350" y="222" text-anchor="middle" font-size="10" font-family="Georgia,serif" letter-spacing="5" fill="rgba(0,0,0,0.3)">PASS THE ACE</text>
       </svg>
     </div>
   </div>
@@ -1476,7 +1502,7 @@
     <div class="ticket-modal-title">DAILY REQUIRED</div>
     <div class="ticket-modal-body">
       You need a <strong>Daily Ticket</strong> to enter this tournament.<br><br>
-      Win a Micro Tournament (15-min) to earn one!<br>
+      Win a Sit & Stay Tournament (3-min) to earn one!<br>
       <span style="font-size:11px;color:var(--muted);">(awarded to 1st place)</span>
     </div>
     <button class="btn-primary" id="btn-no-ticket-play" style="background:linear-gradient(90deg,#8B4513,#cd7f32);color:#fff;">⚡ Play Quick Play</button>
@@ -2065,22 +2091,29 @@ function drawCardFallback(ctx,card,cx,cy,w,h,faceUp){
   ctx.lineWidth=0.5;
   ctx.beginPath();ctx.roundRect(x,y,w,h,3);ctx.fill();ctx.stroke();
   if(!faceUp){
-    // Premium card back — deep navy/brown with crosshatch and gold border
-    ctx.fillStyle='#12100a';
+    // Premium card back — deep navy with diamond grid and teal accent border
+    ctx.fillStyle='#0a0e1a';
     ctx.beginPath();ctx.roundRect(x+1,y+1,w-2,h-2,2);ctx.fill();
-    // Gold border inset
-    ctx.strokeStyle='rgba(200,162,60,0.45)';ctx.lineWidth=0.8;
+    // Teal border inset
+    ctx.strokeStyle='rgba(0,180,160,0.55)';ctx.lineWidth=0.8;
     ctx.beginPath();ctx.roundRect(x+2.5,y+2.5,w-5,h-5,2);ctx.stroke();
-    // Crosshatch pattern
-    ctx.strokeStyle='rgba(200,162,60,0.08)';ctx.lineWidth=0.5;
-    for(let i=-h;i<w+h;i+=4){
-      ctx.beginPath();ctx.moveTo(x+3+i,y+3);ctx.lineTo(x+3+i-h,y+h-3);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(x+3+i,y+3);ctx.lineTo(x+3+i+h,y+h-3);ctx.stroke();
+    // Diamond grid pattern
+    const spacing=5;
+    ctx.strokeStyle='rgba(0,180,160,0.12)';ctx.lineWidth=0.4;
+    for(let gx=x+3;gx<x+w-3;gx+=spacing){
+      for(let gy=y+3;gy<y+h-3;gy+=spacing){
+        ctx.beginPath();
+        ctx.moveTo(gx+spacing/2,gy);
+        ctx.lineTo(gx+spacing,gy+spacing/2);
+        ctx.lineTo(gx+spacing/2,gy+spacing);
+        ctx.lineTo(gx,gy+spacing/2);
+        ctx.closePath();ctx.stroke();
+      }
     }
-    // Center spade watermark
-    ctx.fillStyle='rgba(200,162,60,0.22)';
+    // Center diamond watermark
+    ctx.fillStyle='rgba(0,180,160,0.28)';
     ctx.font=`bold ${w*0.45}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('♠',cx,cy);
+    ctx.fillText('♦',cx,cy);
     ctx.restore();return;
   }
   // Face-up card
@@ -2856,12 +2889,30 @@ function animateDeckExchange(playerId){
   const playerPos=getCardCenter(playerId);
   if(!playerPos)return;
 
+  // Build a visible deck stack at the centre of the table
+  const deckStack=document.createElement('div');
+  deckStack.id='deck-stack-anim';
+  deckStack.style.cssText='position:absolute;left:'+cx+'px;top:'+cy+'px;transform:translate(-50%,-50%);z-index:45;pointer-events:none;';
+  const stackCount=6;
+  for(let i=stackCount-1;i>=0;i--){
+    const sc=document.createElement('canvas');
+    sc.width=26;sc.height=38;
+    sc.style.cssText='position:absolute;width:26px;height:38px;left:'+((-13)+i*0.5)+'px;top:'+(-19-i*0.8)+'px;border-radius:3px;box-shadow:0 2px 6px rgba(0,0,0,0.7);';
+    drawCardFallback(sc.getContext('2d'),null,13,19,26,38,false);
+    deckStack.appendChild(sc);
+  }
+  const deckLabel=document.createElement('div');
+  deckLabel.textContent='DECK';
+  deckLabel.style.cssText='position:absolute;left:50%;top:'+(-19-stackCount*0.8-16)+'px;transform:translateX(-50%);font-family:Orbitron,sans-serif;font-size:7px;color:rgba(0,180,160,0.85);letter-spacing:2px;white-space:nowrap;text-shadow:0 0 8px rgba(0,180,160,0.5);';
+  deckStack.appendChild(deckLabel);
+  deckStack.style.opacity='0';
+  deckStack.style.transition='opacity 0.25s';
+  table.appendChild(deckStack);
+  requestAnimationFrame(()=>{ deckStack.style.opacity='1'; });
+
   function makeCard(x,y){
     const fly=document.createElement('div');
-    fly.style.cssText=`position:absolute;width:22px;height:32px;
-      left:${x}px;top:${y}px;
-      transform:translate(-50%,-50%);z-index:50;pointer-events:none;
-      border-radius:3px;box-shadow:0 4px 12px rgba(0,0,0,0.8);`;
+    fly.style.cssText='position:absolute;width:22px;height:32px;left:'+x+'px;top:'+y+'px;transform:translate(-50%,-50%);z-index:50;pointer-events:none;border-radius:3px;box-shadow:0 4px 12px rgba(0,0,0,0.8);';
     const fc=document.createElement('canvas');
     fc.width=22;fc.height=32;fc.style.cssText='width:22px;height:32px;display:block;border-radius:3px;';
     drawCardFallback(fc.getContext('2d'),null,11,16,22,32,false);
@@ -2875,16 +2926,21 @@ function animateDeckExchange(playerId){
   const dx=cx-playerPos.x, dy=cy-playerPos.y;
   requestAnimationFrame(()=>{
     outCard.style.transition='transform 0.5s cubic-bezier(0.22,1,0.36,1)';
-    outCard.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.7)`;
+    outCard.style.transform='translate(calc(-50% + '+dx+'px), calc(-50% + '+dy+'px)) scale(0.7)';
     setTimeout(()=>{
       outCard.remove();
       // New card flies from deck back to player
       const inCard=makeCard(cx, cy);
-      inCard.style.boxShadow='0 0 0 2px var(--accent), 0 4px 12px rgba(0,0,0,0.8)';
+      inCard.style.boxShadow='0 0 0 2px rgba(0,180,160,0.8), 0 4px 12px rgba(0,0,0,0.8)';
       requestAnimationFrame(()=>{
         inCard.style.transition='transform 0.5s cubic-bezier(0.22,1,0.36,1)';
-        inCard.style.transform=`translate(calc(-50% + ${-dx}px), calc(-50% + ${-dy}px))`;
-        setTimeout(()=>inCard.remove(), 550);
+        inCard.style.transform='translate(calc(-50% + '+(-dx)+'px), calc(-50% + '+(-dy)+'px))';
+        setTimeout(()=>{
+          inCard.remove();
+          deckStack.style.transition='opacity 0.4s';
+          deckStack.style.opacity='0';
+          setTimeout(()=>deckStack.remove(), 450);
+        }, 550);
       });
     },550);
   });
