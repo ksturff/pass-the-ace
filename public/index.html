@@ -2025,7 +2025,6 @@ function buildAvatarPicker() {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if (id === 'screen-home' && typeof Audio !== 'undefined') Audio.attachStartTrigger();
 }
 function showToast(msg,color='#fff',ms=3000){const el=document.getElementById('toast');el.textContent=msg;el.style.color=color;el.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display='none',ms);}
 function showKingToast(){const el=document.getElementById('king-toast');el.style.display='block';clearTimeout(kingToastTimer);kingToastTimer=setTimeout(()=>el.style.display='none',2200);}
@@ -3203,7 +3202,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 
 <!-- ── AUDIO SYSTEM ── -->
-<script>window.PTA_MUSIC_SRC = 'Vibing Over Venus.mp3';</script>
 <script>
 // ─────────────────────────────────────────────
 //  Audio engine — Web Audio API synth + music
@@ -3366,29 +3364,19 @@ const Audio = (() => {
 
     const src = window.PTA_MUSIC_SRC;
     if (src) {
-      const c = getCtx();
-      fetch(src)
-        .then(r => r.arrayBuffer())
-        .then(buf => c.decodeAudioData(buf))
-        .then(decoded => {
-          musicBuffer = decoded;
-          musicGain = c.createGain();
-          musicGain.gain.value = muted ? 0 : 0.35;
-          musicGain.connect(c.destination);
-          musicSource = c.createBufferSource();
-          musicSource.buffer = musicBuffer;
-          musicSource.loop = true;
-          musicSource.connect(musicGain);
-          musicSource.start(0);
-        })
-        .catch(err => console.warn('Music load failed:', err));
+      // Use an <audio> element for looping music files (handles all formats)
+      bgAudio = new window.Audio(src);
+      bgAudio.loop = true;
+      bgAudio.volume = muted ? 0 : 0.35;
+      bgAudio.play().catch(() => {});
     } else {
+      // Fallback: synthesised ambient
       buildAmbiMusic();
     }
   }
 
   function applyMute() {
-    if (musicGain) musicGain.gain.setTargetAtTime(muted ? 0 : 0.35, getCtx().currentTime, 0.3);
+    if (bgAudio) bgAudio.volume = muted ? 0 : 0.35;
     if (ambiGain) ambiGain.gain.setTargetAtTime(muted ? 0 : 0.06, getCtx().currentTime, 0.3);
   }
 
@@ -3410,10 +3398,9 @@ const Audio = (() => {
   // Start music on first real user interaction (browser autoplay policy)
   function attachStartTrigger() {
     const start = () => { startMusic(); };
-    document.addEventListener('click',      start, { once: true });
-    document.addEventListener('mousedown',  start, { once: true });
-    document.addEventListener('touchstart', start, { once: true });
-    document.addEventListener('keydown',    start, { once: true });
+    document.addEventListener('click',     start, { once: true });
+    document.addEventListener('touchstart',start, { once: true });
+    document.addEventListener('keydown',   start, { once: true });
   }
 
   return { sfx, initMuteButton, attachStartTrigger, toggleMute };
