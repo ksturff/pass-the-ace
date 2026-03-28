@@ -3241,8 +3241,8 @@ function renderTournamentList(list){
     tr.addEventListener('click',()=>selectTournament(t));
     tr.querySelector('.btn-register')?.addEventListener('click',e=>{
       e.stopPropagation();
-      const name=document.getElementById('inp-name').value.trim();
-      if(!name){showToast('Enter your name on the home screen first','#ff4d4f');return;}
+      const name=userProfile?.displayName || '';
+      if(!name){showToast('Please complete your profile first','#ff4d4f');return;}
       if(isRegistered){socket.emit('unregisterTournament',{tournamentId:t.id});myTournamentId=null;}
       else{socket.emit('registerTournament',{tournamentId:t.id,name,avatar:myAvatar});myTournamentId=t.id;}
     });
@@ -3288,8 +3288,8 @@ function selectTournament(t){
   else if(isFull){playBtn.textContent='Table Full';playBtn.disabled=true;playBtn.style.background='';}
   else{playBtn.textContent='Register';playBtn.style.background='';playBtn.disabled=false;}
   playBtn.onclick=()=>{
-    const name=document.getElementById('inp-name').value.trim();
-    if(!name){showToast('Enter your name first','#ff4d4f');return;}
+    const name=userProfile?.displayName||'';
+    if(!name){showToast('Please complete your profile first','#ff4d4f');return;}
     if(isRegistered){socket.emit('unregisterTournament',{tournamentId:t.id});myTournamentId=null;}
     else if(!isLive&&!isFull&&!isPast){socket.emit('registerTournament',{tournamentId:t.id,name,avatar:myAvatar});myTournamentId=t.id;}
   };
@@ -3321,8 +3321,8 @@ function renderLobbyRooms(rooms){
     const row=document.createElement('div');row.className='room-card';
     row.innerHTML=`<div class="room-icon">🃏</div><div class="room-info"><div class="room-code-text">${r.code}</div><div class="room-meta">${r.playerCount}/${r.maxPlayers} players · Waiting</div></div><button class="btn-join-room" data-code="${r.code}">Join</button>`;
     row.querySelector('.btn-join-room').addEventListener('click',()=>{
-      const name=document.getElementById('inp-name-lobby').value.trim()||document.getElementById('inp-name').value.trim();
-      if(!name){showToast('Enter your name first','#ff4d4f');return;}
+      const name=userProfile?.displayName||'';
+      if(!name){showToast('Please complete your profile first','#ff4d4f');return;}
       socket.emit('joinRoom',{name,code:r.code,avatar:myAvatar});
     });
     list.appendChild(row);
@@ -4113,17 +4113,17 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   // Room creation
   document.getElementById('btn-create-room').addEventListener('click',()=>{
-    const name=document.getElementById('inp-name-lobby').value.trim()||document.getElementById('inp-name').value.trim();
-    if(!name){showToast('Enter your name first','#ff4d4f');return;}
+    const name=userProfile?.displayName||'';
+    if(!name){showToast('Please complete your profile first','#ff4d4f');return;}
     checkChipsAndProceed(500, async ()=>{
       await updateChipBalance(-500);
       socket.emit('createRoom',{name,seats:selectedSeatsLobby,avatar:myAvatar});
     });
   });
   document.getElementById('btn-join-code').addEventListener('click',()=>{
-    const name=document.getElementById('inp-name-lobby').value.trim()||document.getElementById('inp-name').value.trim();
+    const name=userProfile?.displayName||'';
     const code=document.getElementById('inp-room-code').value.trim().toUpperCase();
-    if(!name){showToast('Enter your name','#ff4d4f');return;}
+    if(!name){showToast('Please complete your profile first','#ff4d4f');return;}
     if(!code){showToast('Enter a room code','#ff4d4f');return;}
     checkChipsAndProceed(500, async ()=>{
       await updateChipBalance(-500);
