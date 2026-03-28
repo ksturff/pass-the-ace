@@ -3858,7 +3858,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('tab-tables').style.display='block';
   });
   document.getElementById('btn-quick-play').addEventListener('click',()=>{
-    showScreen('screen-sas-lobby');
+    const name = userProfile?.displayName || 'Player';
+    myAvatar = userProfile?.avatar || myAvatar;
+    startSolo(name, 10);
   });
 
   // ── SAS back button
