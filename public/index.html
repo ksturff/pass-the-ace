@@ -3391,6 +3391,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('btn-settings').addEventListener('click',()=>{
     showScreen('screen-settings');
     Audio.initSettingsScreen();
+    window.initCardBackPicker && window.initCardBackPicker();
   });
   document.getElementById('btn-back-settings').addEventListener('click',()=>showScreen('screen-home'));
   document.getElementById('btn-back-settings').addEventListener('touchend',(e)=>{e.preventDefault();showScreen('screen-home');});
@@ -3853,36 +3854,39 @@ const Audio = (() => {
     const musicSlider = document.getElementById('music-volume');
     const sfxLabel    = document.getElementById('sfx-vol-label');
     const musicLabel  = document.getElementById('music-vol-label');
-    if (!sfxToggle) return;
-
     // Set initial states
-    sfxToggle.checked   = !sfxMuted;
-    musicToggle.checked = !musicMuted;
-    const sfxPct   = Math.round(sfxVol * 100);
-    const musicPct = Math.round(musicVol * 100);
-    sfxSlider.value   = sfxPct;
-    musicSlider.value = musicPct;
-    sfxLabel.textContent   = sfxPct + '%';
-    musicLabel.textContent = musicPct + '%';
-    sfxSlider.style.setProperty('--val', sfxPct + '%');
-    musicSlider.style.setProperty('--val', musicPct + '%');
-
-    sfxToggle.onchange = () => toggleSfx(sfxToggle.checked);
-    musicToggle.onchange = () => toggleMusic(musicToggle.checked);
-
-    sfxSlider.oninput = () => {
-      const v = sfxSlider.value;
-      sfxLabel.textContent = v + '%';
-      sfxSlider.style.setProperty('--val', v + '%');
-      setSfxVolume(v / 100);
-    };
-    musicSlider.oninput = () => {
-      const v = musicSlider.value;
-      musicLabel.textContent = v + '%';
-      musicSlider.style.setProperty('--val', v + '%');
-      setMusicVolume(v / 100);
-    };
-    initCardBackPicker();
+    if (sfxToggle) {
+      sfxToggle.checked = !sfxMuted;
+      sfxToggle.onchange = () => toggleSfx(sfxToggle.checked);
+    }
+    if (musicToggle) {
+      musicToggle.checked = !musicMuted;
+      musicToggle.onchange = () => toggleMusic(musicToggle.checked);
+    }
+    if (sfxSlider && sfxLabel) {
+      const sfxPct = Math.round(sfxVol * 100);
+      sfxSlider.value = sfxPct;
+      sfxLabel.textContent = sfxPct + '%';
+      sfxSlider.style.setProperty('--val', sfxPct + '%');
+      sfxSlider.oninput = () => {
+        const v = sfxSlider.value;
+        sfxLabel.textContent = v + '%';
+        sfxSlider.style.setProperty('--val', v + '%');
+        setSfxVolume(v / 100);
+      };
+    }
+    if (musicSlider && musicLabel) {
+      const musicPct = Math.round(musicVol * 100);
+      musicSlider.value = musicPct;
+      musicLabel.textContent = musicPct + '%';
+      musicSlider.style.setProperty('--val', musicPct + '%');
+      musicSlider.oninput = () => {
+        const v = musicSlider.value;
+        musicLabel.textContent = v + '%';
+        musicSlider.style.setProperty('--val', v + '%');
+        setMusicVolume(v / 100);
+      };
+    }
   }
 
   // Start music on first real user interaction (browser autoplay policy)
