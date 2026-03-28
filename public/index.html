@@ -3230,21 +3230,41 @@ function renderTournamentList(list){
     tr.className=[isLive?'row-live':'',isPast?'row-past':'',isRegistered?'row-registered':'',isSelected?'row-selected':''].filter(Boolean).join(' ');
     tr.dataset.id=t.id;
     tr.id=`trow-${t.id}`;
+    // SAS: compute buy-in label and prize pool
+    const sasPot = t.isSas ? t.buyIn * 10 : 0;
+    const sasPrize = t.isSas ? Math.floor(sasPot * 0.95) : 0;
+    const tierColors = {bronze:'#cd7f32',silver:'#b0b0b0',gold:'#ffd700',platinum:'#cce8ff',diamond:'#88ccff',elite:'#dd88ff'};
+    const tierColor = t.isSas ? (tierColors[t.tier] || 'var(--accent)') : '';
+    const buyInCell = t.isSas
+      ? `<span style="color:${tierColor};font-weight:700;">${t.buyIn.toLocaleString()} chips</span>`
+      : `FREE`;
+    const nameCell = t.isSas
+      ? `<span style="color:${tierColor};font-weight:700;">${t.label} Sit &amp; Stay</span>`
+      : `Sit &amp; Stay`;
+    const prizeCell = t.isSas
+      ? `<span style="color:var(--gold);">${sasPrize.toLocaleString()} chips</span>`
+      : `—`;
+
     tr.innerHTML=`
       <td class="col-start">${timeStr}<span class="col-date"> ${dateStr}</span></td>
-      <td class="col-buyin">FREE</td>
-      <td class="col-name">Sit &amp; Stay</td>
-      <td class="col-prize">—</td>
+      <td class="col-buyin">${buyInCell}</td>
+      <td class="col-name">${nameCell}</td>
+      <td class="col-prize">${prizeCell}</td>
       <td class="col-state">${stateBadge}</td>
-      <td class="col-registered">${t.playerCount} / ${t.maxPlayers}</td>
+      <td class="col-registered">${t.playerCount} / 10</td>
       <td class="col-action">${(!isPast&&!isLive&&!isFull)?`<button class="btn-register${isRegistered?' unregister':''}" data-id="${t.id}">${isRegistered?'Leave':'Register'}</button>`:''}</td>`;
     tr.addEventListener('click',()=>selectTournament(t));
     tr.querySelector('.btn-register')?.addEventListener('click',e=>{
       e.stopPropagation();
       const name=userProfile?.displayName || '';
       if(!name){showToast('Please complete your profile first','#ff4d4f');return;}
-      if(isRegistered){socket.emit('unregisterTournament',{tournamentId:t.id});myTournamentId=null;}
-      else{socket.emit('registerTournament',{tournamentId:t.id,name,avatar:myAvatar});myTournamentId=t.id;}
+      if(t.isSas){
+        if(isRegistered){ socket.emit('leaveSasQueue'); myTournamentId=null; }
+        else { joinSasQueue(t.id, t.buyIn, t.tier, t.label); myTournamentId=t.id; }
+      } else {
+        if(isRegistered){socket.emit('unregisterTournament',{tournamentId:t.id});myTournamentId=null;}
+        else{socket.emit('registerTournament',{tournamentId:t.id,name,avatar:myAvatar});myTournamentId=t.id;}
+      }
     });
     tbody.appendChild(tr);
     if(!autoScrolled&&(isLive||isUpcoming)){
@@ -3273,11 +3293,14 @@ function selectTournament(t){
   const panel=document.getElementById('t-detail-panel');
   panel.classList.add('visible');
   const d=new Date(t.startTime);
-  document.getElementById('t-detail-name').textContent='Sit & Stay Tournament';
+  const sasPrizePool = t.isSas ? Math.floor(t.buyIn * 10 * 0.95).toLocaleString() + ' chips' : 'Glory';
+  const sasBuyIn = t.isSas ? t.buyIn.toLocaleString() + ' chips' : 'FREE';
+  const sasName = t.isSas ? (t.label + ' Sit & Stay') : 'Sit & Stay Tournament';
+  document.getElementById('t-detail-name').textContent = sasName;
   document.getElementById('t-detail-start').textContent=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' · '+d.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});
-  document.getElementById('t-detail-buyin').textContent='FREE';
-  document.getElementById('t-detail-prize').textContent='Glory';
-  document.getElementById('t-detail-players').textContent=`${t.playerCount} / ${t.maxPlayers}`;
+  document.getElementById('t-detail-buyin').textContent = sasBuyIn;
+  document.getElementById('t-detail-prize').textContent = sasPrizePool;
+  document.getElementById('t-detail-players').textContent=`${t.playerCount} / 10`;
   const isRegistered=myTournamentId===t.id;
   const isFull=t.playerCount>=t.maxPlayers;
   const isLive=t.status==='inProgress';

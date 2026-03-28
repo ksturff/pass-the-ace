@@ -130,10 +130,12 @@ function ensureTournamentsExist() {
 
 function getPublicTournaments() {
   ensureTournamentsExist();
+  ensureSasQueues();
   const now = Date.now();
-  return Array.from(tournaments.values())
-    .filter(t => t.startTime >= now - 60 * 60 * 1000)
-    .sort((a, b) => a.startTime - b.startTime)
+
+  // Non-micro tournaments (daily, saturday)
+  const regularTournaments = Array.from(tournaments.values())
+    .filter(t => t.startTime >= now - 60 * 60 * 1000 && t.type !== 'micro' && t.type !== 'sas')
     .map(t => ({
       id: t.id,
       startTime: t.startTime,
@@ -141,8 +143,30 @@ function getPublicTournaments() {
       playerCount: t.players.length,
       maxPlayers: maxPlayersForType(t.type),
       status: t.status,
-      winners: t.winners
+      winners: t.winners,
+      isSas: false,
     }));
+
+  // SAS queues — show upcoming + recently started
+  const sasEntries = Array.from(sasQueues.values())
+    .filter(q => q.startTime >= now - 10 * 60 * 1000)
+    .map(q => ({
+      id: q.id,
+      startTime: q.startTime,
+      type: 'sas',
+      tier: q.tier,
+      label: q.label,
+      buyIn: q.buyIn,
+      botFill: q.botFill,
+      playerCount: q.players.length,
+      maxPlayers: 10,
+      status: q.status,
+      winners: [],
+      isSas: true,
+    }));
+
+  return [...regularTournaments, ...sasEntries]
+    .sort((a, b) => a.startTime - b.startTime);
 }
 
 // Check every 10s if any tournament should start
