@@ -51,6 +51,7 @@
     #screen-profile-setup.active,
     #screen-leaderboard.active,
     #screen-howto.active,
+    #screen-settings.active,
     #screen-home.active { display:block; overflow-y:scroll; -webkit-overflow-scrolling:touch; }
     /* Lobby is flex (has sticky topbar) */
     #screen-lobby.active { display:flex; flex-direction:column; overflow:hidden; }
@@ -1228,6 +1229,14 @@
         </div>
         <div class="mode-arrow">›</div>
       </button>
+      <button class="mode-card" id="btn-settings">
+        <div class="mode-icon">⚙️</div>
+        <div class="mode-info">
+          <div class="mode-name">SETTINGS</div>
+          <div class="mode-desc">Sound effects, music & volume</div>
+        </div>
+        <div class="mode-arrow">›</div>
+      </button>
     </div>
   </div>
 </div>
@@ -1389,6 +1398,69 @@
           <span class="cv-item">Q = 12</span>
           <span class="cv-item">K = 13 (highest + blocks pass)</span>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── SETTINGS ── -->
+<div id="screen-settings" class="screen">
+  <div class="settings-wrap">
+    <div class="howto-header">
+      <button class="lobby-back" id="btn-back-settings" onclick="showScreen('screen-home')">← BACK</button>
+      <div class="settings-title">SETTINGS</div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">Audio</div>
+
+      <!-- Sound Effects toggle -->
+      <div class="settings-row">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🔔</div>
+          <div class="settings-row-info">
+            <div class="settings-row-name">Sound Effects</div>
+            <div class="settings-row-desc">Card deals, clicks, win &amp; loss sounds</div>
+          </div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-sfx" checked>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+
+      <!-- Music toggle -->
+      <div class="settings-row">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🎵</div>
+          <div class="settings-row-info">
+            <div class="settings-row-name">Music</div>
+            <div class="settings-row-desc">Background music while you play</div>
+          </div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-music" checked>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+
+      <!-- SFX Volume -->
+      <div class="settings-volume-row">
+        <div class="settings-volume-label">
+          <span class="settings-volume-name">🔔 Effects Volume</span>
+          <span class="settings-volume-val" id="sfx-vol-label">70%</span>
+        </div>
+        <input type="range" class="vol-slider" id="sfx-volume" min="0" max="100" value="70">
+      </div>
+
+      <!-- Music Volume -->
+      <div class="settings-volume-row">
+        <div class="settings-volume-label">
+          <span class="settings-volume-name">🎵 Music Volume</span>
+          <span class="settings-volume-val" id="music-vol-label">70%</span>
+        </div>
+        <input type="range" class="vol-slider" id="music-volume" min="0" max="100" value="70">
       </div>
     </div>
   </div>
@@ -3204,6 +3276,12 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   document.getElementById('btn-leaderboard').addEventListener('click',()=>openLeaderboard());
   document.getElementById('btn-how-to-play').addEventListener('click',()=>showScreen('screen-howto'));
+  document.getElementById('btn-settings').addEventListener('click',()=>{
+    showScreen('screen-settings');
+    Audio.initSettingsScreen();
+  });
+  document.getElementById('btn-back-settings').addEventListener('click',()=>showScreen('screen-home'));
+  document.getElementById('btn-back-settings').addEventListener('touchend',(e)=>{e.preventDefault();showScreen('screen-home');});
   document.getElementById('btn-back-howto').addEventListener('click',()=>showScreen('screen-home'));
   document.getElementById('btn-back-howto').addEventListener('touchend',(e)=>{e.preventDefault();showScreen('screen-home');});
   document.getElementById('btn-lobby-back').addEventListener('click',()=>showScreen('screen-home'));
@@ -3300,7 +3378,14 @@ document.addEventListener('DOMContentLoaded',()=>{
 // ─────────────────────────────────────────────
 const Audio = (() => {
   let ctx = null;
-  let muted = localStorage.getItem('pta_muted') === 'true';
+  // Separate sfx / music state — loaded from localStorage
+  let sfxMuted   = localStorage.getItem('pta_sfx_muted')   === 'true';
+  let musicMuted = localStorage.getItem('pta_music_muted') === 'true';
+  let sfxVol     = parseFloat(localStorage.getItem('pta_sfx_vol')   ?? '0.7');
+  let musicVol   = parseFloat(localStorage.getItem('pta_music_vol') ?? '0.7');
+  // Legacy: if old single mute flag was set, honour it for both
+  if (localStorage.getItem('pta_muted') === 'true') { sfxMuted = true; musicMuted = true; }
+
   let musicGain = null;
   let musicSource = null;
   let musicBuffer = null;
@@ -3413,7 +3498,7 @@ const Audio = (() => {
   // ── Sound effects ──
   const sfx = {
     click() {
-      if (muted) return;
+      if (sfxMuted) return;
       const c = getCtx(), t = c.currentTime;
       // Crisp wooden tap
       richOsc(1100, 'sine', t, 0.002, 0.04, 0.0, 0.06, 0.10, null, 2);
@@ -3421,7 +3506,7 @@ const Audio = (() => {
     },
 
     deal() {
-      if (muted) return;
+      if (sfxMuted) return;
       const c = getCtx(), t = c.currentTime;
       // Paper whoosh — broadband noise swept high→low, with a subtle thud
       richNoise(t,        0.18, 0.28, 800,  5000);
@@ -3437,7 +3522,7 @@ const Audio = (() => {
     },
 
     pass() {
-      if (muted) return;
+      if (sfxMuted) return;
       const c = getCtx(), t = c.currentTime;
       // Quick sharp swipe — fast high noise + descending pitch
       richNoise(t,        0.10, 0.32, 1800, 6000);
@@ -3452,7 +3537,7 @@ const Audio = (() => {
     },
 
     yourTurn() {
-      if (muted) return;
+      if (sfxMuted) return;
       const c = getCtx(), t = c.currentTime;
       // Three bell-like tones, rising, with warm harmonics
       const notes = [523.25, 659.25, 783.99]; // C5 E5 G5
@@ -3470,7 +3555,7 @@ const Audio = (() => {
     },
 
     chipLost() {
-      if (muted) return;
+      if (sfxMuted) return;
       const c = getCtx(), t = c.currentTime;
       // Ceramic chip clink — short, pitched, with rattle
       richNoise(t, 0.04, 0.22, 2000, 7000);  // initial clink transient
@@ -3483,7 +3568,7 @@ const Audio = (() => {
     },
 
     eliminated() {
-      if (muted) return;
+      if (sfxMuted) return;
       const c = getCtx(), t = c.currentTime;
       // Heavy descending "game show out" — low thud + falling tones + low rumble
       richNoise(t, 0.08, 0.35, 60, 400);   // deep thud
@@ -3504,7 +3589,7 @@ const Audio = (() => {
     },
 
     win() {
-      if (muted) return;
+      if (sfxMuted) return;
       const c = getCtx(), t = c.currentTime;
       // Triumphant fanfare — ascending chord arpeggio + shimmer
       const fanfare = [523.25, 659.25, 783.99, 1046.5, 1318.5];
@@ -3525,7 +3610,7 @@ const Audio = (() => {
     },
 
     lose() {
-      if (muted) return;
+      if (sfxMuted) return;
       const c = getCtx(), t = c.currentTime;
       // Wah-wah descending — classic sad trombone feel but subtle
       const notes = [392, 349.23, 329.63, 293.66];
@@ -3548,7 +3633,7 @@ const Audio = (() => {
     if (ambiLoop) return;
     const c = getCtx();
     ambiGain = c.createGain();
-    ambiGain.gain.value = muted ? 0 : 0.06;
+    ambiGain.gain.value = musicMuted ? 0 : 0.06 * musicVol;
     ambiGain.connect(c.destination);
 
     // Low drone chord: root + fifth
@@ -3601,7 +3686,7 @@ const Audio = (() => {
         .then(decoded => {
           musicBuffer = decoded;
           musicGain = c.createGain();
-          musicGain.gain.value = muted ? 0 : 0.35;
+          musicGain.gain.value = musicMuted ? 0 : 0.35 * musicVol;
           musicGain.connect(c.destination);
           musicSource = c.createBufferSource();
           musicSource.buffer = musicBuffer;
@@ -3613,7 +3698,7 @@ const Audio = (() => {
           // Fallback: plain <audio> element
           const el = document.createElement('audio');
           el.src = src; el.loop = true;
-          el.volume = muted ? 0 : 0.35;
+          el.volume = musicMuted ? 0 : 0.35 * musicVol;
           el.play().catch(() => {});
           // store so applyMute can reach it
           window._ptaBgAudioEl = el;
@@ -3623,25 +3708,84 @@ const Audio = (() => {
     }
   }
 
-  function applyMute() {
-    if (musicGain) musicGain.gain.setTargetAtTime(muted ? 0 : 0.35, getCtx().currentTime, 0.3);
-    if (ambiGain) ambiGain.gain.setTargetAtTime(muted ? 0 : 0.06, getCtx().currentTime, 0.3);
-    if (window._ptaBgAudioEl) window._ptaBgAudioEl.volume = muted ? 0 : 0.35;
+  function applyMusic() {
+    const vol = musicMuted ? 0 : musicVol;
+    if (musicGain) musicGain.gain.setTargetAtTime(0.35 * vol, getCtx().currentTime, 0.3);
+    if (ambiGain)  ambiGain.gain.setTargetAtTime(0.06 * vol, getCtx().currentTime, 0.3);
+    if (window._ptaBgAudioEl) window._ptaBgAudioEl.volume = 0.35 * vol;
+  }
+  function applyMute() { applyMusic(); } // legacy shim
+
+  function toggleSfx(on) {
+    sfxMuted = !on;
+    localStorage.setItem('pta_sfx_muted', sfxMuted);
+  }
+  function toggleMusic(on) {
+    musicMuted = !on;
+    localStorage.setItem('pta_music_muted', musicMuted);
+    applyMusic();
+  }
+  function setSfxVolume(v) {
+    sfxVol = v;
+    localStorage.setItem('pta_sfx_vol', v);
+  }
+  function setMusicVolume(v) {
+    musicVol = v;
+    localStorage.setItem('pta_music_vol', v);
+    applyMusic();
   }
 
+  // Legacy single-mute button (in-game) — opens settings screen
   function toggleMute() {
-    muted = !muted;
-    localStorage.setItem('pta_muted', muted);
-    applyMute();
-    const btn = document.getElementById('btn-mute');
-    if (btn) btn.textContent = muted ? '🔇' : '🔊';
+    showScreen('screen-settings');
+    if (typeof initSettingsScreen === 'function') initSettingsScreen();
   }
 
   function initMuteButton() {
     const btn = document.getElementById('btn-mute');
     if (!btn) return;
-    btn.textContent = muted ? '🔇' : '🔊';
+    // Show settings cog icon instead of mute emoji
+    btn.textContent = '⚙️';
+    btn.title = 'Settings';
     btn.addEventListener('click', () => { toggleMute(); });
+  }
+
+  function initSettingsScreen() {
+    const sfxToggle   = document.getElementById('toggle-sfx');
+    const musicToggle = document.getElementById('toggle-music');
+    const sfxSlider   = document.getElementById('sfx-volume');
+    const musicSlider = document.getElementById('music-volume');
+    const sfxLabel    = document.getElementById('sfx-vol-label');
+    const musicLabel  = document.getElementById('music-vol-label');
+    if (!sfxToggle) return;
+
+    // Set initial states
+    sfxToggle.checked   = !sfxMuted;
+    musicToggle.checked = !musicMuted;
+    const sfxPct   = Math.round(sfxVol * 100);
+    const musicPct = Math.round(musicVol * 100);
+    sfxSlider.value   = sfxPct;
+    musicSlider.value = musicPct;
+    sfxLabel.textContent   = sfxPct + '%';
+    musicLabel.textContent = musicPct + '%';
+    sfxSlider.style.setProperty('--val', sfxPct + '%');
+    musicSlider.style.setProperty('--val', musicPct + '%');
+
+    sfxToggle.onchange = () => toggleSfx(sfxToggle.checked);
+    musicToggle.onchange = () => toggleMusic(musicToggle.checked);
+
+    sfxSlider.oninput = () => {
+      const v = sfxSlider.value;
+      sfxLabel.textContent = v + '%';
+      sfxSlider.style.setProperty('--val', v + '%');
+      setSfxVolume(v / 100);
+    };
+    musicSlider.oninput = () => {
+      const v = musicSlider.value;
+      musicLabel.textContent = v + '%';
+      musicSlider.style.setProperty('--val', v + '%');
+      setMusicVolume(v / 100);
+    };
   }
 
   // Start music on first real user interaction (browser autoplay policy)
@@ -3653,7 +3797,8 @@ const Audio = (() => {
     document.addEventListener('keydown',    start, { once: true });
   }
 
-  return { sfx, initMuteButton, attachStartTrigger, toggleMute };
+  window.initSettingsScreen = initSettingsScreen;
+  return { sfx, initMuteButton, attachStartTrigger, toggleMute, initSettingsScreen };
 })();
 
 // ── Hook: button clicks ──
