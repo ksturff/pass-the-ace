@@ -846,6 +846,81 @@
     }
     .ss-seat.empty { opacity:0.3; }
 
+    /* ── SPLASH SCREEN ── */
+    #splash {
+      position:fixed; inset:0; z-index:99999;
+      background:#060400;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:0;
+      transition:opacity 0.7s ease, visibility 0.7s ease;
+    }
+    #splash.hidden { opacity:0; visibility:hidden; pointer-events:none; }
+
+    .splash-spade {
+      font-size:72px;
+      line-height:1;
+      margin-bottom:28px;
+      opacity:0;
+      transform:scale(0.7);
+      animation:splash-spade-in 0.8s cubic-bezier(0.22,1,0.36,1) 0.2s forwards;
+      filter:drop-shadow(0 0 32px rgba(200,162,60,0.35));
+    }
+    @keyframes splash-spade-in {
+      to { opacity:1; transform:scale(1); }
+    }
+
+    .splash-title {
+      font-family:'Playfair Display',serif;
+      font-size:clamp(28px,7vw,40px);
+      letter-spacing:6px;
+      background:linear-gradient(135deg,#8a6820 0%,#c8a23c 40%,#f0d878 60%,#c8a23c 80%,#8a6820 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      opacity:0;
+      animation:splash-fade-up 0.7s ease 0.7s forwards;
+      margin-bottom:10px;
+    }
+    .splash-sub {
+      font-family:'Orbitron',sans-serif;
+      font-size:10px; letter-spacing:5px;
+      color:rgba(200,162,60,0.45);
+      text-transform:uppercase;
+      opacity:0;
+      animation:splash-fade-up 0.6s ease 1.0s forwards;
+      margin-bottom:52px;
+    }
+    @keyframes splash-fade-up {
+      from { opacity:0; transform:translateY(8px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    .splash-bar-wrap {
+      width:clamp(120px,36vw,180px);
+      height:2px;
+      background:rgba(200,162,60,0.1);
+      border-radius:2px;
+      overflow:hidden;
+      opacity:0;
+      animation:splash-fade-up 0.4s ease 1.2s forwards;
+    }
+    .splash-bar {
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg,var(--accent2),var(--accent));
+      border-radius:2px;
+      transition:width 0.1s linear;
+    }
+    .splash-studio {
+      position:absolute;
+      bottom:32px;
+      font-family:sans-serif;
+      font-size:10px;
+      letter-spacing:2px;
+      color:rgba(200,162,60,0.2);
+      opacity:0;
+      animation:splash-fade-up 0.5s ease 1.3s forwards;
+    }
+
     /* ── LEGAL CONSENT MODAL ── */
     #legal-consent-overlay {
       position:fixed; inset:0; z-index:99999;
@@ -1066,6 +1141,17 @@
     <button class="btn-legal-close" onclick="closeLegal()">✕ Close</button>
   </div>
   <div class="legal-viewer-content" id="legal-viewer-content"></div>
+</div>
+
+<!-- ── SPLASH SCREEN ── -->
+<div id="splash">
+  <div class="splash-spade">♠</div>
+  <div class="splash-title">PASS THE ACE</div>
+  <div class="splash-sub">by Pop the Crowd</div>
+  <div class="splash-bar-wrap">
+    <div class="splash-bar" id="splash-bar"></div>
+  </div>
+  <div class="splash-studio">POP THE CROWD GAMES</div>
 </div>
 
 <!-- ── ROTATE PROMPT ── -->
@@ -1844,6 +1930,31 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+// ── Splash screen ──
+(function(){
+  const bar = document.getElementById('splash-bar');
+  const splash = document.getElementById('splash');
+  if(!bar || !splash) return;
+
+  // Animate bar quickly to ~85% then hold until auth resolves
+  let pct = 0;
+  const fast = setInterval(()=>{
+    pct = Math.min(pct + 3, 85);
+    bar.style.width = pct + '%';
+    if(pct >= 85) clearInterval(fast);
+  }, 30);
+
+  window._splashDone = function(){
+    clearInterval(fast);
+    bar.style.transition = 'width 0.3s ease';
+    bar.style.width = '100%';
+    setTimeout(()=>{ splash.classList.add('hidden'); }, 350);
+  };
+
+  // Safety fallback — dismiss after 4s no matter what
+  setTimeout(()=>{ if(window._splashDone){ window._splashDone(); window._splashDone=null; } }, 4000);
+})();
+
 // ── Firebase init ──
 const firebaseConfig = {
   apiKey: "AIzaSyD6Jh5tPgW6yfbVxgb4LZKEaVy6ZFK-X7M",
@@ -1973,6 +2084,8 @@ auth.onAuthStateChanged(async user => {
     document.getElementById('top-nav').classList.remove('visible');
     showScreen('screen-login');
   }
+  // Dismiss splash once auth resolves
+  if (window._splashDone) { window._splashDone(); window._splashDone = null; }
 });
 
 function showAuthError(elId, msg) {
@@ -4009,35 +4122,21 @@ const Audio = (() => {
     chipLost() {
       if (sfxMuted) return;
       const c = getCtx(), t = c.currentTime;
-      // Ceramic chip clink — short, pitched, with rattle
-      richNoise(t, 0.04, 0.22, 2000, 7000);  // initial clink transient
-      // Three descending tones — like coins dropping
-      [[440, 0.0], [349.23, 0.09], [293.66, 0.19]].forEach(([freq, dt]) => {
-        richOsc(freq, 'sine', t + dt, 0.004, 0.06, 0.1, 0.28, 0.18, null, 5);
-        richOsc(freq * 1.5, 'sine', t + dt, 0.004, 0.04, 0.0, 0.14, 0.06, null, 2);
-      });
-      richNoise(t + 0.08, 0.14, 0.08, 800, 3000); // settle rattle
+      // Soft low tone — like a quiet hollow knock, no coin drama
+      richOsc(180, 'sine', t, 0.004, 0.08, 0.0, 0.4, 0.14, null, 3);
+      richNoise(t, 0.025, 0.08, 300, 1400);
     },
 
     eliminated() {
       if (sfxMuted) return;
       const c = getCtx(), t = c.currentTime;
-      // Heavy descending "game show out" — low thud + falling tones + low rumble
-      richNoise(t, 0.08, 0.35, 60, 400);   // deep thud
-      richNoise(t, 0.06, 0.20, 400, 1200); // mid crack
-      // Descending tritone — ominous
-      [[220, 0.00], [185, 0.18], [155, 0.36], [130, 0.55]].forEach(([freq, dt]) => {
-        richOsc(freq, 'sawtooth', t + dt, 0.01, 0.12, 0.5, 0.30, 0.18, null, 6);
-        richOsc(freq / 2, 'sine', t + dt, 0.01, 0.10, 0.3, 0.30, 0.12, null, 2);
-      });
-      // Subsonic rumble
-      const sub = c.createOscillator(); sub.type = 'sine';
-      sub.frequency.setValueAtTime(55, t);
-      sub.frequency.exponentialRampToValueAtTime(28, t + 0.8);
-      const sg = c.createGain();
-      adsr(sg, t, 0.01, 0.2, 0.3, 0.5, 0.22);
-      sub.connect(sg); out(sg);
-      sub.start(t); sub.stop(t + 1.1);
+      // Single deep piano-like thud — one low struck note, short attack, long decay tail
+      // Fundamental
+      richOsc(82.4, 'sine', t, 0.005, 0.18, 0.0, 0.9, 0.28, null, 2);
+      // Slightly detuned harmonic for weight
+      richOsc(110,  'sine', t, 0.005, 0.10, 0.0, 0.6, 0.12, null, 3);
+      // Soft transient knock — like a muted string hit
+      richNoise(t, 0.03, 0.18, 200, 900);
     },
 
     win() {
