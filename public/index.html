@@ -1073,8 +1073,8 @@
 <div id="screen-home" class="screen">
   <div class="home-wrap">
     <div class="home-logo">
-      <div class="logo-icon">
-        <svg width="72" height="72" viewBox="0 0 72 72">
+      <div class="logo-icon" style="width:96px;height:96px;border-radius:24px;background:linear-gradient(145deg,#1a1200,#0d0900);border:1.5px solid rgba(200,162,60,0.35);box-shadow:0 0 40px rgba(200,162,60,0.18),0 0 0 1px rgba(200,162,60,0.08),inset 0 1px 0 rgba(255,255,255,0.06);">
+        <svg width="96" height="96" viewBox="0 0 96 96">
           <defs>
             <linearGradient id="logoGold" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stop-color="#b8860b"/>
@@ -1082,42 +1082,52 @@
             </linearGradient>
             <linearGradient id="logoCardFace" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stop-color="#faf6ee"/>
-              <stop offset="100%" stop-color="#e8dfc8"/>
+              <stop offset="100%" stop-color="#ddd4b8"/>
             </linearGradient>
-            <radialGradient id="logoGlow" cx="50%" cy="45%" r="55%">
-              <stop offset="0%" stop-color="rgba(200,162,60,0.18)"/>
+            <radialGradient id="logoGlow" cx="50%" cy="45%" r="60%">
+              <stop offset="0%" stop-color="rgba(200,162,60,0.12)"/>
               <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
             </radialGradient>
-            <filter id="logoShadow">
-              <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.7)"/>
+            <filter id="logoShadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="rgba(0,0,0,0.85)"/>
+            </filter>
+            <filter id="logoGoldGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="2" result="blur"/>
+              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
             </filter>
           </defs>
-          <!-- Glow background -->
-          <rect width="72" height="72" fill="url(#logoGlow)"/>
-          <!-- Back card (left, rotated) -->
-          <g transform="rotate(-18 36 44)" filter="url(#logoShadow)">
-            <rect x="14" y="18" width="28" height="38" rx="3" fill="#0e0c06" stroke="rgba(200,162,60,0.5)" stroke-width="1"/>
-            <rect x="16" y="20" width="24" height="34" rx="2" fill="none" stroke="rgba(200,162,60,0.25)" stroke-width="0.7"/>
-            <text x="28" y="41" text-anchor="middle" font-size="14" font-family="serif" fill="rgba(200,162,60,0.35)">♠</text>
+          <rect width="96" height="96" fill="url(#logoGlow)"/>
+
+          <!-- Left fanned card (back) -->
+          <g transform="rotate(-22 48 60)" filter="url(#logoShadow)">
+            <rect x="18" y="22" width="32" height="46" rx="4" fill="#100d06" stroke="rgba(200,162,60,0.45)" stroke-width="1.2"/>
+            <rect x="21" y="25" width="26" height="40" rx="3" fill="none" stroke="rgba(200,162,60,0.18)" stroke-width="0.8"/>
+            <text x="34" y="49" text-anchor="middle" font-size="16" font-family="serif" fill="rgba(200,162,60,0.3)">♠</text>
           </g>
-          <!-- Back card (right, rotated) -->
-          <g transform="rotate(18 36 44)" filter="url(#logoShadow)">
-            <rect x="30" y="18" width="28" height="38" rx="3" fill="#0e0c06" stroke="rgba(200,162,60,0.5)" stroke-width="1"/>
-            <rect x="32" y="20" width="24" height="34" rx="2" fill="none" stroke="rgba(200,162,60,0.25)" stroke-width="0.7"/>
-            <text x="44" y="41" text-anchor="middle" font-size="14" font-family="serif" fill="rgba(200,162,60,0.35)">♠</text>
+          <!-- Right fanned card (back) -->
+          <g transform="rotate(22 48 60)" filter="url(#logoShadow)">
+            <rect x="46" y="22" width="32" height="46" rx="4" fill="#100d06" stroke="rgba(200,162,60,0.45)" stroke-width="1.2"/>
+            <rect x="49" y="25" width="26" height="40" rx="3" fill="none" stroke="rgba(200,162,60,0.18)" stroke-width="0.8"/>
+            <text x="62" y="49" text-anchor="middle" font-size="16" font-family="serif" fill="rgba(200,162,60,0.3)">♠</text>
           </g>
-          <!-- Front ace card (center) -->
+
+          <!-- Centre ace card (face up) -->
           <g filter="url(#logoShadow)">
-            <rect x="22" y="14" width="28" height="40" rx="3" fill="url(#logoCardFace)" stroke="rgba(0,0,0,0.15)" stroke-width="0.5"/>
-            <text x="25.5" y="22" font-size="7" font-family="serif" font-weight="bold" fill="#111">A</text>
-            <text x="25.5" y="29" font-size="6" font-family="serif" fill="#111">♠</text>
-            <text x="36" y="40" text-anchor="middle" font-size="20" font-family="serif" fill="#111">♠</text>
-            <text x="46.5" y="51" font-size="7" font-family="serif" font-weight="bold" fill="#111" text-anchor="end">A</text>
-            <text x="46.5" y="57" font-size="6" font-family="serif" fill="#111" text-anchor="end">♠</text>
+            <rect x="30" y="16" width="36" height="52" rx="4" fill="url(#logoCardFace)" stroke="rgba(0,0,0,0.2)" stroke-width="0.8"/>
+            <!-- Corner A + suit top-left -->
+            <text x="34" y="26" font-size="9" font-family="Georgia,serif" font-weight="bold" fill="#111">A</text>
+            <text x="34.5" y="34" font-size="7.5" font-family="serif" fill="#111">♠</text>
+            <!-- Big centre spade -->
+            <text x="48" y="50" text-anchor="middle" font-size="26" font-family="serif" fill="#0a0a0a">♠</text>
+            <!-- Corner A + suit bottom-right (rotated) -->
+            <text x="62" y="62" font-size="9" font-family="Georgia,serif" font-weight="bold" fill="#111" text-anchor="end">A</text>
+            <text x="61.5" y="68" font-size="7.5" font-family="serif" fill="#111" text-anchor="end">♠</text>
           </g>
-          <!-- Gold A badge -->
-          <circle cx="56" cy="16" r="9" fill="url(#logoGold)" opacity="0.95"/>
-          <text x="56" y="20" text-anchor="middle" font-size="10" font-family="Orbitron,sans-serif" font-weight="bold" fill="#080600">A</text>
+
+          <!-- Gold "A" stamp top-right -->
+          <circle cx="74" cy="18" r="11" fill="url(#logoGold)" filter="url(#logoGoldGlow)"/>
+          <circle cx="74" cy="18" r="11" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.8"/>
+          <text x="74" y="22.5" text-anchor="middle" font-size="13" font-family="Orbitron,sans-serif" font-weight="bold" fill="#080600">A</text>
         </svg>
       </div>
       <div class="logo-title">PASS THE ACE</div>
@@ -1437,8 +1447,10 @@
         <rect x="28" y="28" width="644" height="344" rx="172" fill="rgba(0,0,0,0.25)" opacity="0.5"/>
         <rect x="28" y="28" width="644" height="344" rx="172" fill="url(#feltGrad)" opacity="0.6"/>
         <!-- Center logo watermark -->
-        <text x="350" y="185" text-anchor="middle" font-size="72" font-family="serif" fill="rgba(0,0,0,0.35)">♠</text>
-        <text x="350" y="222" text-anchor="middle" font-size="10" font-family="Georgia,serif" letter-spacing="5" fill="rgba(0,0,0,0.3)">PASS THE ACE</text>
+        <text x="350" y="190" text-anchor="middle" font-size="80" font-family="serif" fill="rgba(0,0,0,0.45)">♠</text>
+        <text x="350" y="190" text-anchor="middle" font-size="80" font-family="serif" fill="rgba(255,255,255,0.04)">♠</text>
+        <text x="350" y="228" text-anchor="middle" font-size="11" font-family="Georgia,serif" letter-spacing="7" fill="rgba(255,255,255,0.18)">PASS THE ACE</text>
+        <text x="350" y="228" text-anchor="middle" font-size="11" font-family="Georgia,serif" letter-spacing="7" fill="rgba(0,0,0,0.25)">PASS THE ACE</text>
       </svg>
     </div>
   </div>
