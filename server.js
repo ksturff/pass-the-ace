@@ -34,7 +34,7 @@ const RENDER_URL = process.env.RENDER_EXTERNAL_URL || null;
 if (RENDER_URL) {
   setInterval(() => {
     https.get(`${RENDER_URL}/health`, (res) => {
-      console.log(`[ping] ${res.statusCode}`);
+      // ping ok
     }).on('error', (e) => {
       console.warn('[ping error]', e.message);
     });
@@ -58,13 +58,13 @@ function getRoom(code) { return rooms.get(code); }
 const tournaments = new Map(); // id -> tournament
 
 // Returns array of { startTime, type } for all upcoming slots
-function getAllTournamentSlots(count = 200) {
+function getAllTournamentSlots(count = 60) {
   const slots = [];
   const now = Date.now();
 
-  // ── MICRO: every 15 minutes ──
-  const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
-  const firstMicro = Math.ceil(startOfDay.getTime() / TOURNAMENT_INTERVAL_MS) * TOURNAMENT_INTERVAL_MS;
+  // ── MICRO: every 3 minutes, starting from the next upcoming slot ──
+  // Always start from NOW (not midnight) to avoid generating hundreds of past slots on startup
+  const firstMicro = Math.ceil(now / TOURNAMENT_INTERVAL_MS) * TOURNAMENT_INTERVAL_MS;
   for (let i = 0; i < count; i++) {
     slots.push({ startTime: firstMicro + i * TOURNAMENT_INTERVAL_MS, type: 'micro' });
   }
@@ -104,7 +104,7 @@ function maxPlayersForType(type) {
 }
 
 function ensureTournamentsExist() {
-  const slots = getAllTournamentSlots(200);
+  const slots = getAllTournamentSlots(60);
   slots.forEach(({ startTime, type }) => {
     const id = getTournamentId(startTime, type);
     if (!tournaments.has(id)) {
@@ -150,10 +150,9 @@ setInterval(() => {
   const now = Date.now();
   for (const t of tournaments.values()) {
     if (t.status === 'registering' && now >= t.startTime) {
-      // Skip micro tournaments with no human players
+      // Skip micro tournaments with no human players (silently)
       if (t.type === 'micro' && t.players.length === 0) {
         t.status = 'finished';
-        console.log(`[micro] No players — skipping ${t.id}`);
         continue;
       }
       startTournament(t);
