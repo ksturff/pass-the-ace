@@ -2076,35 +2076,6 @@ function tryEnterTicketTournament(tournamentData, onSuccess) {
   }
 }
 
-// ── Auth state listener ──
-auth.onAuthStateChanged(async user => {
-  if (user) {
-    currentUser = user;
-    const profile = await loadUserProfile(user.uid);
-    if (!profile || !profile.displayName) {
-      // First time — show profile setup
-      const suggestedName = user.displayName?.split(' ')[0] || '';
-      document.getElementById('inp-display-name').value = suggestedName;
-      showScreen('screen-profile-setup');
-    } else {
-      userProfile = profile;
-      // Give chipBalance to existing users who don't have it yet
-      if (userProfile.chipBalance === undefined) {
-        await saveUserProfile(user.uid, { chipBalance: 2500 });
-      }
-      updateNavBar();
-      myAvatar = profile.avatar || AVATARS[0];
-      showScreen('screen-home');
-    }
-  } else {
-    currentUser = null;
-    userProfile = null;
-    document.getElementById('top-nav').classList.remove('visible');
-    showScreen('screen-login');
-  }
-  // Dismiss splash once auth resolves
-  if (window._splashDone) { window._splashDone(); window._splashDone = null; }
-});
 
 function showAuthError(elId, msg) {
   const el = document.getElementById(elId);
@@ -2434,6 +2405,36 @@ function buildSetupAvatarPicker() {
 }
 </script>
 <script>
+// ── Auth state listener ──
+auth.onAuthStateChanged(async user => {
+  if (user) {
+    currentUser = user;
+    const profile = await loadUserProfile(user.uid);
+    if (!profile || !profile.displayName) {
+      // First time — show profile setup
+      const suggestedName = user.displayName?.split(' ')[0] || '';
+      document.getElementById('inp-display-name').value = suggestedName;
+      showScreen('screen-profile-setup');
+    } else {
+      userProfile = profile;
+      // Give chipBalance to existing users who don't have it yet
+      if (userProfile.chipBalance === undefined) {
+        await saveUserProfile(user.uid, { chipBalance: 2500 });
+      }
+      updateNavBar();
+      myAvatar = profile.avatar || AVATARS[0];
+      showScreen('screen-home');
+    }
+  } else {
+    currentUser = null;
+    userProfile = null;
+    document.getElementById('top-nav').classList.remove('visible');
+    showScreen('screen-login');
+  }
+  // Dismiss splash once auth resolves
+  if (window._splashDone) { window._splashDone(); window._splashDone = null; }
+});
+
 const SUITS=['S','H','D','C'];
 const RANKS=[2,3,4,5,6,7,8,9,10,'J','Q','K','A'];
 const RANK_VALUE={2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,J:11,Q:12,K:13,A:1};
