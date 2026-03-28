@@ -3819,8 +3819,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     }, 1000);
   }
 
-  const btnLeaveSAS = document.getElementById('btn-leave-sit-and-stay');
-  if (btnLeaveSAS) btnLeaveSAS.addEventListener('click', () => {
+  const btnLeaveSAS1 = document.getElementById('btn-leave-sit-and-stay');
+  if (btnLeaveSAS1) btnLeaveSAS1.addEventListener('click', () => {
     socket.emit('leaveSitAndStay');
     if (ssCountdownInterval) clearInterval(ssCountdownInterval);
     showScreen('screen-home');
@@ -4036,8 +4036,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     if (status) status.textContent = `${playerCount} of 10 players joined`;
   });
 
-  const btnLeaveSAS = document.getElementById('btn-leave-sit-and-stay');
-  if (btnLeaveSAS) btnLeaveSAS.addEventListener('click', () => {
+  const btnLeaveSAS2 = document.getElementById('btn-leave-sit-and-stay');
+  if (btnLeaveSAS2) btnLeaveSAS2.addEventListener('click', () => {
     socket.emit('leaveSasQueue');
     if (ssCountdownInterval) clearInterval(ssCountdownInterval);
     // Refund chips
