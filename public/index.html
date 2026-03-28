@@ -1725,11 +1725,29 @@
 </div>
 
 <!-- ── SIT & STAY WAITING ── -->
+<!-- ── SIT & STAY TIER LOBBY ── -->
+<div id="screen-sas-lobby" class="screen">
+  <div style="min-height:100vh;display:flex;flex-direction:column;background:radial-gradient(ellipse 120% 60% at 50% -5%,#1a1200 0%,#0a0800 55%);">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;padding:16px 16px 0;">
+      <button id="btn-sas-back" class="btn-ghost" style="width:auto;padding:8px 14px;font-size:10px;">← Back</button>
+      <div style="font-family:'Playfair Display',serif;font-size:18px;letter-spacing:3px;background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">SIT &amp; STAY</div>
+    </div>
+    <div style="font-family:sans-serif;font-size:12px;color:var(--muted);padding:6px 16px 16px;letter-spacing:0.5px;">Choose your table. Game starts at the scheduled time.</div>
+
+    <!-- Tier cards -->
+    <div id="sas-tier-list" style="display:flex;flex-direction:column;gap:10px;padding:0 16px 24px;overflow-y:auto;flex:1;">
+      <!-- populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ── SIT & STAY WAITING ── -->
 <div id="screen-sit-and-stay-wait" class="screen">
   <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;background:radial-gradient(ellipse 120% 60% at 50% -5%,#1a1200 0%,#0a0800 55%);">
-    <div style="font-size:48px;margin-bottom:16px;">🪑</div>
-    <div style="font-family:'Orbitron',sans-serif;font-size:16px;letter-spacing:3px;background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">SIT &amp; STAY</div>
-    <div style="font-family:sans-serif;font-size:13px;color:var(--muted);margin-bottom:32px;text-align:center;">Finding players for your table…</div>
+    <div id="ss-tier-badge" style="font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:3px;margin-bottom:8px;color:var(--accent);">BRONZE</div>
+    <div style="font-family:'Orbitron',sans-serif;font-size:16px;letter-spacing:3px;background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;">SIT &amp; STAY</div>
+    <div id="ss-buyin-label" style="font-family:sans-serif;font-size:13px;color:var(--muted);margin-bottom:28px;">150 chip buy-in</div>
 
     <!-- Player slots -->
     <div id="ss-seats" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:340px;margin-bottom:28px;"></div>
@@ -1737,8 +1755,8 @@
     <!-- Countdown -->
     <div style="background:linear-gradient(135deg,#18140a,#100e06);border:1px solid rgba(255,215,0,0.12);border-radius:16px;padding:16px 28px;text-align:center;margin-bottom:24px;">
       <div style="font-family:sans-serif;font-size:11px;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px;">GAME STARTS IN</div>
-      <div id="ss-countdown" style="font-family:'Orbitron',sans-serif;font-size:36px;font-weight:700;background:linear-gradient(90deg,#ffd700,#ffaa00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">20</div>
-      <div style="font-family:sans-serif;font-size:11px;color:var(--muted);letter-spacing:1px;margin-top:4px;">Empty seats filled by bots</div>
+      <div id="ss-countdown" style="font-family:'Orbitron',sans-serif;font-size:36px;font-weight:700;background:linear-gradient(90deg,#ffd700,#ffaa00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">—</div>
+      <div id="ss-bot-note" style="font-family:sans-serif;font-size:11px;color:var(--muted);letter-spacing:1px;margin-top:4px;">Empty seats filled by bots</div>
     </div>
 
     <div id="ss-status" style="font-family:sans-serif;font-size:13px;color:var(--muted);margin-bottom:24px;text-align:center;">
@@ -3383,12 +3401,23 @@ function initSocket(){
     if(data.isTournament)myTournamentId=null;
     const iWon=data.winner.id===myId||data.winner.name===(userProfile?.displayName||'');
     const placement=data.placements?.[myId]??(iWon?1:0);
-    // Use tournamentType from server — most reliable source
     const tType = data.tournamentType || (isTournamentGame ? 'micro' : null);
     // Clear all registration flags
     [12,15,18,21].forEach(h=>window[`_satReg_${h}`]=false);
     [14,18,22].forEach(h=>window[`_dailyReg_${h}`]=false);
-    recordGameResult(iWon, placement, tType);
+
+    // SAS payout — credit chips based on server-calculated payout
+    if(tType === 'sas' && data.sasPayouts && data.sasPayouts[myId] !== undefined) {
+      const payout = data.sasPayouts[myId];
+      updateChipBalance(payout).then(()=>{
+        if(payout > 0) {
+          const place = placement === 1 ? '🥇 1st' : placement === 2 ? '🥈 2nd' : '🥉 3rd';
+          showToast(`${place} — +${payout.toLocaleString()} chips!`, '#ffd700', 4000);
+        }
+      });
+    } else {
+      recordGameResult(iWon, placement, tType);
+    }
   });
   socket.on('roomCreated',data=>{myRoomCode=data.code;isHost=true;document.getElementById('waiting-code').textContent=data.code;updateWaitingRoom(data.players);showScreen('screen-waiting');});
   socket.on('joinedRoom',data=>{myRoomCode=data.code;isHost=false;document.getElementById('waiting-code').textContent=data.code;updateWaitingRoom(data.players);showScreen('screen-waiting');});
@@ -3829,12 +3858,215 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('tab-tables').style.display='block';
   });
   document.getElementById('btn-quick-play').addEventListener('click',()=>{
-    const name=userProfile?.displayName||'Player';
-    myAvatar=userProfile?.avatar||myAvatar;
-    checkChipsAndProceed(100, async ()=>{
-      await updateChipBalance(-100);
-      startSolo(name,10);
+    showScreen('screen-sas-lobby');
+  });
+
+  // ── SAS back button
+  document.getElementById('btn-sas-back').addEventListener('click',()=>showScreen('screen-home'));
+
+  // Request fresh SAS data when lobby opens
+  const _origShowScreen = showScreen;
+  showScreen = function(id) {
+    _origShowScreen(id);
+    if (id === 'screen-sas-lobby') {
+      socket.emit('getTournaments');
+      renderSasLobby();
+    }
+  };
+
+  // ── SAS queue data from server
+  let sasQueuesData = [];
+  socket.on('sasQueues', (queues) => {
+    sasQueuesData = queues || [];
+    if(document.getElementById('screen-sas-lobby').classList.contains('active')) {
+      renderSasLobby();
+    }
+  });
+
+  socket.on('sasQueueCancelled', ({ message }) => {
+    showToast(message || 'Queue cancelled — chips refunded.', '#ff4d4f', 4000);
+    showScreen('screen-home');
+  });
+
+  function renderSasLobby() {
+    const list = document.getElementById('sas-tier-list');
+    if (!list) return;
+    const now = Date.now();
+
+    const tierOrder = ['bronze','silver','gold','platinum','diamond','elite'];
+    const tierColors = {
+      bronze:   '#cd7f32',
+      silver:   '#b0b0b0',
+      gold:     '#ffd700',
+      platinum: '#cce8ff',
+      diamond:  '#88ccff',
+      elite:    '#dd88ff',
+    };
+    const tierIcons = {
+      bronze:'🥉', silver:'🥈', gold:'🥇', platinum:'💎', diamond:'♦️', elite:'👑'
+    };
+
+    // Group by tier — show next upcoming game per tier
+    const nextByTier = {};
+    sasQueuesData.forEach(q => {
+      if (q.status !== 'registering') return;
+      if (!nextByTier[q.tier] || q.startTime < nextByTier[q.tier].startTime) {
+        nextByTier[q.tier] = q;
+      }
     });
+
+    list.innerHTML = '';
+    tierOrder.forEach(tier => {
+      const q = nextByTier[tier];
+      if (!q) return;
+      const msUntil = Math.max(0, q.startTime - now);
+      const minsUntil = Math.floor(msUntil / 60000);
+      const secsUntil = Math.floor((msUntil % 60000) / 1000);
+      const timeStr = msUntil < 60000
+        ? `${secsUntil}s`
+        : `${minsUntil}m ${String(secsUntil).padStart(2,'0')}s`;
+      const color = tierColors[tier] || 'var(--accent)';
+      const icon = tierIcons[tier] || '🃏';
+
+      // Payout preview based on 10 players
+      const pot = q.buyIn * 10;
+      const rake = Math.floor(pot * 0.05);
+      const prize = pot - rake;
+      const p1 = Math.floor(prize * 0.60);
+      const p2 = Math.floor(prize * 0.25);
+      const p3 = Math.floor(prize * 0.15);
+
+      const card = document.createElement('div');
+      card.style.cssText = `
+        background:linear-gradient(135deg,#0e0c07,#090700);
+        border:1px solid ${color}33;
+        border-left:3px solid ${color};
+        border-radius:14px;padding:16px;
+        cursor:pointer;transition:all .2s;
+      `;
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="font-size:24px;">${icon}</span>
+          <div style="flex:1;">
+            <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:${color};letter-spacing:1px;">${q.label.toUpperCase()}</div>
+            <div style="font-family:sans-serif;font-size:11px;color:var(--muted);">Buy-in: <strong style="color:var(--text);">${q.buyIn.toLocaleString()} chips</strong></div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:${color};" id="sas-timer-${q.id}">${timeStr}</div>
+            <div style="font-family:sans-serif;font-size:10px;color:var(--muted);">${q.playerCount}/10 joined</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <div style="flex:1;background:rgba(255,255,255,0.03);border-radius:8px;padding:8px;text-align:center;">
+            <div style="font-size:10px;color:var(--muted);font-family:sans-serif;margin-bottom:2px;">1ST</div>
+            <div style="font-size:13px;font-weight:700;color:#ffd700;font-family:'Playfair Display',serif;">${p1.toLocaleString()}</div>
+          </div>
+          <div style="flex:1;background:rgba(255,255,255,0.03);border-radius:8px;padding:8px;text-align:center;">
+            <div style="font-size:10px;color:var(--muted);font-family:sans-serif;margin-bottom:2px;">2ND</div>
+            <div style="font-size:13px;font-weight:700;color:#b0b0b0;font-family:'Playfair Display',serif;">${p2.toLocaleString()}</div>
+          </div>
+          <div style="flex:1;background:rgba(255,255,255,0.03);border-radius:8px;padding:8px;text-align:center;">
+            <div style="font-size:10px;color:var(--muted);font-family:sans-serif;margin-bottom:2px;">3RD</div>
+            <div style="font-size:13px;font-weight:700;color:#cd7f32;font-family:'Playfair Display',serif;">${p3.toLocaleString()}</div>
+          </div>
+        </div>
+        <div style="font-family:sans-serif;font-size:10px;color:var(--muted);margin-bottom:10px;">
+          ${q.botFill ? '🤖 Empty seats filled by bots' : '👤 Real players only — game starts when full or at start time'}
+        </div>
+        <button class="btn-primary" style="padding:10px;" data-sasid="${q.id}" data-buyin="${q.buyIn}" data-tier="${q.tier}" data-label="${q.label}">
+          Join — ${q.buyIn.toLocaleString()} chips
+        </button>
+      `;
+      card.querySelector('.btn-primary').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const sasId = e.target.dataset.sasid;
+        const buyIn = parseInt(e.target.dataset.buyin);
+        const tier = e.target.dataset.tier;
+        const label = e.target.dataset.label;
+        joinSasQueue(sasId, buyIn, tier, label);
+      });
+      card.addEventListener('mouseenter', () => card.style.borderColor = color + '66');
+      card.addEventListener('mouseleave', () => card.style.borderColor = color + '33');
+      list.appendChild(card);
+    });
+
+    if (list.children.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:var(--muted);font-family:sans-serif;padding:32px;">No games available right now…</div>';
+    }
+  }
+
+  // Live countdown timers in the lobby
+  setInterval(() => {
+    const now = Date.now();
+    sasQueuesData.forEach(q => {
+      const el = document.getElementById(`sas-timer-${q.id}`);
+      if (!el) return;
+      const msUntil = Math.max(0, q.startTime - now);
+      const minsUntil = Math.floor(msUntil / 60000);
+      const secsUntil = Math.floor((msUntil % 60000) / 1000);
+      el.textContent = msUntil < 60000 ? `${secsUntil}s` : `${minsUntil}m ${String(secsUntil).padStart(2,'0')}s`;
+    });
+  }, 1000);
+
+  function joinSasQueue(sasId, buyIn, tier, label) {
+    const name = userProfile?.displayName || 'Player';
+    myAvatar = userProfile?.avatar || myAvatar;
+    checkChipsAndProceed(buyIn, async () => {
+      await updateChipBalance(-buyIn);
+      socket.emit('joinSasQueue', { sasId, name, avatar: myAvatar });
+      // Show waiting screen
+      const tierColors = { bronze:'#cd7f32',silver:'#b0b0b0',gold:'#ffd700',platinum:'#cce8ff',diamond:'#88ccff',elite:'#dd88ff' };
+      const badge = document.getElementById('ss-tier-badge');
+      if (badge) { badge.textContent = label.toUpperCase(); badge.style.color = tierColors[tier] || 'var(--accent)'; }
+      const buyinLabel = document.getElementById('ss-buyin-label');
+      if (buyinLabel) buyinLabel.textContent = `${buyIn.toLocaleString()} chip buy-in`;
+      const botNote = document.getElementById('ss-bot-note');
+      if (botNote) botNote.textContent = ['platinum','diamond','elite'].includes(tier)
+        ? 'Real players only — waiting for full table'
+        : 'Empty seats filled by bots';
+      showScreen('screen-sit-and-stay-wait');
+    });
+  }
+
+  socket.on('sasJoined', ({ sasId, playerCount, startTime }) => {
+    renderSsSeats(playerCount);
+    const msUntil = Math.max(0, startTime - Date.now());
+    startSsCountdown(msUntil);
+    const status = document.getElementById('ss-status');
+    if (status) status.textContent = `${playerCount} of 10 players joined`;
+  });
+
+  const btnLeaveSAS = document.getElementById('btn-leave-sit-and-stay');
+  if (btnLeaveSAS) btnLeaveSAS.addEventListener('click', () => {
+    socket.emit('leaveSasQueue');
+    if (ssCountdownInterval) clearInterval(ssCountdownInterval);
+    // Refund chips
+    const buyinLabel = document.getElementById('ss-buyin-label');
+    const buyIn = buyinLabel ? parseInt(buyinLabel.textContent) : 0;
+    if (buyIn > 0) updateChipBalance(buyIn);
+    showScreen('screen-sas-lobby');
+  });
+
+  // Sit & Stay socket events (legacy + new)
+  socket.on('sitAndStayWaiting', ({ playerCount, totalSeats, waitMs }) => {
+    renderSsSeats(playerCount);
+    startSsCountdown(waitMs);
+    const status = document.getElementById('ss-status');
+    if (status) status.textContent = `${playerCount} of ${totalSeats} players found`;
+  });
+
+  socket.on('sitAndStayStatus', ({ playerCount, totalSeats }) => {
+    renderSsSeats(playerCount);
+    const status = document.getElementById('ss-status');
+    if (status) status.textContent = `${playerCount} of ${totalSeats} players found`;
+  });
+
+  socket.on('sitAndStayLaunching', () => {
+    if (ssCountdownInterval) clearInterval(ssCountdownInterval);
+    const status = document.getElementById('ss-status');
+    if (status) status.textContent = 'Starting game…';
+    const countdown = document.getElementById('ss-countdown');
+    if (countdown) countdown.textContent = '🃏';
   });
   document.getElementById('btn-tournaments').addEventListener('click', () => {
     showScreen('screen-lobby');

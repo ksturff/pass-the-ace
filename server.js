@@ -410,24 +410,41 @@ function endTournamentRound(t) {
     t.winners = [winner.name];
 
     // Build placements map: socketId -> finishing position
-    // Winner = 1, then reverse elimination order
     const humanPlayers = t.allPlayers.filter(p => !p.isBot);
-    const totalHumans = humanPlayers.length;
     const placements = {};
     placements[winner.id] = 1;
     const eliminated = (t.eliminationOrder || []).filter(id =>
       humanPlayers.find(p => p.id === id)
     );
     eliminated.reverse().forEach((id, idx) => {
-      placements[id] = idx + 2; // 2nd, 3rd, 4th...
+      placements[id] = idx + 2;
     });
+
+    // SAS payout: 60% / 25% / 15% of prize pool
+    let sasPayouts = null;
+    if (t.isSas) {
+      const totalPot = humanPlayers.length * t.buyIn;
+      const rake = Math.floor(totalPot * 0.05); // 5% rake
+      const prizePot = totalPot - rake;
+      sasPayouts = {};
+      humanPlayers.forEach(p => {
+        const place = placements[p.id] || 99;
+        if (place === 1) sasPayouts[p.id] = Math.floor(prizePot * 0.60);
+        else if (place === 2) sasPayouts[p.id] = Math.floor(prizePot * 0.25);
+        else if (place === 3) sasPayouts[p.id] = Math.floor(prizePot * 0.15);
+        else sasPayouts[p.id] = 0;
+      });
+    }
 
     t.allPlayers.filter(p => !p.isBot).forEach(player => {
       io.to(player.id).emit('gameOver', {
         winner: { name: winner.name, id: winner.id },
         isTournament: true,
-        tournamentType: t.type,
-        placements
+        tournamentType: t.isSas ? 'sas' : t.type,
+        tier: t.tier || null,
+        placements,
+        sasPayouts,
+        buyIn: t.buyIn || null,
       });
     });
     io.emit('tournamentList', getPublicTournaments());
@@ -493,10 +510,68 @@ io.on('connection', socket => {
   // Send initial data
   socket.emit('tournamentList', getPublicTournaments());
   socket.emit('lobbyUpdate', getLobbyRooms());
+  socket.emit('sasQueues', getPublicSasQueues());
 
   // ── Client requests tournament list explicitly
   socket.on('getTournaments', () => {
     socket.emit('tournamentList', getPublicTournaments());
+  });
+
+  // ── Sit & Stay: join a queue
+  socket.on('joinSasQueue', ({ sasId, name, avatar }) => {
+    ensureSasQueues();
+    const q = sasQueues.get(sasId);
+    if (!q) { socket.emit('error', 'Queue not found.'); return; }
+    if (q.status !== 'registering') { socket.emit('error', 'This game has already started.'); return; }
+    if (q.players.find(p => p.id === socket.id)) { socket.emit('error', 'Already in this queue.'); return; }
+    if (q.players.length >= 10) { socket.emit('error', 'Queue is full.'); return; }
+
+    const player = {
+      id: socket.id, name, avatar: avatar || '🎭',
+      chips: CHIPS_START, eliminated: false, card: null,
+      seatIndex: q.players.length, isBot: false
+    };
+    q.players.push(player);
+    socket.join(sasId);
+    socket.data.sasQueueId = sasId;
+    socket.data.playerName = name;
+    socket.data.playerAvatar = avatar;
+
+    socket.emit('sasJoined', {
+      sasId,
+      tier: q.tier,
+      label: q.label,
+      buyIn: q.buyIn,
+      startTime: q.startTime,
+      playerCount: q.players.length,
+    });
+    io.emit('sasQueues', getPublicSasQueues());
+  });
+
+  // ── Sit & Stay: leave queue
+  socket.on('leaveSasQueue', () => {
+    const sasId = socket.data.sasQueueId;
+    if (!sasId) return;
+    const q = sasQueues.get(sasId);
+    if (q && q.status === 'registering') {
+      q.players = q.players.filter(p => p.id !== socket.id);
+      io.emit('sasQueues', getPublicSasQueues());
+    }
+    socket.leave(sasId);
+    socket.data.sasQueueId = null;
+  });
+
+  // Legacy leaveSitAndStay support
+  socket.on('leaveSitAndStay', () => {
+    const sasId = socket.data.sasQueueId;
+    if (!sasId) return;
+    const q = sasQueues.get(sasId);
+    if (q && q.status === 'registering') {
+      q.players = q.players.filter(p => p.id !== socket.id);
+      io.emit('sasQueues', getPublicSasQueues());
+    }
+    socket.leave(sasId);
+    socket.data.sasQueueId = null;
   });
 
   // ── Tournament registration
@@ -665,6 +740,181 @@ function getLobbyRooms() {
     .filter(r => r.players.length > 0)
     .map(r => ({ code: r.code, playerCount: r.players.length, maxPlayers: r.options.seats || 8, inProgress: !!r.gameState, mode: r.options.mode || 'Classic' }));
 }
+
+// ─────────────────────────────────────────
+//  SIT & STAY TIERED SYSTEM
+// ─────────────────────────────────────────
+
+// Tier definitions
+const SAS_TIERS = {
+  bronze:   { buyIn: 150,  label: 'Bronze',   color: '#cd7f32', botFill: true  },
+  silver:   { buyIn: 225,  label: 'Silver',   color: '#b0b0b0', botFill: true  },
+  gold:     { buyIn: 300,  label: 'Gold',     color: '#ffd700', botFill: true  },
+  platinum: { buyIn: 375,  label: 'Platinum', color: '#e0f0ff', botFill: false },
+  diamond:  { buyIn: 450,  label: 'Diamond',  color: '#a0d8ff', botFill: false },
+  elite:    { buyIn: 500,  label: 'Elite',    color: '#ff90ff', botFill: false },
+};
+
+// 20-slot rotation per hour (slots 0–19, each = 3 minutes)
+// Bronze=8 slots, Silver=5, Gold=4, Platinum=2, Diamond=1 (slot 0), Elite=1 (slot 10)
+const SAS_ROTATION = [
+  'diamond',  // :00
+  'bronze',   // :03
+  'silver',   // :06
+  'bronze',   // :09
+  'gold',     // :12
+  'bronze',   // :15
+  'silver',   // :18
+  'bronze',   // :21
+  'platinum', // :24
+  'bronze',   // :27
+  'elite',    // :30
+  'bronze',   // :33
+  'silver',   // :36
+  'bronze',   // :39
+  'gold',     // :42
+  'bronze',   // :45
+  'silver',   // :48
+  'bronze',   // :51
+  'platinum', // :54
+  'bronze',   // :57
+];
+
+// Map of active queues: sasId -> queue object
+const sasQueues = new Map();
+
+function getSasId(startTime, tier) {
+  return `sas_${tier}_${startTime}`;
+}
+
+// Get start time for a given rotation slot index (0-19) in a given hour epoch
+function slotStartTime(hourEpoch, slotIdx) {
+  return hourEpoch + slotIdx * 3 * 60 * 1000;
+}
+
+// Build all SAS slots for upcoming windows
+function ensureSasQueues(windowHours = 3) {
+  const now = Date.now();
+  // Round down to current hour
+  const currentHour = Math.floor(now / (60 * 60 * 1000)) * (60 * 60 * 1000);
+
+  for (let h = 0; h <= windowHours; h++) {
+    const hourEpoch = currentHour + h * 60 * 60 * 1000;
+    SAS_ROTATION.forEach((tier, slotIdx) => {
+      const startTime = slotStartTime(hourEpoch, slotIdx);
+      if (startTime < now - 5 * 60 * 1000) return; // skip past slots
+      const id = getSasId(startTime, tier);
+      if (!sasQueues.has(id)) {
+        sasQueues.set(id, {
+          id,
+          tier,
+          startTime,
+          buyIn: SAS_TIERS[tier].buyIn,
+          label: SAS_TIERS[tier].label,
+          color: SAS_TIERS[tier].color,
+          botFill: SAS_TIERS[tier].botFill,
+          players: [],
+          status: 'registering',
+          gameStarted: false,
+        });
+      }
+    });
+  }
+
+  // Clean up old queues
+  const cutoff = now - 60 * 60 * 1000;
+  for (const [id, q] of sasQueues.entries()) {
+    if (q.startTime < cutoff) sasQueues.delete(id);
+  }
+}
+
+function getPublicSasQueues() {
+  ensureSasQueues();
+  const now = Date.now();
+  return Array.from(sasQueues.values())
+    .filter(q => q.startTime >= now - 10 * 60 * 1000)
+    .sort((a, b) => a.startTime - b.startTime)
+    .map(q => ({
+      id: q.id,
+      tier: q.tier,
+      label: q.label,
+      color: q.color,
+      buyIn: q.buyIn,
+      startTime: q.startTime,
+      playerCount: q.players.length,
+      maxPlayers: 10,
+      status: q.status,
+      botFill: q.botFill,
+    }));
+}
+
+function startSasGame(q) {
+  if (q.gameStarted) return;
+  q.gameStarted = true;
+  q.status = 'inProgress';
+
+  const seats = [...q.players];
+  if (q.botFill) {
+    let botIdx = 0;
+    while (seats.length < 10) {
+      seats.push({
+        id: `bot_${q.id}_${botIdx}`,
+        name: BOT_NAMES[botIdx % BOT_NAMES.length],
+        avatar: BOT_AVATARS[botIdx % BOT_AVATARS.length],
+        chips: CHIPS_START, eliminated: false, card: null,
+        seatIndex: seats.length, isBot: true
+      });
+      botIdx++;
+    }
+  } else if (seats.length < 2) {
+    // Not enough real players, cancel
+    q.status = 'cancelled';
+    q.players.forEach(p => {
+      io.to(p.id).emit('sasQueueCancelled', { message: 'Not enough players joined. Your chips have been refunded.' });
+    });
+    io.emit('sasQueues', getPublicSasQueues());
+    return;
+  }
+
+  seats.forEach((p, i) => { p.chips = CHIPS_START; p.eliminated = false; p.card = null; p.seatIndex = i; });
+
+  // Create a virtual tournament object to reuse tournament game logic
+  const t = {
+    id: q.id,
+    type: 'sas',
+    tier: q.tier,
+    buyIn: q.buyIn,
+    allPlayers: seats,
+    players: q.players,
+    gameState: null,
+    status: 'inProgress',
+    winners: [],
+    eliminationOrder: [],
+    placements: {},
+    isSas: true,
+  };
+  tournaments.set(q.id, t);
+
+  // Notify players
+  q.players.forEach(p => {
+    io.to(p.id).emit('tournamentStarting', { tournamentId: q.id, tournamentType: 'sas', tier: q.tier, buyIn: q.buyIn });
+  });
+
+  startTournamentGame(t);
+  io.emit('sasQueues', getPublicSasQueues());
+}
+
+// Check SAS queues every 5s
+setInterval(() => {
+  ensureSasQueues();
+  const now = Date.now();
+  for (const q of sasQueues.values()) {
+    if (q.status === 'registering' && now >= q.startTime && !q.gameStarted) {
+      startSasGame(q);
+    }
+  }
+  io.emit('sasQueues', getPublicSasQueues());
+}, 5000);
 
 // Generate tournament schedule on startup
 ensureTournamentsExist();
