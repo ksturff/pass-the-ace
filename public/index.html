@@ -1408,7 +1408,7 @@
 <div id="screen-settings" class="screen">
   <div class="settings-wrap">
     <div class="howto-header">
-      <button class="lobby-back" id="btn-back-settings" onclick="showScreen('screen-home')">← BACK</button>
+      <button class="lobby-back" id="btn-back-settings" onclick="showScreen(typeof _previousScreen!=='undefined'?_previousScreen:'screen-home')">← BACK</button>
       <div class="settings-title">SETTINGS</div>
     </div>
 
@@ -2162,7 +2162,10 @@ function buildAvatarPicker() {
   });
 }
 
+let _previousScreen = 'screen-home';
 function showScreen(id) {
+  const current = document.querySelector('.screen.active');
+  if (current && current.id !== id) _previousScreen = current.id;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (id === 'screen-home' && typeof Audio !== 'undefined') Audio.attachStartTrigger();
@@ -3391,10 +3394,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('btn-settings').addEventListener('click',()=>{
     showScreen('screen-settings');
     Audio.initSettingsScreen();
-    window.initCardBackPicker && window.initCardBackPicker();
+    Audio.initCardBackPicker && Audio.initCardBackPicker();
   });
-  document.getElementById('btn-back-settings').addEventListener('click',()=>showScreen('screen-home'));
-  document.getElementById('btn-back-settings').addEventListener('touchend',(e)=>{e.preventDefault();showScreen('screen-home');});
+  document.getElementById('btn-back-settings').addEventListener('click',()=>showScreen(_previousScreen||'screen-home'));
+  document.getElementById('btn-back-settings').addEventListener('touchend',(e)=>{e.preventDefault();showScreen(_previousScreen||'screen-home');});
   document.getElementById('btn-back-howto').addEventListener('click',()=>showScreen('screen-home'));
   document.getElementById('btn-back-howto').addEventListener('touchend',(e)=>{e.preventDefault();showScreen('screen-home');});
   document.getElementById('btn-lobby-back').addEventListener('click',()=>showScreen('screen-home'));
@@ -3832,10 +3835,11 @@ const Audio = (() => {
     applyMusic();
   }
 
-  // Legacy single-mute button (in-game) — opens settings screen
+  // In-game cog button — opens settings screen, preserving return path
   function toggleMute() {
     showScreen('screen-settings');
-    if (typeof initSettingsScreen === 'function') initSettingsScreen();
+    initSettingsScreen();
+    initCardBackPicker();
   }
 
   function initMuteButton() {
@@ -3911,6 +3915,7 @@ const Audio = (() => {
       const cv = document.createElement('canvas');
       cv.width = 44; cv.height = 62;
       cv.className = 'card-back-canvas';
+      cv.style.pointerEvents = 'none';
       const ctx = cv.getContext('2d');
       // Base card shape
       ctx.fillStyle = '#0e0c06';
@@ -3922,6 +3927,7 @@ const Audio = (() => {
       const label = document.createElement('div');
       label.className = 'card-back-label';
       label.textContent = style.label;
+      label.style.pointerEvents = 'none';
 
       opt.appendChild(cv);
       opt.appendChild(label);
@@ -3937,7 +3943,7 @@ const Audio = (() => {
   }
   window.initCardBackPicker = initCardBackPicker;
   window.initSettingsScreen = initSettingsScreen;
-  return { sfx, initMuteButton, attachStartTrigger, toggleMute, initSettingsScreen };
+  return { sfx, initMuteButton, attachStartTrigger, toggleMute, initSettingsScreen, initCardBackPicker };
 })();
 
 // ── Hook: button clicks ──
