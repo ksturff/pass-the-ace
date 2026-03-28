@@ -61,6 +61,7 @@ const tournaments = new Map(); // id -> tournament
 function getAllTournamentSlots(count = 60) {
   const slots = [];
   const now = Date.now();
+  const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
 
   // ── MICRO: every 3 minutes, starting from the next upcoming slot ──
   // Always start from NOW (not midnight) to avoid generating hundreds of past slots on startup
