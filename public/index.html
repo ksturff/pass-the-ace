@@ -1566,6 +1566,13 @@
       </div>
     </div>
 
+    <div class="settings-section">
+      <div class="settings-section-label">Table Colour</div>
+      <div class="card-back-grid" id="table-theme-grid">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -2298,6 +2305,67 @@ function loadAssets(){
   });
 }
 
+
+
+// ── Table colour themes ──
+let selectedTableTheme = localStorage.getItem('pta_table_theme') || 'burgundy';
+
+const TABLE_THEMES = {
+  burgundy: {
+    label: 'Burgundy',
+    felt:  ['#3a1a2a','#241018','#150910'],
+    rail:  ['#3a2510','#1c1208','#100a04'],
+    glow:  'rgba(180,40,80,0.25)'
+  },
+  green: {
+    label: 'Classic Green',
+    felt:  ['#1e4a2e','#142e1c','#0c1f12'],
+    rail:  ['#5c4418','#2a1e08','#1a1306'],
+    glow:  'rgba(40,160,80,0.2)'
+  },
+  navy: {
+    label: 'Midnight Navy',
+    felt:  ['#0e1a3a','#091024','#060b18'],
+    rail:  ['#2a2010','#18140a','#0e0a04'],
+    glow:  'rgba(40,80,200,0.22)'
+  },
+  slate: {
+    label: 'Slate',
+    felt:  ['#1a1e28','#10131a','#08090f'],
+    rail:  ['#2a2820','#181610','#0e0c08'],
+    glow:  'rgba(100,110,140,0.18)'
+  },
+  purple: {
+    label: 'Royal Purple',
+    felt:  ['#2a1040','#1a0a2a','#0f0618'],
+    rail:  ['#2e1e0a','#1a1005','#0f0802'],
+    glow:  'rgba(140,60,200,0.25)'
+  },
+  crimson: {
+    label: 'Crimson',
+    felt:  ['#3a0a0a','#240606','#150303'],
+    rail:  ['#3a2010','#1e1008','#100804'],
+    glow:  'rgba(200,30,30,0.22)'
+  }
+};
+
+function applyTableTheme(key) {
+  const theme = TABLE_THEMES[key] || TABLE_THEMES.burgundy;
+  const svg = document.getElementById('table-bg');
+  if (!svg) return;
+  const feltStops = svg.querySelectorAll('#feltGrad stop');
+  const railStops = svg.querySelectorAll('#railGrad stop');
+  if (feltStops.length >= 3) {
+    feltStops[0].setAttribute('stop-color', theme.felt[0]);
+    feltStops[1].setAttribute('stop-color', theme.felt[1]);
+    feltStops[2].setAttribute('stop-color', theme.felt[2]);
+  }
+  if (railStops.length >= 3) {
+    railStops[0].setAttribute('stop-color', theme.rail[0]);
+    railStops[1].setAttribute('stop-color', theme.rail[1]);
+    railStops[2].setAttribute('stop-color', theme.rail[2]);
+  }
+}
 
 // ── Card back styles ──
 let selectedCardBack = localStorage.getItem('pta_card_back') || 'teal_diamond';
@@ -3495,6 +3563,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     showScreen('screen-settings');
     Audio.initSettingsScreen();
     Audio.initCardBackPicker && Audio.initCardBackPicker();
+    Audio.initTableThemePicker && Audio.initTableThemePicker();
   });
   document.getElementById('btn-back-settings').addEventListener('click',()=>{
     showScreen(_previousScreen||'screen-home');
@@ -3947,6 +4016,7 @@ const Audio = (() => {
     showScreen('screen-settings');
     initSettingsScreen();
     initCardBackPicker();
+    initTableThemePicker();
   }
 
   function initMuteButton() {
@@ -4048,9 +4118,64 @@ const Audio = (() => {
       grid.appendChild(opt);
     });
   }
+  function initTableThemePicker() {
+    const grid = document.getElementById('table-theme-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    Object.entries(TABLE_THEMES).forEach(([key, theme]) => {
+      const opt = document.createElement('div');
+      opt.className = 'card-back-opt' + (selectedTableTheme === key ? ' selected' : '');
+      opt.dataset.key = key;
+
+      // Mini felt preview canvas
+      const cv = document.createElement('canvas');
+      cv.width = 62; cv.height = 44;
+      cv.style.cssText = 'border-radius:10px;box-shadow:0 3px 8px rgba(0,0,0,0.7);display:block;pointer-events:none;';
+      const ctx = cv.getContext('2d');
+      // Rail outer
+      const rail = ctx.createRadialGradient(31,15,2,31,22,38);
+      rail.addColorStop(0, theme.rail[0]);
+      rail.addColorStop(0.5, theme.rail[1]);
+      rail.addColorStop(1, theme.rail[2]);
+      ctx.fillStyle = rail;
+      ctx.beginPath(); ctx.roundRect(0,0,62,44,10); ctx.fill();
+      // Felt inner
+      const felt = ctx.createRadialGradient(31,18,2,31,22,28);
+      felt.addColorStop(0, theme.felt[0]);
+      felt.addColorStop(0.55, theme.felt[1]);
+      felt.addColorStop(1, theme.felt[2]);
+      ctx.fillStyle = felt;
+      ctx.beginPath(); ctx.roundRect(5,4,52,36,8); ctx.fill();
+      // Gold border stroke
+      ctx.strokeStyle = 'rgba(200,162,60,0.35)';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.roundRect(5,4,52,36,8); ctx.stroke();
+      // Tiny spade watermark
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.font = 'bold 14px serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('♠', 31, 22);
+
+      const label = document.createElement('div');
+      label.className = 'card-back-label';
+      label.textContent = theme.label;
+      label.style.pointerEvents = 'none';
+
+      opt.appendChild(cv);
+      opt.appendChild(label);
+      opt.addEventListener('click', () => {
+        selectedTableTheme = key;
+        localStorage.setItem('pta_table_theme', key);
+        grid.querySelectorAll('.card-back-opt').forEach(o => o.classList.toggle('selected', o.dataset.key === key));
+        applyTableTheme(key);
+      });
+      grid.appendChild(opt);
+    });
+  }
+  window.initTableThemePicker = initTableThemePicker;
   window.initCardBackPicker = initCardBackPicker;
   window.initSettingsScreen = initSettingsScreen;
-  return { sfx, initMuteButton, attachStartTrigger, toggleMute, initSettingsScreen, initCardBackPicker };
+  return { sfx, initMuteButton, attachStartTrigger, toggleMute, initSettingsScreen, initCardBackPicker, initTableThemePicker };
 })();
 
 // ── Hook: button clicks ──
@@ -4122,6 +4247,7 @@ updateTable = function(revealAll) {
 document.addEventListener('DOMContentLoaded', () => {
   Audio.initMuteButton();
   Audio.attachStartTrigger();
+  applyTableTheme(selectedTableTheme);
 
   // Patch multiplayer yourTurn after socket init
   // The socket.on('yourTurn') is set up inside initSocket() — we shadow it
