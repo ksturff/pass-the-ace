@@ -692,6 +692,11 @@
     .p-card-wrap canvas { display:block; border-radius:3px; box-shadow:0 3px 10px rgba(0,0,0,0.7); }
     .p-card-wrap.active-glow canvas { box-shadow:0 0 0 2px var(--accent), 0 0 14px rgba(200,162,60,0.55); }
 
+    @keyframes pta-deck-pulse {
+      0%,100% { opacity:0.5; transform:translateX(-50%) scale(1); }
+      50% { opacity:1; transform:translateX(-50%) scale(1.08); }
+    }
+
     /* ── Card animations ── */
     @keyframes dealCard {
       0%   { transform: translate(var(--deal-x), var(--deal-y)) scale(0.4) rotate(var(--deal-rot)); opacity:0; }
@@ -3198,13 +3203,21 @@ function soloProcessTurn(){
   const p=soloPlayers[soloCurrentIndex];
   currentPlayerId=p.id;myTurn=p.isHuman;
   document.getElementById('turn-banner').textContent=p.isHuman?'🎯 Your turn!':`${p.name} is thinking…`;
+  // Show deck if this player is the last in the round (must pass with deck)
+  const isLastPlayer=(soloTurnsTaken+1)>=soloAlive().length;
+  if(isLastPlayer&&!p.eliminated){
+    showDeckOnTable();
+  } else {
+    hideDeckOnTable();
+  }
   updateTable();
   if(!p.isHuman)setTimeout(soloBotAct,900);
 }
 function soloAdvance(){soloTurnsTaken++;if(soloTurnsTaken>=soloAlive().length){soloEndRound();return;}soloCurrentIndex=soloNextAlive(soloCurrentIndex,1);soloProcessTurn();}
-function soloKeep(){myTurn=false;updateTable();soloAdvance();}
+function soloKeep(){myTurn=false;hideDeckOnTable();updateTable();soloAdvance();}
 function soloPass(){
   myTurn=false;
+  hideDeckOnTable();
   const fromP=soloPlayers[soloCurrentIndex];const toIdx=soloNextAlive(soloCurrentIndex,1);const toP=soloPlayers[toIdx];
   if(toP?.card?.rank==='K'){showKingToast();soloKeep();return;}
   if(fromP?.card?.rank==='K'){soloKeep();return;}
@@ -3229,6 +3242,7 @@ function soloBotAct(){
   }
 }
 function soloEndRound(){
+  hideDeckOnTable();
   updateTable(true);
   const alive=soloAlive();const minVal=Math.min(...alive.map(p=>soloCardValue(p.card)));
   const losers=alive.filter(p=>soloCardValue(p.card)===minVal);
@@ -3253,6 +3267,42 @@ function soloContinue(){
   soloDealerIndex=soloNextAlive(soloDealerIndex,1);
   soloPlayers.forEach(p=>p.card=null);players=soloPlayers;buildTable();
   setTimeout(()=>soloStartRound(), 100);
+}
+
+// ── Persistent deck display (last player's turn) ──
+function showDeckOnTable(){
+  const table=document.getElementById('game-table');
+  if(document.getElementById('deck-stack-persistent'))return;
+  const cx=table.offsetWidth/2, cy=table.offsetHeight/2;
+  const deckStack=document.createElement('div');
+  deckStack.id='deck-stack-persistent';
+  deckStack.style.cssText='position:absolute;left:'+cx+'px;top:'+cy+'px;transform:translate(-50%,-50%);z-index:35;pointer-events:none;opacity:0;transition:opacity 0.3s;';
+  const stackCount=7;
+  for(let i=stackCount-1;i>=0;i--){
+    const sc=document.createElement('canvas');
+    sc.width=30;sc.height=44;
+    sc.style.cssText='position:absolute;width:30px;height:44px;left:'+((-15)+i*0.7)+'px;top:'+(-22-i*1)+'px;border-radius:3px;box-shadow:0 2px 8px rgba(0,0,0,0.75);';
+    drawCardFallback(sc.getContext('2d'),null,15,22,30,44,false);
+    deckStack.appendChild(sc);
+  }
+  const deckLabel=document.createElement('div');
+  deckLabel.textContent='DECK';
+  deckLabel.style.cssText='position:absolute;left:50%;top:'+(-22-stackCount*1-18)+'px;transform:translateX(-50%);font-family:Orbitron,sans-serif;font-size:8px;color:rgba(0,200,180,0.9);letter-spacing:2px;white-space:nowrap;text-shadow:0 0 10px rgba(0,200,180,0.6);';
+  deckStack.appendChild(deckLabel);
+  // Pulse hint label
+  const hint=document.createElement('div');
+  hint.textContent='PASS TO DRAW';
+  hint.style.cssText='position:absolute;left:50%;top:'+(-22-stackCount*1-30)+'px;transform:translateX(-50%);font-family:Orbitron,sans-serif;font-size:6px;color:rgba(200,162,60,0.7);letter-spacing:1.5px;white-space:nowrap;animation:pta-deck-pulse 1.4s ease-in-out infinite;';
+  deckStack.appendChild(hint);
+  table.appendChild(deckStack);
+  requestAnimationFrame(()=>{ deckStack.style.opacity='1'; });
+}
+function hideDeckOnTable(){
+  const el=document.getElementById('deck-stack-persistent');
+  if(!el)return;
+  el.style.transition='opacity 0.3s';
+  el.style.opacity='0';
+  setTimeout(()=>el.remove(),350);
 }
 
 // ── Deck exchange animation ──
