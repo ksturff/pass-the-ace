@@ -623,7 +623,7 @@
     .tw-name { font-size:9px; color:var(--muted); font-family:sans-serif; max-width:48px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
     /* ── HOW TO PLAY ── */
-    #screen-howto { background:var(--bg); overflow-y:auto; -webkit-overflow-scrolling:touch; padding:24px 16px; }
+    #screen-howto { background:var(--bg); overflow-y:auto; -webkit-overflow-scrolling:touch; padding:16px 16px 24px; }
     .howto-wrap { width:min(480px,96vw); }
     .howto-header { display:flex; align-items:center; gap:12px; margin-bottom:24px; }
     .howto-title { font-size:16px; letter-spacing:2px; color:var(--accent); }
@@ -1324,7 +1324,7 @@
 <div id="screen-howto" class="screen">
   <div class="howto-wrap">
     <div class="howto-header">
-      <button class="lobby-back" id="btn-back-howto">← BACK</button>
+      <button class="lobby-back" id="btn-back-howto" onclick="showScreen('screen-home')">← BACK</button>
       <div class="howto-title">HOW TO PLAY</div>
     </div>
     <div class="howto-step">
@@ -2602,7 +2602,7 @@ function renderTournamentList(list){
     tr.innerHTML=`
       <td class="col-start">${timeStr}<span class="col-date"> ${dateStr}</span></td>
       <td class="col-buyin">FREE</td>
-      <td class="col-name">15-Min Classic</td>
+      <td class="col-name">Sit &amp; Stay</td>
       <td class="col-prize">—</td>
       <td class="col-state">${stateBadge}</td>
       <td class="col-registered">${t.playerCount} / ${t.maxPlayers}</td>
@@ -2642,7 +2642,7 @@ function selectTournament(t){
   const panel=document.getElementById('t-detail-panel');
   panel.classList.add('visible');
   const d=new Date(t.startTime);
-  document.getElementById('t-detail-name').textContent='15-Minute Classic Tournament';
+  document.getElementById('t-detail-name').textContent='Sit & Stay Tournament';
   document.getElementById('t-detail-start').textContent=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' · '+d.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});
   document.getElementById('t-detail-buyin').textContent='FREE';
   document.getElementById('t-detail-prize').textContent='Glory';
