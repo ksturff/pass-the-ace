@@ -697,6 +697,63 @@
       50% { opacity:1; transform:translateX(-50%) scale(1.08); }
     }
 
+    /* ── Elimination overlay ── */
+    #elim-overlay {
+      position:fixed; inset:0; z-index:60; pointer-events:none;
+      display:flex; align-items:center; justify-content:center;
+      opacity:0; transition:opacity 0.2s;
+    }
+    #elim-overlay.show { opacity:1; }
+    #elim-overlay-bg {
+      position:absolute; inset:0;
+      background:radial-gradient(ellipse at center, rgba(180,20,20,0.55) 0%, rgba(0,0,0,0.0) 70%);
+      animation:elim-vignette-pulse 0.6s ease-out;
+    }
+    #elim-overlay-card {
+      position:relative; z-index:1;
+      background:linear-gradient(135deg,#1a0808,#0d0404);
+      border:1px solid rgba(220,50,50,0.5);
+      border-radius:16px; padding:22px 32px; text-align:center;
+      box-shadow:0 0 60px rgba(200,20,20,0.4), 0 20px 60px rgba(0,0,0,0.9);
+      animation:elim-card-in 0.4s cubic-bezier(0.22,1,0.36,1);
+    }
+    #elim-skull { font-size:44px; display:block; margin-bottom:8px; animation:elim-skull-drop 0.5s cubic-bezier(0.22,1,0.36,1); }
+    #elim-name { font-size:18px; font-weight:700; color:#ff6060; letter-spacing:2px; font-family:'Playfair Display',serif; margin-bottom:4px; }
+    #elim-sub { font-size:10px; color:rgba(200,80,80,0.7); letter-spacing:3px; font-family:'Orbitron',sans-serif; }
+    @keyframes elim-vignette-pulse {
+      0%   { opacity:0; transform:scale(1.3); }
+      100% { opacity:1; transform:scale(1); }
+    }
+    @keyframes elim-card-in {
+      0%   { opacity:0; transform:scale(0.7) translateY(20px); }
+      100% { opacity:1; transform:scale(1) translateY(0); }
+    }
+    @keyframes elim-skull-drop {
+      0%   { transform:translateY(-20px) scale(0.5); opacity:0; }
+      60%  { transform:translateY(4px) scale(1.15); opacity:1; }
+      100% { transform:translateY(0) scale(1); }
+    }
+
+    /* ── Chip loss shake ── */
+    @keyframes chip-shake {
+      0%   { transform:translate(-50%,-50%) scale(1); }
+      20%  { transform:translate(calc(-50% - 4px),-50%) scale(1.08); }
+      40%  { transform:translate(calc(-50% + 4px),-50%) scale(1.08); }
+      60%  { transform:translate(calc(-50% - 3px),-50%) scale(1.04); }
+      80%  { transform:translate(calc(-50% + 2px),-50%) scale(1.02); }
+      100% { transform:translate(-50%,-50%) scale(1); }
+    }
+    .chip-shake { animation:chip-shake 0.38s cubic-bezier(0.36,0.07,0.19,0.97); }
+
+    /* ── My hand area chip shake ── */
+    @keyframes hand-chip-shake {
+      0%,100% { transform:none; }
+      25% { transform:translateX(-4px); }
+      50% { transform:translateX(4px); }
+      75% { transform:translateX(-3px); }
+    }
+    .hand-chip-shake { animation:hand-chip-shake 0.36s cubic-bezier(0.36,0.07,0.19,0.97); }
+
     /* ── Card animations ── */
     @keyframes dealCard {
       0%   { transform: translate(var(--deal-x), var(--deal-y)) scale(0.4) rotate(var(--deal-rot)); opacity:0; }
@@ -1660,6 +1717,12 @@
         <text x="350" y="190" text-anchor="middle" font-size="80" font-family="serif" fill="rgba(255,255,255,0.04)">♠</text>
         <text x="350" y="228" text-anchor="middle" font-size="11" font-family="Georgia,serif" letter-spacing="7" fill="rgba(255,255,255,0.18)">PASS THE ACE</text>
         <text x="350" y="228" text-anchor="middle" font-size="11" font-family="Georgia,serif" letter-spacing="7" fill="rgba(0,0,0,0.25)">PASS THE ACE</text>
+        <!-- Ambient shimmer sweep -->
+        <ellipse id="table-shimmer" cx="200" cy="130" rx="260" ry="130" fill="rgba(255,255,255,0.032)" style="transform-origin:350px 200px;">
+          <animateTransform attributeName="transform" type="translate"
+            values="0 0; 300 140; 0 0" dur="7s" repeatCount="indefinite" calcMode="spline"
+            keySplines="0.45 0 0.55 1; 0.45 0 0.55 1"/>
+        </ellipse>
       </svg>
     </div>
   </div>
@@ -1679,6 +1742,16 @@
       <button class="hand-btn" id="btn-keep">KEEP</button>
       <button class="hand-btn" id="btn-pass">PASS →</button>
     </div>
+  </div>
+</div>
+
+<!-- ── ELIMINATION OVERLAY ── -->
+<div id="elim-overlay">
+  <div id="elim-overlay-bg"></div>
+  <div id="elim-overlay-card">
+    <span id="elim-skull">💀</span>
+    <div id="elim-name">PLAYER</div>
+    <div id="elim-sub">ELIMINATED</div>
   </div>
 </div>
 
@@ -2290,6 +2363,43 @@ function premiumChips(chips,danger){
     if(i<chips){const cls=(danger||chips<=1)?'p-chip-dot danger':'p-chip-dot';return `<span class="${cls}"></span>`;}
     return '<span class="p-chip-dot empty"></span>';
   }).join('');
+}
+
+// ── Haptic feedback ──
+function haptic(pattern){
+  try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+}
+
+// ── Elimination overlay ──
+let _elimTimer=null;
+function showEliminationOverlay(name){
+  haptic([40,60,80,60,120]);
+  const ov=document.getElementById('elim-overlay');
+  document.getElementById('elim-name').textContent=name.toUpperCase();
+  ov.classList.add('show');
+  clearTimeout(_elimTimer);
+  _elimTimer=setTimeout(()=>ov.classList.remove('show'),2200);
+}
+
+// ── Chip shake on a player slot ──
+function animateChipLoss(playerId){
+  haptic(30);
+  const isMe=playerId===myId;
+  if(isMe){
+    const el=document.getElementById('my-chips-dots');
+    if(!el)return;
+    el.classList.remove('hand-chip-shake');
+    void el.offsetWidth;
+    el.classList.add('hand-chip-shake');
+    el.addEventListener('animationend',()=>el.classList.remove('hand-chip-shake'),{once:true});
+  } else {
+    const slot=document.getElementById(`slot-${playerId}`);
+    if(!slot)return;
+    slot.classList.remove('chip-shake');
+    void slot.offsetWidth;
+    slot.classList.add('chip-shake');
+    slot.addEventListener('animationend',()=>slot.classList.remove('chip-shake'),{once:true});
+  }
 }
 
 function loadAssets(){
@@ -3144,8 +3254,19 @@ function initSocket(){
     animateDeckExchange(data.playerId);
   });
   socket.on('roundEnded',data=>{
+    const prevChips={};
+    players.forEach(p=>{ prevChips[p.id]=p.chips; });
     data.players.forEach(updated=>{const p=players.find(p=>p.id===updated.id);if(p){p.chips=updated.chips;p.eliminated=updated.eliminated;if(updated.card)p.card=updated.card;}});
-    myTurn=false;updateTable(true);showRoundResult(data);
+    myTurn=false;updateTable(true);
+    // Chip shake + elimination overlay
+    const losers=data.losers||[];
+    losers.forEach((loser,i)=>{
+      const p=players.find(p=>p.name===loser.name);
+      if(!p)return;
+      setTimeout(()=>animateChipLoss(p.id), 400+i*200);
+      if(p.eliminated) setTimeout(()=>showEliminationOverlay(p.name), 700+i*200);
+    });
+    showRoundResult(data);
   });
   socket.on('gameOver',data=>{
     document.getElementById('round-result').classList.remove('show');
@@ -3249,7 +3370,17 @@ function soloEndRound(){
   // Deck exchange animation for last player
   const lastP=soloPlayers[soloCurrentIndex];
   if(lastP&&!lastP.eliminated) animateDeckExchange(lastP.id);
-  losers.forEach(p=>{p.chips--;if(p.chips<=0)p.eliminated=true;});
+  losers.forEach(p=>{
+    const hadChips=p.chips;
+    p.chips--;
+    // Animate chip loss
+    setTimeout(()=>animateChipLoss(p.id), 400);
+    if(p.chips<=0){
+      p.eliminated=true;
+      // Show elimination overlay after a short delay
+      setTimeout(()=>showEliminationOverlay(p.name), 700);
+    }
+  });
   myTurn=false;updateTable(true);
   // Check if game is over
   const stillAlive=soloAlive();
@@ -3668,13 +3799,13 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   // Game actions
   document.getElementById('btn-keep').addEventListener('click',()=>{
-    if(!myTurn)return;myTurn=false;updateTable();
+    if(!myTurn)return;myTurn=false;haptic(15);updateTable();
     if(isSolo)soloKeep();
     else if(isTournamentGame)socket.emit('tournamentKeep');
     else socket.emit('keep');
   });
   document.getElementById('btn-pass').addEventListener('click',()=>{
-    if(!myTurn)return;myTurn=false;updateTable();
+    if(!myTurn)return;myTurn=false;haptic([20,30,20]);updateTable();
     if(isSolo)soloPass();
     else if(isTournamentGame)socket.emit('tournamentPass');
     else socket.emit('pass');
@@ -4248,6 +4379,7 @@ soloProcessTurn = function() {
 const _origAnimateDeal = animateDealCards;
 animateDealCards = function(onDone) {
   Audio.sfx.deal();
+  haptic(10);
   _origAnimateDeal.call(this, onDone);
 };
 
@@ -4255,6 +4387,7 @@ animateDealCards = function(onDone) {
 const _origAnimatePass = animateCardPass;
 animateCardPass = function(fromId, toId, onDone) {
   Audio.sfx.pass();
+  haptic([15,20]);
   _origAnimatePass.call(this, fromId, toId, onDone);
 };
 
