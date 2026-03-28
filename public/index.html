@@ -3508,17 +3508,9 @@ const Audio = (() => {
     deal() {
       if (sfxMuted) return;
       const c = getCtx(), t = c.currentTime;
-      // Paper whoosh — broadband noise swept high→low, with a subtle thud
-      richNoise(t,        0.18, 0.28, 800,  5000);
-      richNoise(t + 0.04, 0.12, 0.14, 200,  900);   // body thud
-      // Pitch-swept tone for the "slide"
-      const o = c.createOscillator(); o.type = 'triangle';
-      o.frequency.setValueAtTime(420, t);
-      o.frequency.exponentialRampToValueAtTime(180, t + 0.18);
-      const g = c.createGain();
-      adsr(g, t, 0.005, 0.08, 0.2, 0.10, 0.08);
-      o.connect(g); out(g);
-      o.start(t); o.stop(t + 0.28);
+      // Soft paper flick — tiny high-freq flutter then a whisper of air settling
+      richNoise(t,        0.06, 0.05, 3000, 9000);  // brief crisp flick transient
+      richNoise(t + 0.04, 0.10, 0.02, 800,  3000);  // soft paper body, barely there
     },
 
     pass() {
