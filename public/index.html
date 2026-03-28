@@ -1503,7 +1503,7 @@
 <div id="screen-settings" class="screen">
   <div class="settings-wrap">
     <div class="howto-header">
-      <button class="lobby-back" id="btn-back-settings" onclick="showScreen(typeof _previousScreen!=='undefined'?_previousScreen:'screen-home')">← BACK</button>
+      <button class="lobby-back" id="btn-back-settings">← BACK</button>
       <div class="settings-title">SETTINGS</div>
     </div>
 
@@ -2260,7 +2260,10 @@ function buildAvatarPicker() {
 let _previousScreen = 'screen-home';
 function showScreen(id) {
   const current = document.querySelector('.screen.active');
-  if (current && current.id !== id) _previousScreen = current.id;
+  // Only record previous screen when navigating TO settings (so back knows where to return)
+  if (current && current.id !== id && id === 'screen-settings') {
+    _previousScreen = current.id;
+  }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (id === 'screen-home' && typeof Audio !== 'undefined') Audio.attachStartTrigger();
