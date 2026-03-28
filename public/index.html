@@ -2025,6 +2025,7 @@ function buildAvatarPicker() {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if (id === 'screen-home' && typeof Audio !== 'undefined') Audio.attachStartTrigger();
 }
 function showToast(msg,color='#fff',ms=3000){const el=document.getElementById('toast');el.textContent=msg;el.style.color=color;el.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display='none',ms);}
 function showKingToast(){const el=document.getElementById('king-toast');el.style.display='block';clearTimeout(kingToastTimer);kingToastTimer=setTimeout(()=>el.style.display='none',2200);}
@@ -3202,6 +3203,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 
 <!-- ── AUDIO SYSTEM ── -->
+<script>window.PTA_MUSIC_SRC = 'Vibing Over Venus.mp3';</script>
 <script>
 // ─────────────────────────────────────────────
 //  Audio engine — Web Audio API synth + music
@@ -3220,36 +3222,102 @@ const Audio = (() => {
     return ctx;
   }
 
-  // ── Synth helpers ──
-  function osc(freq, type, startT, dur, gainVal, fadeOut=true, dest=null) {
-    const c = getCtx();
-    const g = c.createGain();
-    g.gain.setValueAtTime(gainVal, startT);
-    if (fadeOut) g.gain.exponentialRampToValueAtTime(0.0001, startT + dur);
-    const o = c.createOscillator();
-    o.type = type;
-    o.frequency.setValueAtTime(freq, startT);
-    o.connect(g);
-    g.connect(dest || c.destination);
-    o.start(startT);
-    o.stop(startT + dur + 0.01);
+  // ── Reverb (convolution) ──
+  let reverbNode = null;
+  function getReverb() {
+    if (reverbNode) return reverbNode;
+    try {
+      const c = getCtx();
+      reverbNode = c.createConvolver();
+      const len = c.sampleRate * 1.4;
+      const ir = c.createBuffer(2, len, c.sampleRate);
+      for (let ch = 0; ch < 2; ch++) {
+        const d = ir.getChannelData(ch);
+        for (let i = 0; i < len; i++) {
+          const t = i / c.sampleRate;
+          const earlyBoost = t < 0.02 ? 1.8 : 1.0;
+          d[i] = (Math.random() * 2 - 1) * earlyBoost * Math.pow(1 - t / 1.4, 2.8);
+        }
+      }
+      reverbNode.buffer = ir;
+      const wet = c.createGain(); wet.gain.value = 0.22;
+      reverbNode.connect(wet);
+      wet.connect(c.destination);
+      return reverbNode;
+    } catch(e) {
+      // Reverb unavailable — return a passthrough gain to destination
+      const c = getCtx();
+      const fallback = c.createGain(); fallback.gain.value = 0.22;
+      fallback.connect(c.destination);
+      reverbNode = fallback;
+      return reverbNode;
+    }
   }
 
-  function noise(startT, dur, gainVal, filtFreq=2000) {
+  // ── Master output with soft limiter ──
+  let masterGain = null;
+  function getMaster() {
+    if (masterGain) return masterGain;
     const c = getCtx();
-    const buf = c.createBuffer(1, c.sampleRate * dur, c.sampleRate);
+    masterGain = c.createDynamicsCompressor();
+    masterGain.threshold.value = -10;
+    masterGain.knee.value = 8;
+    masterGain.ratio.value = 4;
+    masterGain.attack.value = 0.003;
+    masterGain.release.value = 0.15;
+    masterGain.connect(c.destination);
+    return masterGain;
+  }
+
+  // Route to both dry master + reverb
+  function out(node) {
+    const c = getCtx();
+    node.connect(getMaster());
+    node.connect(getReverb());
+  }
+
+  // ── ADSR envelope ──
+  function adsr(gainNode, t, atk, dec, sus, rel, peak) {
+    const g = gainNode.gain;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(0, t);
+    g.linearRampToValueAtTime(peak, t + atk);
+    g.linearRampToValueAtTime(peak * sus, t + atk + dec);
+    g.setValueAtTime(peak * sus, t + atk + dec);
+    g.exponentialRampToValueAtTime(0.0001, t + atk + dec + rel);
+  }
+
+  // ── Layered oscillator (chorus = 2 oscs slightly detuned) ──
+  function richOsc(freq, type, t, atk, dec, sus, rel, peak, dest, detune=4) {
+    const c = getCtx();
+    [-detune/2, detune/2].forEach(dt => {
+      const o = c.createOscillator();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t);
+      o.detune.value = dt;
+      const g = c.createGain();
+      adsr(g, t, atk, dec, sus, rel, peak * 0.55);
+      o.connect(g);
+      (dest ? g.connect(dest) : out(g));
+      o.start(t);
+      o.stop(t + atk + dec + rel + 0.05);
+    });
+  }
+
+  // ── Filtered noise burst ──
+  function richNoise(t, dur, peak, loFreq, hiFreq, dest) {
+    const c = getCtx();
+    const buf = c.createBuffer(1, Math.ceil(c.sampleRate * dur), c.sampleRate);
     const data = buf.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-    const src = c.createBufferSource();
-    src.buffer = buf;
-    const filt = c.createBiquadFilter();
-    filt.type = 'bandpass';
-    filt.frequency.value = filtFreq;
+    const src = c.createBufferSource(); src.buffer = buf;
+    const lo = c.createBiquadFilter(); lo.type='lowpass';  lo.frequency.value = hiFreq;
+    const hi = c.createBiquadFilter(); hi.type='highpass'; hi.frequency.value = loFreq;
     const g = c.createGain();
-    g.gain.setValueAtTime(gainVal, startT);
-    g.gain.exponentialRampToValueAtTime(0.0001, startT + dur);
-    src.connect(filt); filt.connect(g); g.connect(c.destination);
-    src.start(startT); src.stop(startT + dur);
+    adsr(g, t, 0.004, dur * 0.3, 0.3, dur * 0.65, peak);
+    src.connect(hi); hi.connect(lo); lo.connect(g);
+    dest ? g.connect(dest) : out(g);
+    src.start(t); src.stop(t + dur + 0.05);
   }
 
   // ── Sound effects ──
@@ -3257,59 +3325,127 @@ const Audio = (() => {
     click() {
       if (muted) return;
       const c = getCtx(), t = c.currentTime;
-      osc(900, 'sine', t, 0.06, 0.08);
-      osc(1200, 'sine', t + 0.02, 0.04, 0.04);
+      // Crisp wooden tap
+      richOsc(1100, 'sine', t, 0.002, 0.04, 0.0, 0.06, 0.10, null, 2);
+      richNoise(t, 0.05, 0.06, 1200, 4000);
     },
+
     deal() {
       if (muted) return;
       const c = getCtx(), t = c.currentTime;
-      noise(t, 0.12, 0.18, 1800);
-      osc(320, 'triangle', t, 0.1, 0.06);
+      // Paper whoosh — broadband noise swept high→low, with a subtle thud
+      richNoise(t,        0.18, 0.28, 800,  5000);
+      richNoise(t + 0.04, 0.12, 0.14, 200,  900);   // body thud
+      // Pitch-swept tone for the "slide"
+      const o = c.createOscillator(); o.type = 'triangle';
+      o.frequency.setValueAtTime(420, t);
+      o.frequency.exponentialRampToValueAtTime(180, t + 0.18);
+      const g = c.createGain();
+      adsr(g, t, 0.005, 0.08, 0.2, 0.10, 0.08);
+      o.connect(g); out(g);
+      o.start(t); o.stop(t + 0.28);
     },
+
     pass() {
       if (muted) return;
       const c = getCtx(), t = c.currentTime;
-      noise(t, 0.08, 0.22, 2400);
-      osc(260, 'triangle', t, 0.14, 0.07);
-      osc(200, 'triangle', t + 0.06, 0.08, 0.04);
+      // Quick sharp swipe — fast high noise + descending pitch
+      richNoise(t,        0.10, 0.32, 1800, 6000);
+      richNoise(t + 0.05, 0.08, 0.16, 300,  1200);
+      const o = c.createOscillator(); o.type = 'triangle';
+      o.frequency.setValueAtTime(380, t);
+      o.frequency.exponentialRampToValueAtTime(140, t + 0.14);
+      const g = c.createGain();
+      adsr(g, t, 0.003, 0.06, 0.15, 0.09, 0.10);
+      o.connect(g); out(g);
+      o.start(t); o.stop(t + 0.18);
     },
+
     yourTurn() {
       if (muted) return;
       const c = getCtx(), t = c.currentTime;
-      osc(523, 'sine', t,      0.12, 0.14);
-      osc(659, 'sine', t+0.10, 0.12, 0.14);
-      osc(784, 'sine', t+0.20, 0.18, 0.18);
+      // Three bell-like tones, rising, with warm harmonics
+      const notes = [523.25, 659.25, 783.99]; // C5 E5 G5
+      notes.forEach((freq, i) => {
+        const st = t + i * 0.13;
+        // Fundamental
+        richOsc(freq,      'sine',     st, 0.006, 0.12, 0.4, 0.55, 0.20, null, 3);
+        // Octave shimmer
+        richOsc(freq * 2,  'sine',     st, 0.006, 0.08, 0.1, 0.30, 0.06, null, 2);
+        // Subtle bell partial at 2.75x
+        richOsc(freq * 2.75,'sine',    st, 0.006, 0.05, 0.0, 0.18, 0.03, null, 1);
+      });
+      // Final sparkle noise
+      richNoise(t + 0.32, 0.12, 0.06, 3000, 8000);
     },
+
     chipLost() {
       if (muted) return;
       const c = getCtx(), t = c.currentTime;
-      osc(440, 'triangle', t,      0.08, 0.15);
-      osc(370, 'triangle', t+0.07, 0.08, 0.12);
-      osc(311, 'triangle', t+0.14, 0.14, 0.14);
-      noise(t, 0.06, 0.08, 1000);
+      // Ceramic chip clink — short, pitched, with rattle
+      richNoise(t, 0.04, 0.22, 2000, 7000);  // initial clink transient
+      // Three descending tones — like coins dropping
+      [[440, 0.0], [349.23, 0.09], [293.66, 0.19]].forEach(([freq, dt]) => {
+        richOsc(freq, 'sine', t + dt, 0.004, 0.06, 0.1, 0.28, 0.18, null, 5);
+        richOsc(freq * 1.5, 'sine', t + dt, 0.004, 0.04, 0.0, 0.14, 0.06, null, 2);
+      });
+      richNoise(t + 0.08, 0.14, 0.08, 800, 3000); // settle rattle
     },
+
     eliminated() {
       if (muted) return;
       const c = getCtx(), t = c.currentTime;
-      osc(220, 'sawtooth', t,      0.20, 0.22);
-      osc(185, 'sawtooth', t+0.15, 0.18, 0.20);
-      osc(155, 'sawtooth', t+0.32, 0.24, 0.22);
-      noise(t, 0.5, 0.06, 600);
+      // Heavy descending "game show out" — low thud + falling tones + low rumble
+      richNoise(t, 0.08, 0.35, 60, 400);   // deep thud
+      richNoise(t, 0.06, 0.20, 400, 1200); // mid crack
+      // Descending tritone — ominous
+      [[220, 0.00], [185, 0.18], [155, 0.36], [130, 0.55]].forEach(([freq, dt]) => {
+        richOsc(freq, 'sawtooth', t + dt, 0.01, 0.12, 0.5, 0.30, 0.18, null, 6);
+        richOsc(freq / 2, 'sine', t + dt, 0.01, 0.10, 0.3, 0.30, 0.12, null, 2);
+      });
+      // Subsonic rumble
+      const sub = c.createOscillator(); sub.type = 'sine';
+      sub.frequency.setValueAtTime(55, t);
+      sub.frequency.exponentialRampToValueAtTime(28, t + 0.8);
+      const sg = c.createGain();
+      adsr(sg, t, 0.01, 0.2, 0.3, 0.5, 0.22);
+      sub.connect(sg); out(sg);
+      sub.start(t); sub.stop(t + 1.1);
     },
+
     win() {
       if (muted) return;
       const c = getCtx(), t = c.currentTime;
-      const notes = [523, 659, 784, 1047];
-      notes.forEach((f, i) => osc(f, 'sine', t + i * 0.1, 0.3, 0.18));
-      osc(1319, 'sine', t + 0.45, 0.5, 0.22);
-      noise(t + 0.45, 0.3, 0.08, 3000);
+      // Triumphant fanfare — ascending chord arpeggio + shimmer
+      const fanfare = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+      fanfare.forEach((freq, i) => {
+        const st = t + i * 0.11;
+        richOsc(freq,     'sine',    st, 0.008, 0.10, 0.6, 0.55, 0.22, null, 4);
+        richOsc(freq * 2, 'sine',    st, 0.008, 0.07, 0.2, 0.35, 0.07, null, 2);
+        richOsc(freq / 2, 'triangle',st, 0.008, 0.12, 0.4, 0.40, 0.09, null, 2);
+      });
+      // Coin shower — rapid noise bursts
+      for (let i = 0; i < 6; i++) {
+        richNoise(t + 0.42 + i * 0.06, 0.07, 0.10, 2000, 8000);
+      }
+      // Final sustain chord
+      [523.25, 659.25, 783.99].forEach(freq => {
+        richOsc(freq, 'sine', t + 0.62, 0.02, 0.15, 0.7, 0.80, 0.16, null, 3);
+      });
     },
+
     lose() {
       if (muted) return;
       const c = getCtx(), t = c.currentTime;
-      osc(330, 'sawtooth', t,      0.22, 0.20);
-      osc(277, 'sawtooth', t+0.18, 0.22, 0.20);
-      osc(220, 'sawtooth', t+0.38, 0.30, 0.22);
+      // Wah-wah descending — classic sad trombone feel but subtle
+      const notes = [392, 349.23, 329.63, 293.66];
+      notes.forEach((freq, i) => {
+        const st = t + i * 0.17;
+        richOsc(freq,     'sawtooth', st, 0.012, 0.10, 0.55, 0.38, 0.18, null, 5);
+        richOsc(freq * 1.5,'sine',    st, 0.012, 0.08, 0.20, 0.28, 0.06, null, 2);
+      });
+      // Low sub hit at the end
+      richNoise(t + 0.55, 0.20, 0.18, 40, 200);
     }
   };
 
@@ -3364,20 +3500,43 @@ const Audio = (() => {
 
     const src = window.PTA_MUSIC_SRC;
     if (src) {
-      // Use an <audio> element for looping music files (handles all formats)
-      bgAudio = new window.Audio(src);
-      bgAudio.loop = true;
-      bgAudio.volume = muted ? 0 : 0.35;
-      bgAudio.play().catch(() => {});
+      const c = getCtx();
+      // Try Web Audio API fetch first
+      fetch(src)
+        .then(r => {
+          if (!r.ok) throw new Error('fetch failed');
+          return r.arrayBuffer();
+        })
+        .then(buf => c.decodeAudioData(buf))
+        .then(decoded => {
+          musicBuffer = decoded;
+          musicGain = c.createGain();
+          musicGain.gain.value = muted ? 0 : 0.35;
+          musicGain.connect(c.destination);
+          musicSource = c.createBufferSource();
+          musicSource.buffer = musicBuffer;
+          musicSource.loop = true;
+          musicSource.connect(musicGain);
+          musicSource.start(0);
+        })
+        .catch(() => {
+          // Fallback: plain <audio> element
+          const el = document.createElement('audio');
+          el.src = src; el.loop = true;
+          el.volume = muted ? 0 : 0.35;
+          el.play().catch(() => {});
+          // store so applyMute can reach it
+          window._ptaBgAudioEl = el;
+        });
     } else {
-      // Fallback: synthesised ambient
       buildAmbiMusic();
     }
   }
 
   function applyMute() {
-    if (bgAudio) bgAudio.volume = muted ? 0 : 0.35;
+    if (musicGain) musicGain.gain.setTargetAtTime(muted ? 0 : 0.35, getCtx().currentTime, 0.3);
     if (ambiGain) ambiGain.gain.setTargetAtTime(muted ? 0 : 0.06, getCtx().currentTime, 0.3);
+    if (window._ptaBgAudioEl) window._ptaBgAudioEl.volume = muted ? 0 : 0.35;
   }
 
   function toggleMute() {
@@ -3398,9 +3557,10 @@ const Audio = (() => {
   // Start music on first real user interaction (browser autoplay policy)
   function attachStartTrigger() {
     const start = () => { startMusic(); };
-    document.addEventListener('click',     start, { once: true });
-    document.addEventListener('touchstart',start, { once: true });
-    document.addEventListener('keydown',   start, { once: true });
+    document.addEventListener('click',      start, { once: true });
+    document.addEventListener('mousedown',  start, { once: true });
+    document.addEventListener('touchstart', start, { once: true });
+    document.addEventListener('keydown',    start, { once: true });
   }
 
   return { sfx, initMuteButton, attachStartTrigger, toggleMute };
