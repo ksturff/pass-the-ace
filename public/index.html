@@ -3524,16 +3524,8 @@ const Audio = (() => {
     pass() {
       if (sfxMuted) return;
       const c = getCtx(), t = c.currentTime;
-      // Quick sharp swipe — fast high noise + descending pitch
-      richNoise(t,        0.10, 0.32, 1800, 6000);
-      richNoise(t + 0.05, 0.08, 0.16, 300,  1200);
-      const o = c.createOscillator(); o.type = 'triangle';
-      o.frequency.setValueAtTime(380, t);
-      o.frequency.exponentialRampToValueAtTime(140, t + 0.14);
-      const g = c.createGain();
-      adsr(g, t, 0.003, 0.06, 0.15, 0.09, 0.10);
-      o.connect(g); out(g);
-      o.start(t); o.stop(t + 0.18);
+      // Whisper swoosh — very soft, brief high-freq air
+      richNoise(t, 0.12, 0.04, 2500, 7000);
     },
 
     yourTurn() {
