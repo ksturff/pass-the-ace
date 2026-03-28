@@ -1463,6 +1463,14 @@
         <input type="range" class="vol-slider" id="music-volume" min="0" max="100" value="70">
       </div>
     </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">Card Back Style</div>
+      <div class="card-back-grid" id="card-back-grid">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -2189,6 +2197,132 @@ function loadAssets(){
   });
 }
 
+
+// ── Card back styles ──
+let selectedCardBack = localStorage.getItem('pta_card_back') || 'teal_diamond';
+
+const CARD_BACKS = {
+  teal_diamond: {
+    label: 'Teal Diamond',
+    draw(ctx, x, y, w, h, cx, cy) {
+      ctx.fillStyle='#0a0e1a';
+      ctx.beginPath();ctx.roundRect(x+1,y+1,w-2,h-2,2);ctx.fill();
+      ctx.strokeStyle='rgba(0,180,160,0.55)';ctx.lineWidth=0.8;
+      ctx.beginPath();ctx.roundRect(x+2.5,y+2.5,w-5,h-5,2);ctx.stroke();
+      const sp=5;
+      ctx.strokeStyle='rgba(0,180,160,0.13)';ctx.lineWidth=0.4;
+      for(let gx=x+3;gx<x+w-3;gx+=sp){
+        for(let gy=y+3;gy<y+h-3;gy+=sp){
+          ctx.beginPath();ctx.moveTo(gx+sp/2,gy);ctx.lineTo(gx+sp,gy+sp/2);
+          ctx.lineTo(gx+sp/2,gy+sp);ctx.lineTo(gx,gy+sp/2);ctx.closePath();ctx.stroke();
+        }
+      }
+      ctx.fillStyle='rgba(0,180,160,0.28)';
+      ctx.font=`bold ${w*0.45}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('♦',cx,cy);
+    }
+  },
+  gold_crosshatch: {
+    label: 'Gold Classic',
+    draw(ctx, x, y, w, h, cx, cy) {
+      ctx.fillStyle='#12100a';
+      ctx.beginPath();ctx.roundRect(x+1,y+1,w-2,h-2,2);ctx.fill();
+      ctx.strokeStyle='rgba(200,162,60,0.5)';ctx.lineWidth=0.8;
+      ctx.beginPath();ctx.roundRect(x+2.5,y+2.5,w-5,h-5,2);ctx.stroke();
+      ctx.strokeStyle='rgba(200,162,60,0.09)';ctx.lineWidth=0.5;
+      for(let i=-h;i<w+h;i+=4){
+        ctx.beginPath();ctx.moveTo(x+3+i,y+3);ctx.lineTo(x+3+i-h,y+h-3);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(x+3+i,y+3);ctx.lineTo(x+3+i+h,y+h-3);ctx.stroke();
+      }
+      ctx.fillStyle='rgba(200,162,60,0.25)';
+      ctx.font=`bold ${w*0.45}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('♠',cx,cy);
+    }
+  },
+  crimson: {
+    label: 'Crimson',
+    draw(ctx, x, y, w, h, cx, cy) {
+      ctx.fillStyle='#1a0608';
+      ctx.beginPath();ctx.roundRect(x+1,y+1,w-2,h-2,2);ctx.fill();
+      ctx.strokeStyle='rgba(200,40,50,0.55)';ctx.lineWidth=0.8;
+      ctx.beginPath();ctx.roundRect(x+2.5,y+2.5,w-5,h-5,2);ctx.stroke();
+      // Diagonal stripe pattern
+      ctx.strokeStyle='rgba(200,40,50,0.1)';ctx.lineWidth=1.2;
+      for(let i=-h;i<w+h;i+=5){
+        ctx.beginPath();ctx.moveTo(x+3+i,y+3);ctx.lineTo(x+3+i-h,y+h-3);ctx.stroke();
+      }
+      ctx.fillStyle='rgba(200,40,50,0.3)';
+      ctx.font=`bold ${w*0.45}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('♥',cx,cy);
+    }
+  },
+  midnight: {
+    label: 'Midnight',
+    draw(ctx, x, y, w, h, cx, cy) {
+      ctx.fillStyle='#060810';
+      ctx.beginPath();ctx.roundRect(x+1,y+1,w-2,h-2,2);ctx.fill();
+      ctx.strokeStyle='rgba(120,100,220,0.5)';ctx.lineWidth=0.8;
+      ctx.beginPath();ctx.roundRect(x+2.5,y+2.5,w-5,h-5,2);ctx.stroke();
+      // Dot grid
+      ctx.fillStyle='rgba(120,100,220,0.18)';
+      const sp=5;
+      for(let gx=x+4;gx<x+w-3;gx+=sp){
+        for(let gy=y+4;gy<y+h-3;gy+=sp){
+          ctx.beginPath();ctx.arc(gx,gy,0.8,0,Math.PI*2);ctx.fill();
+        }
+      }
+      ctx.fillStyle='rgba(120,100,220,0.32)';
+      ctx.font=`bold ${w*0.45}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('★',cx,cy);
+    }
+  },
+  forest: {
+    label: 'Forest',
+    draw(ctx, x, y, w, h, cx, cy) {
+      ctx.fillStyle='#061008';
+      ctx.beginPath();ctx.roundRect(x+1,y+1,w-2,h-2,2);ctx.fill();
+      ctx.strokeStyle='rgba(40,180,80,0.5)';ctx.lineWidth=0.8;
+      ctx.beginPath();ctx.roundRect(x+2.5,y+2.5,w-5,h-5,2);ctx.stroke();
+      // Wavy lines
+      ctx.strokeStyle='rgba(40,180,80,0.1)';ctx.lineWidth=0.6;
+      for(let gy=y+5;gy<y+h-3;gy+=4){
+        ctx.beginPath();
+        for(let gx=x+3;gx<x+w-3;gx+=2){
+          const wave=Math.sin((gx-x)*0.6)*1.2;
+          gx===x+3?ctx.moveTo(gx,gy+wave):ctx.lineTo(gx,gy+wave);
+        }
+        ctx.stroke();
+      }
+      ctx.fillStyle='rgba(40,180,80,0.28)';
+      ctx.font=`bold ${w*0.45}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('♣',cx,cy);
+    }
+  },
+  rose_gold: {
+    label: 'Rose Gold',
+    draw(ctx, x, y, w, h, cx, cy) {
+      ctx.fillStyle='#160a0a';
+      ctx.beginPath();ctx.roundRect(x+1,y+1,w-2,h-2,2);ctx.fill();
+      ctx.strokeStyle='rgba(220,140,100,0.55)';ctx.lineWidth=0.8;
+      ctx.beginPath();ctx.roundRect(x+2.5,y+2.5,w-5,h-5,2);ctx.stroke();
+      // Concentric rounded rects
+      ctx.strokeStyle='rgba(220,140,100,0.1)';ctx.lineWidth=0.5;
+      for(let i=0;i<4;i++){
+        const pad=4+i*3.5;
+        ctx.beginPath();ctx.roundRect(x+pad,y+pad,w-pad*2,h-pad*2,2);ctx.stroke();
+      }
+      ctx.fillStyle='rgba(220,140,100,0.28)';
+      ctx.font=`bold ${w*0.38}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('✦',cx,cy);
+    }
+  }
+};
+
+function drawCardBack(ctx, x, y, w, h, cx, cy) {
+  const style = CARD_BACKS[selectedCardBack] || CARD_BACKS.teal_diamond;
+  style.draw(ctx, x, y, w, h, cx, cy);
+}
+
 function drawCardFallback(ctx,card,cx,cy,w,h,faceUp){
   const x=cx-w/2,y=cy-h/2;ctx.save();
   // Card base
@@ -2197,29 +2331,7 @@ function drawCardFallback(ctx,card,cx,cy,w,h,faceUp){
   ctx.lineWidth=0.5;
   ctx.beginPath();ctx.roundRect(x,y,w,h,3);ctx.fill();ctx.stroke();
   if(!faceUp){
-    // Premium card back — deep navy with diamond grid and teal accent border
-    ctx.fillStyle='#0a0e1a';
-    ctx.beginPath();ctx.roundRect(x+1,y+1,w-2,h-2,2);ctx.fill();
-    // Teal border inset
-    ctx.strokeStyle='rgba(0,180,160,0.55)';ctx.lineWidth=0.8;
-    ctx.beginPath();ctx.roundRect(x+2.5,y+2.5,w-5,h-5,2);ctx.stroke();
-    // Diamond grid pattern
-    const spacing=5;
-    ctx.strokeStyle='rgba(0,180,160,0.12)';ctx.lineWidth=0.4;
-    for(let gx=x+3;gx<x+w-3;gx+=spacing){
-      for(let gy=y+3;gy<y+h-3;gy+=spacing){
-        ctx.beginPath();
-        ctx.moveTo(gx+spacing/2,gy);
-        ctx.lineTo(gx+spacing,gy+spacing/2);
-        ctx.lineTo(gx+spacing/2,gy+spacing);
-        ctx.lineTo(gx,gy+spacing/2);
-        ctx.closePath();ctx.stroke();
-      }
-    }
-    // Center diamond watermark
-    ctx.fillStyle='rgba(0,180,160,0.28)';
-    ctx.font=`bold ${w*0.45}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('♦',cx,cy);
+    drawCardBack(ctx, x, y, w, h, cx, cy);
     ctx.restore();return;
   }
   // Face-up card
@@ -3770,6 +3882,7 @@ const Audio = (() => {
       musicSlider.style.setProperty('--val', v + '%');
       setMusicVolume(v / 100);
     };
+    initCardBackPicker();
   }
 
   // Start music on first real user interaction (browser autoplay policy)
@@ -3781,6 +3894,44 @@ const Audio = (() => {
     document.addEventListener('keydown',    start, { once: true });
   }
 
+  function initCardBackPicker() {
+    const grid = document.getElementById('card-back-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    Object.entries(CARD_BACKS).forEach(([key, style]) => {
+      const opt = document.createElement('div');
+      opt.className = 'card-back-opt' + (selectedCardBack === key ? ' selected' : '');
+      opt.dataset.key = key;
+
+      // Mini preview canvas
+      const cv = document.createElement('canvas');
+      cv.width = 44; cv.height = 62;
+      cv.className = 'card-back-canvas';
+      const ctx = cv.getContext('2d');
+      // Base card shape
+      ctx.fillStyle = '#0e0c06';
+      ctx.strokeStyle = 'rgba(200,162,60,0.2)';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.roundRect(0, 0, 44, 62, 4); ctx.fill(); ctx.stroke();
+      style.draw(ctx, 0, 0, 44, 62, 22, 31);
+
+      const label = document.createElement('div');
+      label.className = 'card-back-label';
+      label.textContent = style.label;
+
+      opt.appendChild(cv);
+      opt.appendChild(label);
+      opt.addEventListener('click', () => {
+        selectedCardBack = key;
+        localStorage.setItem('pta_card_back', key);
+        grid.querySelectorAll('.card-back-opt').forEach(o => o.classList.toggle('selected', o.dataset.key === key));
+        // Redraw all cards on table if game is active
+        if (typeof updateTable === 'function') updateTable();
+      });
+      grid.appendChild(opt);
+    });
+  }
+  window.initCardBackPicker = initCardBackPicker;
   window.initSettingsScreen = initSettingsScreen;
   return { sfx, initMuteButton, attachStartTrigger, toggleMute, initSettingsScreen };
 })();
