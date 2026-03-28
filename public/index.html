@@ -2586,9 +2586,7 @@ function animateDealCards(onDone){
     const fc=document.createElement('canvas');
     fc.width=22;fc.height=32;fc.style.cssText='width:22px;height:32px;display:block;';
     const fcCtx=fc.getContext('2d');
-    const backImg=cardImages['back'];
-    if(backImg&&backImg.complete&&backImg.naturalWidth>0)fcCtx.drawImage(backImg,0,0,22,32);
-    else drawCardFallback(fcCtx,null,11,16,22,32,false);
+    drawCardFallback(fcCtx,null,11,16,22,32,false);
     fly.appendChild(fc);
     table.appendChild(fly);
 
@@ -2644,9 +2642,7 @@ function animateCardPass(fromId, toId, onDone){
   const fc=document.createElement('canvas');
   fc.width=w;fc.height=h;fc.style.cssText=`width:${w}px;height:${h}px;display:block;`;
   const fcCtx2=fc.getContext('2d');
-  const backImg2=cardImages['back'];
-  if(backImg2&&backImg2.complete&&backImg2.naturalWidth>0)fcCtx2.drawImage(backImg2,0,0,w,h);
-  else drawCardFallback(fcCtx2,null,w/2,h/2,w,h,false);
+  drawCardFallback(fcCtx2,null,w/2,h/2,w,h,false);
   fly.appendChild(fc);
   table.appendChild(fly);
 
@@ -2684,9 +2680,14 @@ function updateTable(revealAll=false){
         const isHidden=p.card==='hidden';
         const faceUp=revealAll||(!isHidden&&p.card?.rank==='K');
         const key=faceUp?cardKey(p.card):'back';
-        const img=cardImages[key];
-        if(img&&img.complete&&img.naturalWidth>0)cctx.drawImage(img,0,0,cw,ch);
-        else drawCardFallback(cctx,isHidden?null:p.card,cw/2,ch/2,cw,ch,faceUp);
+        if(faceUp){
+          const img=cardImages[key];
+          if(img&&img.complete&&img.naturalWidth>0)cctx.drawImage(img,0,0,cw,ch);
+          else drawCardFallback(cctx,isHidden?null:p.card,cw/2,ch/2,cw,ch,true);
+        } else {
+          // Always use canvas-drawn back so selectedCardBack style is respected
+          drawCardFallback(cctx,null,cw/2,ch/2,cw,ch,false);
+        }
       }
     }
     if(chipsEl)chipsEl.innerHTML=p.eliminated?'<span style="color:#333;font-size:9px;letter-spacing:1px;">OUT</span>':premiumChips(p.chips,p.chips<=1);
@@ -2718,7 +2719,8 @@ function updateHandArea(){
     if(img&&img.complete&&img.naturalWidth>0)handCtx.drawImage(img,0,0,hcw,hch);
     else drawCardFallback(handCtx,me.card,hcw/2,hch/2,hcw,hch,true);
     cardDisp.classList.toggle('glow',myTurn);
-  }else{
+  } else {
+    // Always canvas-drawn back so selectedCardBack style applies
     drawCardFallback(handCtx,null,hcw/2,hch/2,hcw,hch,false);
     cardDisp.classList.remove('glow');
   }
@@ -3494,8 +3496,15 @@ document.addEventListener('DOMContentLoaded',()=>{
     Audio.initSettingsScreen();
     Audio.initCardBackPicker && Audio.initCardBackPicker();
   });
-  document.getElementById('btn-back-settings').addEventListener('click',()=>showScreen(_previousScreen||'screen-home'));
-  document.getElementById('btn-back-settings').addEventListener('touchend',(e)=>{e.preventDefault();showScreen(_previousScreen||'screen-home');});
+  document.getElementById('btn-back-settings').addEventListener('click',()=>{
+    showScreen(_previousScreen||'screen-home');
+    if(typeof updateTable==='function') setTimeout(()=>updateTable(),50);
+  });
+  document.getElementById('btn-back-settings').addEventListener('touchend',(e)=>{
+    e.preventDefault();
+    showScreen(_previousScreen||'screen-home');
+    if(typeof updateTable==='function') setTimeout(()=>updateTable(),50);
+  });
   document.getElementById('btn-back-howto').addEventListener('click',()=>showScreen('screen-home'));
   document.getElementById('btn-back-howto').addEventListener('touchend',(e)=>{e.preventDefault();showScreen('screen-home');});
   document.getElementById('btn-lobby-back').addEventListener('click',()=>showScreen('screen-home'));
