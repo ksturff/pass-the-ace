@@ -2845,8 +2845,26 @@ function getSeatPositions(n){
   const cardPxX=tw*0.26;
   const cardPxY=th*0.28;
 
+  // Custom angle overrides for 10-player layout.
+  // Default even spacing: 90,126,162,198,234,270,306,342,18,54
+  // Pull corner seats (1,4,6,9) closer to table edges;
+  // spread side pairs (2&3, 7&8) further apart.
+  const customAngles10=[
+    90,   // seat 0: human (bottom centre)
+    112,  // seat 1: bottom-left corner — was 126, shifted up toward left edge
+    155,  // seat 2: left side upper — was 162, spread apart
+    205,  // seat 3: left side lower — was 198, spread apart
+    248,  // seat 4: top-left corner — was 234, shifted toward top
+    270,  // seat 5: top centre
+    292,  // seat 6: top-right corner — was 306, shifted toward top
+    335,  // seat 7: right side upper — was 342, spread apart
+    25,   // seat 8: right side lower — was 18, spread apart
+    68,   // seat 9: bottom-right corner — was 54, shifted up toward right edge
+  ];
+
   for(let i=0;i<n;i++){
-    const angle=(90+i*360/n)*Math.PI/180;
+    const baseDeg=n===10?customAngles10[i]:(90+i*360/n);
+    const angle=baseDeg*Math.PI/180;
     positions.push({
       hud:{
         left:50+Math.cos(angle)*hudPxX/tw*100,
