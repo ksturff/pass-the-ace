@@ -3520,7 +3520,7 @@ function renderTournamentList(list){
     if(!autoScrolled&&(isLive||isUpcoming)){
       autoScrolled=true;
       setTimeout(()=>tr.scrollIntoView({block:'center',behavior:'smooth'}),150);
-      if(!selectedTournamentId)selectTournament(t);
+      // don't auto-open modal on load
     }
   });
   clearInterval(window._tCountdown);
