@@ -2252,9 +2252,13 @@ function tryEnterTicketTournament(tournamentData, onSuccess) {
       document.getElementById('no-saturday-ticket-modal').classList.add('show');
     }
   } else {
-    const count = userProfile?.dailyTickets ?? 0;
-    if (count > 0) {
-      spendDailyTicket().then(() => onSuccess());
+    // Daily tournaments now cost chips instead of a ticket
+    const balance = userProfile?.chipBalance ?? 0;
+    if (balance >= 500) {
+      updateChipBalance(-500).then(() => {
+        showToast('-500 chips — Good luck! 🎟️', '#cd7f32', 2000);
+        onSuccess();
+      });
     } else {
       document.getElementById('no-ticket-modal').classList.add('show');
     }
@@ -2371,8 +2375,7 @@ async function recordGameResult(won, placement=0, tournamentType=null) {
       // Ticket tournament rewards
       if (won && placement === 1) {
         if (tournamentType === 'micro') {
-          // Won a Micro (15-min) tournament → award Daily Ticket
-          setTimeout(() => awardDailyTicket(), 1400);
+          // SAS win — chips already paid out above, no extra ticket
         } else if (tournamentType === 'daily') {
           // Won Daily Tournament → award Saturday Ticket
           setTimeout(() => awardSaturdayTicket(), 1400);
@@ -3349,7 +3352,7 @@ function renderTournamentList(list){
     row.id = `trow-daily-${hr}`;
     row.innerHTML = `
       <td class="col-start" style="color:#cd7f32;font-weight:700;">${fmtTime(slotDate)}<span class="col-date"> in ${countdownLabel(ms)}</span></td>
-      <td class="col-buyin-ticket">🎟️ Daily Ticket</td>
+      <td class="col-buyin-ticket">🪙 500 chips</td>
       <td class="col-name">Daily Tournament</td>
       <td class="col-prize-ticket" style="color:#ffd700;">🏆 Sat Ticket</td>
       <td class="col-state"><span class="t-badge ticket">DAILY</span></td>
@@ -3564,7 +3567,7 @@ function showDailyOrSatModal(t, type, slotDate, ticketsOwned, hr) {
   document.getElementById('t-info-id').textContent = shortGameId(t.id);
   document.getElementById('t-info-start').textContent = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + (isSat ? ' · Saturday' : '');
   document.getElementById('t-info-status').textContent = isRegistered ? '✅ Registered' : 'Registering';
-  document.getElementById('t-info-buyin').textContent = isDaily ? '🎟️ Daily Ticket' : '🏆 Sat Ticket';
+  document.getElementById('t-info-buyin').textContent = isDaily ? '🪙 500 chips' : '🏆 Sat Ticket';
   document.getElementById('t-info-prize').textContent = isDaily ? '🏆 Sat Ticket' : '🏆 Trophy + Coins';
   document.getElementById('t-info-players').textContent = isRegistered ? 'You are registered' : `${ticketsOwned} ticket${ticketsOwned !== 1 ? 's' : ''} owned`;
 
