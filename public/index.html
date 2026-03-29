@@ -3115,27 +3115,23 @@ function updateHandArea(){
 
 function showRoundResult(data){
   const losers=data.losers||[];
-  document.getElementById('result-losers').textContent=losers.length===1?`${losers[0].name} loses a life!`:`${losers.map(l=>l.name).join(' & ')} lose a life!`;
-  const cardsEl=document.getElementById('result-cards');cardsEl.innerHTML='';
-  data.players.forEach(p=>{
-    if(!p.card||p.card==='hidden')return;
-    const item=document.createElement('div');item.className='result-card-item';
-    const c=document.createElement('canvas');
-    const dpr=window.devicePixelRatio||1;
-    const rw=44;const rh=64;
-    c.width=rw*dpr;c.height=rh*dpr;
-    c.style.width=rw+'px';c.style.height=rh+'px';
-    c.style.cssText+='border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.5);';
-    const cx=c.getContext('2d');cx.scale(dpr,dpr);
-    const key=cardKey(p.card);const img=cardImages[key];
-    if(img&&img.complete&&img.naturalWidth>0){cx.drawImage(img,0,0,rw,rh);}
-    else drawCardFallback(cx,p.card,rw/2,rh/2,rw,rh,true);
-    item.appendChild(c);
-    const label=document.createElement('div');label.textContent=p.name;
-    if(losers.find(l=>l.name===p.name))label.style.color='#ff4d4f';
-    item.appendChild(label);cardsEl.appendChild(item);
-  });
-  document.getElementById('round-result').classList.add('show');
+  // Show a brief non-blocking toast banner instead of a modal popup
+  const msg=losers.length===1?`${losers[0].name} loses a life!`:`${losers.map(l=>l.name).join(' & ')} lose a life!`;
+  let toast=document.getElementById('round-toast');
+  if(!toast){
+    toast=document.createElement('div');
+    toast.id='round-toast';
+    toast.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:29;background:rgba(10,8,0,0.88);border:1px solid rgba(200,162,60,0.35);border-radius:14px;padding:14px 28px;font-family:Orbitron,sans-serif;font-size:14px;color:#f0deb0;letter-spacing:1px;text-align:center;pointer-events:none;opacity:0;transition:opacity 0.25s;box-shadow:0 8px 32px rgba(0,0,0,0.7);';
+    document.body.appendChild(toast);
+  }
+  toast.textContent=msg;
+  toast.style.opacity='1';
+  const hideDelay=7000;
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer=setTimeout(()=>{
+    toast.style.opacity='0';
+    if(isSolo) setTimeout(()=>soloContinue(),250);
+  },hideDelay);
 }
 
 // ── Tournament UI ──
@@ -3620,6 +3616,7 @@ function soloEndRound(){
   showRoundResult({players:soloPlayers,losers:losers.map(p=>({name:p.name,card:p.card}))});
 }
 function soloContinue(){
+  if(soloContinue._running)return; soloContinue._running=true; setTimeout(()=>soloContinue._running=false,500);
   document.getElementById('round-result').classList.remove('show');
   const alive=soloAlive();
   if(alive.length<=1){document.getElementById('over-winner').textContent=alive[0]?.name??'???';document.getElementById('game-over').classList.add('show');return;}
@@ -4097,6 +4094,9 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   document.getElementById('btn-continue').addEventListener('click',()=>{
     document.getElementById('round-result').classList.remove('show');
+    // soloContinue is now auto-called from the toast timer; only call here if toast was somehow skipped
+    const toast=document.getElementById('round-toast');
+    if(toast){toast.style.opacity='0';clearTimeout(toast._hideTimer);}
     if(isSolo)soloContinue();
   });
   document.getElementById('btn-again').addEventListener('click',()=>{
