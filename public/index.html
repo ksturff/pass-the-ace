@@ -2139,15 +2139,23 @@
     if(pct >= 85) clearInterval(fast);
   }, 30);
 
+  // Enforce a minimum display time of 3s
+  const splashStart = Date.now();
+  const MIN_SPLASH = 3000;
+
   window._splashDone = function(){
-    clearInterval(fast);
-    bar.style.transition = 'width 0.3s ease';
-    bar.style.width = '100%';
-    setTimeout(()=>{ splash.classList.add('hidden'); }, 350);
+    const elapsed = Date.now() - splashStart;
+    const remaining = Math.max(0, MIN_SPLASH - elapsed);
+    setTimeout(()=>{
+      clearInterval(fast);
+      bar.style.transition = 'width 0.3s ease';
+      bar.style.width = '100%';
+      setTimeout(()=>{ splash.classList.add('hidden'); }, 350);
+    }, remaining);
   };
 
-  // Safety fallback — dismiss after 4s no matter what
-  setTimeout(()=>{ if(window._splashDone){ window._splashDone(); window._splashDone=null; } }, 4000);
+  // Safety fallback — dismiss after 6s no matter what
+  setTimeout(()=>{ if(window._splashDone){ window._splashDone(); window._splashDone=null; } }, 6000);
 })();
 
 // ── Firebase init ──
