@@ -106,6 +106,63 @@
     }
     #btn-task-complete-ok { margin-top:4px; }
 
+
+    /* ── TOURNAMENT INFO MODAL ── */
+    #t-info-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.88);
+      z-index: 300; display: none; place-items: center;
+    }
+    #t-info-modal.show { display: grid; }
+    .t-info-box {
+      background: linear-gradient(135deg,#18140a,#0e0c07);
+      border: 1px solid rgba(200,162,60,0.28);
+      border-radius: 18px; padding: 28px 24px;
+      width: min(360px, 92vw);
+      display: flex; flex-direction: column; gap: 0;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+      animation: task-pop .3s cubic-bezier(0.22,1,0.36,1);
+    }
+    .t-info-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .t-info-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px; color: var(--text); line-height: 1.2;
+      flex: 1; padding-right: 12px;
+    }
+    .t-info-badge {
+      font-size: 9px; font-weight: 700; letter-spacing: 1px;
+      padding: 3px 9px; border-radius: 5px; font-family: sans-serif;
+      white-space: nowrap; flex-shrink: 0; margin-top: 3px;
+    }
+    .t-info-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 12px; margin-bottom: 20px;
+    }
+    .t-info-item { display: flex; flex-direction: column; gap: 3px; }
+    .t-info-item.full { grid-column: 1 / -1; }
+    .t-info-label {
+      font-size: 9px; color: var(--muted); letter-spacing: 1.5px;
+      text-transform: uppercase; font-family: sans-serif;
+    }
+    .t-info-val {
+      font-size: 14px; font-weight: 700; color: var(--text);
+      font-family: 'Orbitron', sans-serif;
+    }
+    .t-info-val.gold { color: var(--accent); }
+    .t-info-val.small { font-size: 11px; color: var(--muted); font-weight: 400; font-family: sans-serif; letter-spacing: 0.5px; }
+    .t-info-divider { height: 1px; background: rgba(200,162,60,0.1); margin-bottom: 18px; }
+    .t-info-actions { display: flex; gap: 10px; }
+    .t-info-actions .btn-primary { flex: 1; padding: 12px; font-size: 12px; }
+    .t-info-actions .btn-ghost { flex: 0 0 auto; padding: 12px 16px; font-size: 12px; width: auto; }
+    #btn-t-info-close {
+      background: none; border: none; color: var(--muted);
+      font-size: 20px; cursor: pointer; padding: 0; line-height: 1;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    #btn-t-info-close:hover { color: var(--text); }
+
     @media (max-width: 768px) and (orientation: portrait) {
       #rotate-prompt { display: flex; }
     }
@@ -1712,20 +1769,8 @@
     </div>
   </div>
 
-  <!-- Selected tournament detail panel (bottom, like PokerStars) -->
-  <div class="t-detail-panel" id="t-detail-panel">
-    <div class="t-detail-name" id="t-detail-name">—</div>
-    <div class="t-detail-meta">
-      <div class="t-detail-item"><div class="t-detail-label">Start</div><div class="t-detail-val" id="t-detail-start">—</div></div>
-      <div class="t-detail-item"><div class="t-detail-label">Buy-in</div><div class="t-detail-val" id="t-detail-buyin">—</div></div>
-      <div class="t-detail-item"><div class="t-detail-label">Prize Pool</div><div class="t-detail-val" id="t-detail-prize">—</div></div>
-      <div class="t-detail-item"><div class="t-detail-label">Players</div><div class="t-detail-val" id="t-detail-players">—</div></div>
-    </div>
-    <div class="t-detail-actions">
-      <button class="btn-observe" id="btn-observe">Observe</button>
-      <button class="btn-play-now" id="btn-play-now">Register</button>
-    </div>
-  </div>
+  <!-- Tournament info panel kept for legacy compat but hidden -->
+  <div class="t-detail-panel" id="t-detail-panel" style="display:none!important;"></div>
 
 </div>
 
@@ -3327,6 +3372,25 @@ function renderTournamentList(list){
         });
       }
     });
+    row.addEventListener('click', e => {
+      if (e.target.closest('button')) return;
+      const match = currentTournamentList.find(t =>
+        t.type === 'daily' &&
+        Math.abs(t.startTime - slotDate.getTime()) < 60000
+      );
+      const fake = match || {
+        id: 'daily-' + hr + '-' + slotDate.getTime(),
+        startTime: slotDate.getTime(),
+        status: 'registering',
+        playerCount: 0,
+        maxPlayers: 10,
+        buyIn: 0,
+        isSas: false,
+        label: 'Daily',
+        type: 'daily'
+      };
+      showDailyOrSatModal(fake, 'daily', slotDate, myDailyTickets, hr);
+    });
     tbody.appendChild(row);
   });
 
@@ -3371,6 +3435,25 @@ function renderTournamentList(list){
           showToast(`🏆 Registered for ${fmtTime(slotDate)} Saturday Championship!`, '#ffd700', 3500);
         });
       }
+    });
+    row.addEventListener('click', e => {
+      if (e.target.closest('button')) return;
+      const match = currentTournamentList.find(t =>
+        t.type === 'saturday' &&
+        Math.abs(t.startTime - slotDate.getTime()) < 60000
+      );
+      const fake = match || {
+        id: 'sat-' + hr + '-' + slotDate.getTime(),
+        startTime: slotDate.getTime(),
+        status: 'registering',
+        playerCount: 0,
+        maxPlayers: 10,
+        buyIn: 0,
+        isSas: false,
+        label: 'Saturday Championship',
+        type: 'saturday'
+      };
+      showDailyOrSatModal(fake, 'saturday', slotDate, mySatTickets, hr);
     });
     tbody.appendChild(row);
   });
@@ -3454,35 +3537,121 @@ function renderTournamentList(list){
   },5000);
 }
 
-function selectTournament(t){
-  selectedTournamentId=t.id;
-  document.querySelectorAll('.t-grid tbody tr').forEach(r=>r.classList.toggle('row-selected',r.dataset.id===t.id));
-  const panel=document.getElementById('t-detail-panel');
-  panel.classList.add('visible');
-  const d=new Date(t.startTime);
-  const sasPrizePool = t.isSas ? Math.floor(t.buyIn * 10 * 0.95).toLocaleString() + ' chips' : 'Glory';
+function shortGameId(id) {
+  // Generate a short readable game ID from the full ID
+  if (!id) return 'N/A';
+  const clean = id.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  return 'PTA-' + clean.slice(-6);
+}
+
+
+function showDailyOrSatModal(t, type, slotDate, ticketsOwned, hr) {
+  const isDaily = type === 'daily';
+  const isSat = type === 'saturday';
+  const regId = isDaily ? `_dailyReg_${hr}` : `_satReg_${hr}`;
+  const isRegistered = window[regId] || false;
+  const d = slotDate || new Date(t.startTime);
+
+  document.getElementById('t-info-title').textContent = isDaily ? 'Daily Tournament' : '⭐ Saturday Championship';
+  document.getElementById('t-info-id').textContent = shortGameId(t.id);
+  document.getElementById('t-info-start').textContent = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + (isSat ? ' · Saturday' : '');
+  document.getElementById('t-info-status').textContent = isRegistered ? '✅ Registered' : 'Registering';
+  document.getElementById('t-info-buyin').textContent = isDaily ? '🎟️ Daily Ticket' : '🏆 Sat Ticket';
+  document.getElementById('t-info-prize').textContent = isDaily ? '🏆 Sat Ticket' : '🏆 Trophy + Coins';
+  document.getElementById('t-info-players').textContent = isRegistered ? 'You are registered' : `${ticketsOwned} ticket${ticketsOwned !== 1 ? 's' : ''} owned`;
+
+  const actionBtn = document.getElementById('btn-t-info-action');
+  if (isRegistered) {
+    actionBtn.textContent = 'Leave';
+    actionBtn.style.background = 'rgba(255,77,79,0.85)';
+    actionBtn.disabled = false;
+  } else {
+    actionBtn.textContent = isDaily ? 'Enter with Daily Ticket' : 'Enter with Sat Ticket';
+    actionBtn.style.background = '';
+    actionBtn.disabled = false;
+  }
+  actionBtn.onclick = () => {
+    document.getElementById('t-info-modal').classList.remove('show');
+    if (isRegistered) {
+      window[regId] = false;
+      renderTournamentList(currentTournamentList);
+      showToast(isDaily ? 'Left Daily Tournament' : 'Left Saturday Championship', '#8a7a50');
+    } else {
+      const ticketType = isDaily ? 'daily' : 'saturday';
+      tryEnterTicketTournament({type:'ticket', ticketType}, () => {
+        const targetTime = d.getTime();
+        const match = currentTournamentList.find(x =>
+          x.type === type && Math.abs(x.startTime - targetTime) < 60000 && x.status === 'registering'
+        );
+        if (!match) { showToast('No server tournament found for this slot yet', '#ff4d4f', 3000); return; }
+        const name = userProfile?.displayName || 'Player';
+        socket.emit('registerTournament', { tournamentId: match.id, name, avatar: myAvatar, ticketType });
+        myTournamentId = match.id;
+        window[regId] = true;
+        renderTournamentList(currentTournamentList);
+        showToast(isDaily ? `🎟️ Registered for Daily!` : `🏆 Registered for Saturday Championship!`, isDaily ? '#cd7f32' : '#ffd700', 3000);
+      });
+    }
+  };
+  document.getElementById('t-info-modal').classList.add('show');
+}
+
+function showTournamentModal(t) {
+  selectedTournamentId = t.id;
+  document.querySelectorAll('.t-grid tbody tr').forEach(r => r.classList.toggle('row-selected', r.dataset.id === t.id));
+  const d = new Date(t.startTime);
+  const isRegistered = myTournamentId === t.id;
+  const isFull = t.playerCount >= (t.maxPlayers || 10);
+  const isLive = t.status === 'inProgress';
+  const isPast = t.startTime < Date.now() && !isLive;
+  const sasPrize = t.isSas ? Math.floor(t.buyIn * 10 * 0.95).toLocaleString() + ' chips' : 'Glory';
   const sasBuyIn = t.isSas ? t.buyIn.toLocaleString() + ' chips' : 'FREE';
   const sasName = t.isSas ? (t.label + ' Sit & Stay') : 'Sit & Stay Tournament';
-  document.getElementById('t-detail-name').textContent = sasName;
-  document.getElementById('t-detail-start').textContent=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' · '+d.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});
-  document.getElementById('t-detail-buyin').textContent = sasBuyIn;
-  document.getElementById('t-detail-prize').textContent = sasPrizePool;
-  document.getElementById('t-detail-players').textContent=`${t.playerCount} / 10`;
-  const isRegistered=myTournamentId===t.id;
-  const isFull=t.playerCount>=t.maxPlayers;
-  const isLive=t.status==='inProgress';
-  const isPast=t.startTime<Date.now()&&!isLive;
-  const playBtn=document.getElementById('btn-play-now');
-  if(isLive||isPast){playBtn.textContent=isLive?'In Progress':'Finished';playBtn.disabled=true;playBtn.style.background='';}
-  else if(isRegistered){playBtn.textContent='Leave Tournament';playBtn.style.background='rgba(255,77,79,0.85)';playBtn.disabled=false;}
-  else if(isFull){playBtn.textContent='Table Full';playBtn.disabled=true;playBtn.style.background='';}
-  else{playBtn.textContent='Register';playBtn.style.background='';playBtn.disabled=false;}
-  playBtn.onclick=()=>{
-    const name=userProfile?.displayName||'';
-    if(!name){showToast('Please complete your profile first','#ff4d4f');return;}
-    if(isRegistered){socket.emit('unregisterTournament',{tournamentId:t.id});myTournamentId=null;}
-    else if(!isLive&&!isFull&&!isPast){socket.emit('registerTournament',{tournamentId:t.id,name,avatar:myAvatar});myTournamentId=t.id;}
+
+  document.getElementById('t-info-title').textContent = sasName;
+  document.getElementById('t-info-id').textContent = shortGameId(t.id);
+  document.getElementById('t-info-start').textContent = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  document.getElementById('t-info-status').textContent = isLive ? '🟢 Live' : isPast ? 'Finished' : 'Registering';
+  document.getElementById('t-info-buyin').textContent = sasBuyIn;
+  document.getElementById('t-info-prize').textContent = sasPrize;
+  document.getElementById('t-info-players').textContent = `${t.playerCount} / ${t.maxPlayers || 10} registered`;
+
+  const actionBtn = document.getElementById('btn-t-info-action');
+  if (isLive || isPast) {
+    actionBtn.textContent = isLive ? 'In Progress' : 'Finished';
+    actionBtn.disabled = true;
+    actionBtn.style.background = '';
+  } else if (isRegistered) {
+    actionBtn.textContent = 'Leave Tournament';
+    actionBtn.style.background = 'rgba(255,77,79,0.85)';
+    actionBtn.disabled = false;
+  } else if (isFull) {
+    actionBtn.textContent = 'Table Full';
+    actionBtn.disabled = true;
+    actionBtn.style.background = '';
+  } else {
+    actionBtn.textContent = 'Register';
+    actionBtn.style.background = '';
+    actionBtn.disabled = false;
+  }
+  actionBtn.onclick = () => {
+    const name = userProfile?.displayName || '';
+    if (!name) { showToast('Please complete your profile first', '#ff4d4f'); return; }
+    if (t.isSas) {
+      if (isRegistered) { socket.emit('leaveSasQueue'); myTournamentId = null; }
+      else { joinSasQueue(t.id, t.buyIn, t.tier, t.label); myTournamentId = t.id; }
+    } else {
+      if (isRegistered) { socket.emit('unregisterTournament', {tournamentId: t.id}); myTournamentId = null; }
+      else if (!isLive && !isFull && !isPast) { socket.emit('registerTournament', {tournamentId: t.id, name, avatar: myAvatar}); myTournamentId = t.id; }
+    }
+    document.getElementById('t-info-modal').classList.remove('show');
+    renderTournamentList(currentTournamentList);
   };
+  document.getElementById('t-info-modal').classList.add('show');
+}
+
+function selectTournament(t){
+  showTournamentModal(t);
 }
 
 function startTournamentCountdown(startTime){
@@ -3870,7 +4039,7 @@ function initLobbyTabs(){
       document.getElementById('tab-tournaments').style.display=isTournaments?'block':'none';
       document.getElementById('tab-tables').style.display=isTournaments?'none':'block';
       document.getElementById('lobby-filterbar').style.display=isTournaments?'flex':'none';
-      document.getElementById('t-detail-panel').classList.toggle('visible',isTournaments&&!!selectedTournamentId);
+      // t-detail-panel replaced by modal
     });
   });
   document.getElementById('filter-state')?.addEventListener('change',()=>renderTournamentList(currentTournamentList));
@@ -4495,6 +4664,15 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('btn-back-tasks').addEventListener('click', () => showScreen('screen-home'));
   document.getElementById('btn-back-tasks').addEventListener('touchend', e => { e.preventDefault(); showScreen('screen-home'); });
 
+
+  // Tournament info modal close
+  document.getElementById('btn-t-info-close').addEventListener('click', () => {
+    document.getElementById('t-info-modal').classList.remove('show');
+  });
+  document.getElementById('t-info-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('t-info-modal'))
+      document.getElementById('t-info-modal').classList.remove('show');
+  });
   // Expose functions needed by code outside this DOMContentLoaded block
   window.joinSasQueue = joinSasQueue;
   window.checkDailyBonus = checkDailyBonus;
@@ -5134,6 +5312,47 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="task-complete-name" id="task-complete-name">WIN A ROUND</div>
     <div class="task-complete-reward" id="task-complete-reward">+75 chips</div>
     <button class="btn-primary" id="btn-task-complete-ok">Claim Reward 🎉</button>
+  </div>
+</div>
+
+
+<!-- ── TOURNAMENT INFO MODAL ── -->
+<div id="t-info-modal">
+  <div class="t-info-box">
+    <div class="t-info-header">
+      <div class="t-info-title" id="t-info-title">Sit &amp; Stay</div>
+      <button id="btn-t-info-close" aria-label="Close">✕</button>
+    </div>
+    <div class="t-info-grid">
+      <div class="t-info-item full">
+        <div class="t-info-label">Game ID</div>
+        <div class="t-info-val small" id="t-info-id">—</div>
+      </div>
+      <div class="t-info-item">
+        <div class="t-info-label">Start Time</div>
+        <div class="t-info-val" id="t-info-start">—</div>
+      </div>
+      <div class="t-info-item">
+        <div class="t-info-label">Status</div>
+        <div class="t-info-val" id="t-info-status">—</div>
+      </div>
+      <div class="t-info-item">
+        <div class="t-info-label">Buy-in</div>
+        <div class="t-info-val gold" id="t-info-buyin">—</div>
+      </div>
+      <div class="t-info-item">
+        <div class="t-info-label">Prize Pool</div>
+        <div class="t-info-val gold" id="t-info-prize">—</div>
+      </div>
+      <div class="t-info-item full">
+        <div class="t-info-label">Registered Players</div>
+        <div class="t-info-val" id="t-info-players">—</div>
+      </div>
+    </div>
+    <div class="t-info-divider"></div>
+    <div class="t-info-actions">
+      <button class="btn-primary" id="btn-t-info-action">Register</button>
+    </div>
   </div>
 </div>
 
