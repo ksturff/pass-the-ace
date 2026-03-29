@@ -4392,6 +4392,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     isSolo=false;isTournamentGame=false;myId=socket?.id||null;
     showScreen('screen-home');
   });
+
+  // Expose functions needed by code outside this DOMContentLoaded block
+  window.joinSasQueue = joinSasQueue;
+  window.checkDailyBonus = checkDailyBonus;
+  window.showSasResults = showSasResults;
 });
 </script>
 
