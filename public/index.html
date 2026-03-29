@@ -30,6 +30,82 @@
     .rotate-text { font-size: 14px; color: var(--muted); font-family: sans-serif; letter-spacing: 1px; text-align: center; }
     .rotate-title { font-size: 16px; letter-spacing: 2px; color: var(--accent); }
 
+
+    /* ── TASKS SCREEN ── */
+    #screen-tasks {
+      background: var(--bg);
+      padding: 60px 16px 24px;
+    }
+    .tasks-wrap { width: min(480px, 96vw); margin: 0 auto; }
+    .tasks-title { font-size:16px; letter-spacing:3px; color:var(--accent); margin-bottom:6px; text-align:center; font-family:'Playfair Display',serif; }
+    .tasks-subtitle { font-family:sans-serif; font-size:12px; color:var(--muted); text-align:center; margin-bottom:24px; letter-spacing:1px; }
+    .tasks-reset { font-family:sans-serif; font-size:11px; color:var(--muted); text-align:center; margin-bottom:20px; }
+    .task-card {
+      background:linear-gradient(135deg,#0e0c06,#090700);
+      border:1px solid rgba(200,162,60,0.12);
+      border-radius:14px; padding:18px 16px; margin-bottom:12px;
+      transition: border-color .2s;
+    }
+    .task-card.done { border-color:rgba(58,170,90,0.4); background:linear-gradient(135deg,#070e08,#050a06); }
+    .task-card.claimed { border-color:rgba(200,162,60,0.1); opacity:0.55; }
+    .task-header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    .task-icon { font-size:26px; flex-shrink:0; }
+    .task-info { flex:1; }
+    .task-name { font-size:13px; font-weight:700; letter-spacing:0.5px; color:var(--text); margin-bottom:3px; }
+    .task-reward { font-size:11px; color:var(--accent); font-family:sans-serif; }
+    .task-status { font-size:18px; flex-shrink:0; }
+    .task-progress-bar {
+      height:6px; border-radius:3px;
+      background:rgba(255,255,255,0.07);
+      overflow:hidden; margin-bottom:6px;
+    }
+    .task-progress-fill {
+      height:100%; border-radius:3px;
+      background:linear-gradient(90deg,var(--accent2),var(--accent));
+      transition:width 0.4s ease;
+    }
+    .task-card.done .task-progress-fill { background:linear-gradient(90deg,#2a7a40,#3aaa5a); }
+    .task-progress-label { font-family:sans-serif; font-size:11px; color:var(--muted); }
+    .btn-claim-task {
+      width:100%; padding:10px; border-radius:8px; border:0;
+      background:linear-gradient(135deg,var(--accent2),var(--accent));
+      color:#0a0800; font-weight:700; font-size:12px;
+      font-family:'Orbitron',sans-serif; cursor:pointer;
+      margin-top:10px; letter-spacing:0.5px;
+      transition:opacity .2s, transform .1s;
+    }
+    .btn-claim-task:hover { opacity:.88; }
+    .btn-claim-task:active { transform:scale(.98); }
+
+    /* ── TASK COMPLETE MODAL ── */
+    #task-complete-modal {
+      position:fixed; inset:0; background:rgba(0,0,0,0.88);
+      z-index:400; display:none; place-items:center;
+    }
+    #task-complete-modal.show { display:grid; }
+    .task-complete-box {
+      background:linear-gradient(135deg,#18140a,#0e0c07);
+      border:1px solid rgba(200,162,60,0.3);
+      border-radius:20px; padding:36px 28px;
+      width:min(320px,90vw); text-align:center;
+      display:flex; flex-direction:column; gap:14px; align-items:center;
+      box-shadow:0 20px 60px rgba(0,0,0,0.8);
+      animation: task-pop .35s cubic-bezier(0.22,1,0.36,1);
+    }
+    @keyframes task-pop {
+      from { transform:scale(0.8); opacity:0; }
+      to   { transform:scale(1);   opacity:1; }
+    }
+    .task-complete-emoji { font-size:56px; display:block; animation:bonusBounce 0.6s cubic-bezier(0.22,1,0.36,1); }
+    .task-complete-title { font-family:'Playfair Display',serif; font-size:22px; color:var(--text); }
+    .task-complete-name { font-size:12px; color:var(--muted); font-family:sans-serif; letter-spacing:1px; }
+    .task-complete-reward {
+      font-family:'Orbitron',sans-serif; font-size:30px; font-weight:700;
+      background:linear-gradient(90deg,#ffd700,#ffaa00);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    #btn-task-complete-ok { margin-top:4px; }
+
     @media (max-width: 768px) and (orientation: portrait) {
       #rotate-prompt { display: flex; }
     }
@@ -1520,6 +1596,14 @@
         </div>
         <div class="mode-arrow">›</div>
       </button>
+      <button class="mode-card" id="btn-tasks">
+        <div class="mode-icon">✅</div>
+        <div class="mode-info">
+          <div class="mode-name">DAILY TASKS</div>
+          <div class="mode-desc">3 challenges · resets at midnight</div>
+        </div>
+        <div class="mode-arrow">›</div>
+      </button>
       <button class="mode-card" id="btn-leaderboard">
         <div class="mode-icon">🏅</div>
         <div class="mode-info">
@@ -2206,6 +2290,7 @@ function initAuth() {
 // ── Stats tracking ──
 // tournamentType: null=micro/regular, daily=Daily Tournament, saturday=Saturday Championship, 'jack' (Daily Tournament), 'weekly' (Saturday Championship)
 async function recordGameResult(won, placement=0, tournamentType=null) {
+  if(won && typeof trackTaskProgress==='function') trackTaskProgress('win_game', 1);
   if (!currentUser) return;
   try {
     await db.collection('users').doc(currentUser.uid).update({
@@ -3501,6 +3586,14 @@ function initSocket(){
       if(p.eliminated) setTimeout(()=>showEliminationOverlay(p.name), 700+i*200);
     });
     showRoundResult(data);
+    // Task tracking (multiplayer)
+    if(typeof trackTaskProgress==='function'){
+      trackTaskProgress('play_rounds', 1);
+      const me=players.find(p=>p.id===myId);
+      if(me&&!losers.find(l=>l.name===me.name)) trackTaskProgress('win_round', 1);
+      const newElims=losers.filter(l=>{ const p=players.find(x=>x.name===l.name); return p&&p.eliminated&&p.id!==myId; });
+      if(newElims.length) trackTaskProgress('eliminations', newElims.length);
+    }
   });
   socket.on('gameOver',data=>{
     document.getElementById('round-result').classList.remove('show');
@@ -3584,6 +3677,8 @@ function soloPass(){
   const fromP=soloPlayers[soloCurrentIndex];const toIdx=soloNextAlive(soloCurrentIndex,1);const toP=soloPlayers[toIdx];
   if(toP?.card?.rank==='K'){showKingToast();soloKeep();return;}
   if(fromP?.card?.rank==='K'){soloKeep();return;}
+  // Track ace pass task
+  if(fromP?.card?.rank==='A'&&typeof trackTaskProgress==='function') trackTaskProgress('pass_aces', 1);
   // Pass animation then swap
   animateCardPass(fromP.id, toP.id, ()=>{
     [fromP.card,toP.card]=[toP.card,fromP.card];
@@ -3632,6 +3727,14 @@ function soloEndRound(){
     recordGameResult(iWon);
   }
   showRoundResult({players:soloPlayers,losers:losers.map(p=>({name:p.name,card:p.card}))});
+  // Task tracking
+  if(typeof trackTaskProgress==='function'){
+    trackTaskProgress('play_rounds', 1);
+    const humanP=soloPlayers.find(p=>p.id==='human');
+    if(humanP&&!losers.find(l=>l.name===humanP.name)) trackTaskProgress('win_round', 1);
+    const newElims=losers.filter(l=>l.name!==humanP?.name&&soloPlayers.find(p=>p.name===l.name&&p.eliminated));
+    if(newElims.length) trackTaskProgress('eliminations', newElims.length);
+  }
 }
 function soloContinue(){
   if(soloContinue._running)return; soloContinue._running=true; setTimeout(()=>soloContinue._running=false,500);
@@ -4232,6 +4335,165 @@ document.addEventListener('DOMContentLoaded',()=>{
     isSolo=false;isTournamentGame=false;gameTableBuilt=false;myId=socket?.id||null;
     showScreen('screen-home');
   });
+
+
+
+  // ══════════════════════════════════════
+  //  DAILY TASKS SYSTEM
+  // ══════════════════════════════════════
+  const TASK_DEFS = [
+    { id:'play_rounds',   icon:'🃏', name:'Play 5 Rounds',       desc:'Complete 5 rounds in any game',      target:5,  reward:50  },
+    { id:'win_round',     icon:'⭐', name:'Win a Round',          desc:'Have the highest card at round end',  target:1,  reward:75  },
+    { id:'win_game',      icon:'🏆', name:'Win a Game',           desc:'Be the last player standing',        target:1,  reward:150 },
+    { id:'pass_aces',     icon:'🂡', name:'Pass 4 Aces',          desc:'Pass an Ace to another player 4x',   target:4,  reward:100 },
+    { id:'eliminations',  icon:'💀', name:'Eliminate 5 Players',  desc:'Knock out 5 players across games',   target:5,  reward:200 },
+  ];
+
+  function getTodayKey() {
+    const d = new Date();
+    return `pta_tasks_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`;
+  }
+
+  function loadDailyTasks() {
+    const key = getTodayKey();
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      try { return JSON.parse(saved); } catch(e) {}
+    }
+    // Pick 3 random tasks for today using date as seed
+    const d = new Date();
+    const seed = d.getFullYear() * 10000 + d.getMonth() * 100 + d.getDate();
+    const shuffled = [...TASK_DEFS].sort((a, b) => {
+      const ha = ((seed ^ a.id.charCodeAt(0) * 31) >>> 0) % 997;
+      const hb = ((seed ^ b.id.charCodeAt(0) * 31) >>> 0) % 997;
+      return ha - hb;
+    });
+    const tasks = shuffled.slice(0, 3).map(t => ({ ...t, progress: 0, claimed: false }));
+    localStorage.setItem(key, JSON.stringify(tasks));
+    return tasks;
+  }
+
+  function saveDailyTasks(tasks) {
+    localStorage.setItem(getTodayKey(), JSON.stringify(tasks));
+  }
+
+  function msUntilMidnight() {
+    const now = new Date();
+    const midnight = new Date(now); midnight.setHours(24, 0, 0, 0);
+    return midnight - now;
+  }
+
+  function formatTimeUntilReset() {
+    let ms = msUntilMidnight();
+    const h = Math.floor(ms / 3600000); ms -= h * 3600000;
+    const m = Math.floor(ms / 60000);
+    return `Resets in ${h}h ${m}m`;
+  }
+
+  // Called from game hooks with event type and amount
+  window.trackTaskProgress = function(eventId, amount = 1) {
+    if (!currentUser) return;
+    const tasks = loadDailyTasks();
+    let changed = false;
+    tasks.forEach(t => {
+      if (t.claimed) return;
+      if (t.id !== eventId) return;
+      const before = t.progress;
+      t.progress = Math.min(t.target, t.progress + amount);
+      if (t.progress >= t.target && before < t.target) {
+        changed = true;
+        // Show completion modal
+        showTaskCompleteModal(t);
+      }
+    });
+    if (changed || tasks.some(t => t.id === eventId)) {
+      saveDailyTasks(tasks);
+      // Re-render if tasks screen is active
+      if (document.getElementById('screen-tasks').classList.contains('active')) {
+        renderTasksScreen();
+      }
+    }
+  };
+
+  function showTaskCompleteModal(task) {
+    document.getElementById('task-complete-emoji').textContent = task.icon;
+    document.getElementById('task-complete-name').textContent = task.name.toUpperCase();
+    document.getElementById('task-complete-reward').textContent = `+${task.reward} chips`;
+    document.getElementById('task-complete-modal').classList.add('show');
+    // Store which task to claim on OK
+    document.getElementById('task-complete-modal').dataset.taskId = task.id;
+  }
+
+  document.getElementById('btn-task-complete-ok').addEventListener('click', async () => {
+    const modal = document.getElementById('task-complete-modal');
+    const taskId = modal.dataset.taskId;
+    modal.classList.remove('show');
+    // Award chips
+    const tasks = loadDailyTasks();
+    const task = tasks.find(t => t.id === taskId);
+    if (task && !task.claimed) {
+      task.claimed = true;
+      saveDailyTasks(tasks);
+      await updateChipBalance(task.reward);
+      showToast(`+${task.reward} chips! ${task.icon}`, '#ffd700', 2500);
+      if (document.getElementById('screen-tasks').classList.contains('active')) {
+        renderTasksScreen();
+      }
+    }
+  });
+
+  function renderTasksScreen() {
+    const tasks = loadDailyTasks();
+    const list = document.getElementById('tasks-list');
+    const resetLabel = document.getElementById('tasks-reset-label');
+    if (resetLabel) resetLabel.textContent = formatTimeUntilReset();
+    if (!list) return;
+    list.innerHTML = '';
+    tasks.forEach(task => {
+      const pct = Math.min(100, Math.round((task.progress / task.target) * 100));
+      const done = task.progress >= task.target;
+      const card = document.createElement('div');
+      card.className = 'task-card' + (task.claimed ? ' claimed' : done ? ' done' : '');
+      card.innerHTML = `
+        <div class="task-header">
+          <div class="task-icon">${task.icon}</div>
+          <div class="task-info">
+            <div class="task-name">${task.name}</div>
+            <div class="task-reward">+${task.reward} chips</div>
+          </div>
+          <div class="task-status">${task.claimed ? '✅' : done ? '🎁' : ''}</div>
+        </div>
+        <div class="task-progress-bar">
+          <div class="task-progress-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="task-progress-label">${task.desc} — ${task.progress}/${task.target}</div>
+        ${done && !task.claimed ? '<button class="btn-claim-task" data-task-id="' + task.id + '">Claim +' + task.reward + ' chips</button>' : ''}
+      `;
+      // Claim button handler
+      const claimBtn = card.querySelector('.btn-claim-task');
+      if (claimBtn) {
+        claimBtn.addEventListener('click', async () => {
+          const tasks2 = loadDailyTasks();
+          const t = tasks2.find(x => x.id === task.id);
+          if (t && !t.claimed) {
+            t.claimed = true;
+            saveDailyTasks(tasks2);
+            await updateChipBalance(t.reward);
+            showToast(`+${t.reward} chips! ${t.icon}`, '#ffd700', 2500);
+            renderTasksScreen();
+          }
+        });
+      }
+      list.appendChild(card);
+    });
+  }
+
+  document.getElementById('btn-tasks').addEventListener('click', () => {
+    renderTasksScreen();
+    showScreen('screen-tasks');
+  });
+  document.getElementById('btn-back-tasks').addEventListener('click', () => showScreen('screen-home'));
+  document.getElementById('btn-back-tasks').addEventListener('touchend', e => { e.preventDefault(); showScreen('screen-home'); });
 
   // Expose functions needed by code outside this DOMContentLoaded block
   window.joinSasQueue = joinSasQueue;
@@ -4852,5 +5114,28 @@ document.addEventListener('DOMContentLoaded', () => {
     <button class="btn-primary" id="btn-daily-bonus-ok" style="margin-top:4px;">Claim! 🎉</button>
   </div>
 </div>
+
+<!-- ── TASKS SCREEN ── -->
+<div id="screen-tasks" class="screen">
+  <div class="tasks-wrap">
+    <button class="lobby-back" id="btn-back-tasks">← BACK</button>
+    <div class="tasks-title" style="margin-top:16px;">DAILY TASKS</div>
+    <div class="tasks-subtitle">Complete 3 challenges to earn chips</div>
+    <div class="tasks-reset" id="tasks-reset-label"></div>
+    <div id="tasks-list"></div>
+  </div>
+</div>
+
+<!-- ── TASK COMPLETE MODAL ── -->
+<div id="task-complete-modal">
+  <div class="task-complete-box">
+    <span class="task-complete-emoji" id="task-complete-emoji">🎉</span>
+    <div class="task-complete-title">Task Complete!</div>
+    <div class="task-complete-name" id="task-complete-name">WIN A ROUND</div>
+    <div class="task-complete-reward" id="task-complete-reward">+75 chips</div>
+    <button class="btn-primary" id="btn-task-complete-ok">Claim Reward 🎉</button>
+  </div>
+</div>
+
 </body>
 </html>
