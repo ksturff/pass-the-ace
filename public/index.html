@@ -2533,6 +2533,7 @@ let toastTimer=null, kingToastTimer=null;
 let soloPlayers=[], soloDealerIndex=0, soloCurrentIndex=0, soloTurnsTaken=0;
 let myTournamentId=null, tournamentCountdownInterval=null;
 let isTournamentGame=false;
+let gameTableBuilt=false; // true once we've built+dealt for the current game session
 
 // ── Avatar picker ──
 function buildAvatarPicker() {
@@ -3452,14 +3453,14 @@ function initSocket(){
   });
 
   socket.on('gameState',state=>{
-    const wasActive=document.getElementById('screen-game').classList.contains('active');
     players=state.players;currentPlayerId=state.currentPlayerId;myTurn=currentPlayerId===myId;
     isTournamentGame=!!state.isTournament;
     players.forEach((p,i)=>{ if(p.seatIndex===undefined) p.seatIndex=i; });
     const cur=players.find(p=>p.id===currentPlayerId);
     document.getElementById('turn-banner').textContent=myTurn?'🎯 Your turn!':`${cur?.name??'…'} is thinking…`;
-    if(!wasActive){
+    if(!gameTableBuilt){
       // First time entering game screen — build table then deal
+      gameTableBuilt=true;
       loadAssets().then(()=>{
         showScreen('screen-game');
         requestAnimationFrame(()=>{
@@ -3533,7 +3534,7 @@ function soloAlive(){return soloPlayers.filter(p=>!p.eliminated&&p.chips>0);}
 function soloNextAlive(from,step=1){const n=soloPlayers.length;let idx=from;for(let i=0;i<n*2;i++){idx=((idx+step)%n+n)%n;if(!soloPlayers[idx].eliminated&&soloPlayers[idx].chips>0)return idx;}return -1;}
 
 function startSolo(name,seats){
-  isSolo=true;isTournamentGame=false;
+  isSolo=true;isTournamentGame=false;gameTableBuilt=true;
   const botNames=['Alex','Sam','Jordan','Taylor','Morgan','Casey','Riley','Quinn','Avery'];
   soloPlayers=Array.from({length:seats},(_,i)=>({
     id:i===0?'human':`bot_${i}`,name:i===0?name:botNames[(i-1)%botNames.length],
@@ -4292,7 +4293,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       document.getElementById('hand-area').classList.remove('visible');
       document.getElementById('round-result').classList.remove('show');
       document.getElementById('game-over').classList.remove('show');
-      isSolo=false;isTournamentGame=false;myId=socket?.id||null;
+      isSolo=false;isTournamentGame=false;gameTableBuilt=false;myId=socket?.id||null;
       showScreen('screen-home');
     }
   });
@@ -4389,7 +4390,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('btn-menu').addEventListener('click',()=>{
     document.getElementById('game-over').classList.remove('show');
     document.getElementById('hand-area').classList.remove('visible');
-    isSolo=false;isTournamentGame=false;myId=socket?.id||null;
+    isSolo=false;isTournamentGame=false;gameTableBuilt=false;myId=socket?.id||null;
     showScreen('screen-home');
   });
 
