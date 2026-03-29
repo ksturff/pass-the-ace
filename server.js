@@ -561,6 +561,7 @@ io.on('connection', socket => {
     socket.data.playerName = name;
     socket.data.playerAvatar = avatar;
 
+    // Tell the joiner they're in
     socket.emit('sasJoined', {
       sasId,
       tier: q.tier,
@@ -568,6 +569,11 @@ io.on('connection', socket => {
       buyIn: q.buyIn,
       startTime: q.startTime,
       playerCount: q.players.length,
+    });
+    // Tell everyone already in the room about the updated count
+    socket.to(sasId).emit('sasPlayerUpdate', {
+      playerCount: q.players.length,
+      startTime: q.startTime,
     });
     io.emit('sasQueues', getPublicSasQueues());
   });

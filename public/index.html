@@ -3449,6 +3449,8 @@ function initSocket(){
     // Server says our tournament is starting — go to game
     socket.emit('readyForTournament',{tournamentId:data.tournamentId});
     clearInterval(tournamentCountdownInterval);
+    if (ssCountdownInterval) clearInterval(ssCountdownInterval);
+    gameTableBuilt = true; // claim the flag before async so gameState doesn't race and deal twice
     loadAssets().then(()=>{showScreen('screen-game');buildTable();});
   });
 
@@ -3924,20 +3926,18 @@ document.addEventListener('DOMContentLoaded',()=>{
     _ssLastPlayerCount = playerCount;
   }
 
-  function startSsCountdown(waitMs) {
-    let remaining = Math.ceil(waitMs / 1000);
+  function startSsCountdown(startTime) {
     const cdEl = document.getElementById('ss-countdown');
-    cdEl.textContent = remaining;
-    cdEl.classList.remove('countdown-pulse');
     if (ssCountdownInterval) clearInterval(ssCountdownInterval);
-    ssCountdownInterval = setInterval(() => {
-      remaining--;
+    function tick() {
+      const remaining = Math.ceil((startTime - Date.now()) / 1000);
       if (remaining <= 10 && remaining > 0) cdEl.classList.add('countdown-pulse');
-      else if (remaining <= 0) cdEl.classList.remove('countdown-pulse');
-      const el = document.getElementById('ss-countdown');
-      if (el) el.textContent = Math.max(0, remaining);
+      else cdEl.classList.remove('countdown-pulse');
+      cdEl.textContent = Math.max(0, remaining);
       if (remaining <= 0) clearInterval(ssCountdownInterval);
-    }, 1000);
+    }
+    tick();
+    ssCountdownInterval = setInterval(tick, 500);
   }
 
   const btnLeaveSAS1 = document.getElementById('btn-leave-sit-and-stay');
@@ -3948,9 +3948,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 
   // Sit & Stay socket events
-  socket.on('sitAndStayWaiting', ({ playerCount, totalSeats, waitMs }) => {
+  socket.on('sitAndStayWaiting', ({ playerCount, totalSeats, startTime }) => {
     renderSsSeats(playerCount);
-    startSsCountdown(waitMs);
+    startSsCountdown(startTime);
     const status = document.getElementById('ss-status');
     if (status) status.textContent = `${playerCount} of ${totalSeats} players found`;
   });
@@ -4153,8 +4153,15 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   socket.on('sasJoined', ({ sasId, playerCount, startTime }) => {
     renderSsSeats(playerCount);
-    const msUntil = Math.max(0, startTime - Date.now());
-    startSsCountdown(msUntil);
+    startSsCountdown(startTime);
+    const status = document.getElementById('ss-status');
+    if (status) status.textContent = `${playerCount} of 10 players joined`;
+  });
+
+  // Another player joined our queue — update count and resync countdown
+  socket.on('sasPlayerUpdate', ({ playerCount, startTime }) => {
+    renderSsSeats(playerCount);
+    startSsCountdown(startTime);
     const status = document.getElementById('ss-status');
     if (status) status.textContent = `${playerCount} of 10 players joined`;
   });
@@ -4171,9 +4178,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 
   // Sit & Stay socket events (legacy + new)
-  socket.on('sitAndStayWaiting', ({ playerCount, totalSeats, waitMs }) => {
+  socket.on('sitAndStayWaiting', ({ playerCount, totalSeats, startTime }) => {
     renderSsSeats(playerCount);
-    startSsCountdown(waitMs);
+    startSsCountdown(startTime);
     const status = document.getElementById('ss-status');
     if (status) status.textContent = `${playerCount} of ${totalSeats} players found`;
   });
