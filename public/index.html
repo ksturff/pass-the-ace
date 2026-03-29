@@ -2518,6 +2518,8 @@ let soloPlayers=[], soloDealerIndex=0, soloCurrentIndex=0, soloTurnsTaken=0;
 let myTournamentId=null, tournamentCountdownInterval=null;
 let isTournamentGame=false;
 let gameTableBuilt=false; // true once we've built+dealt for the current game session
+let ssCountdownInterval = null;  // SAS waiting screen countdown
+let _ssLastPlayerCount = 0;
 
 // ── Avatar picker ──
 function buildAvatarPicker() {
@@ -3928,7 +3930,42 @@ document.addEventListener('DOMContentLoaded',()=>{
     });
   }
 
-  socket.on('sasJoined', ({ sasId, playerCount, startTime }) => {
+  // ── Sit & Stay waiting screen helpers ──
+  function renderSsSeats(playerCount) {
+    const seats = document.getElementById('ss-seats');
+    if (!seats) return;
+    if (seats.children.length !== 10) {
+      seats.innerHTML = '';
+      for (let i = 0; i < 10; i++) {
+        const div = document.createElement('div');
+        div.className = 'ss-seat ' + (i < playerCount ? 'filled' : 'empty');
+        div.textContent = i < playerCount ? '🧑' : '○';
+        seats.appendChild(div);
+      }
+    } else {
+      for (let i = _ssLastPlayerCount; i < playerCount && i < 10; i++) {
+        const div = seats.children[i];
+        if (div) { div.className = 'ss-seat filled'; div.textContent = '🧑'; }
+      }
+    }
+    _ssLastPlayerCount = playerCount;
+  }
+
+  function startSsCountdown(startTime) {
+    const cdEl = document.getElementById('ss-countdown');
+    if (ssCountdownInterval) clearInterval(ssCountdownInterval);
+    function tick() {
+      const remaining = Math.ceil((startTime - Date.now()) / 1000);
+      if (remaining <= 10 && remaining > 0) cdEl.classList.add('countdown-pulse');
+      else cdEl.classList.remove('countdown-pulse');
+      cdEl.textContent = Math.max(0, remaining);
+      if (remaining <= 0) clearInterval(ssCountdownInterval);
+    }
+    tick();
+    ssCountdownInterval = setInterval(tick, 500);
+  }
+
+    socket.on('sasJoined', ({ sasId, playerCount, startTime }) => {
     renderSsSeats(playerCount);
     startSsCountdown(startTime);
     const status = document.getElementById('ss-status');
