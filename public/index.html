@@ -1503,22 +1503,10 @@
         <div class="stat-value gold" id="stat-chips" style="font-size:28px;">0</div>
         <div class="stat-label">💰 Chip Balance</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-value gold" id="stat-wins">0</div>
-        <div class="stat-label">🏆 Wins</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-games">0</div>
-        <div class="stat-label">🃏 Games</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value cyan" id="stat-winrate">0%</div>
-        <div class="stat-label">📈 Win Rate</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-streak">0</div>
-        <div class="stat-label">🔥 Day Streak</div>
-      </div>
+      <div class="stat-card"><div class="stat-value gold" id="stat-wins">0</div><div class="stat-label">🏆 Wins</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-games">0</div><div class="stat-label">🃏 Games</div></div>
+      <div class="stat-card"><div class="stat-value cyan" id="stat-winrate">0%</div><div class="stat-label">📈 Win Rate</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-streak">0</div><div class="stat-label">🔥 Day Streak</div></div>
     </div>
 
     <div class="profile-section-title">Recent Activity</div>
@@ -2618,12 +2606,8 @@ function openProfile() {
   document.getElementById('stat-wins').textContent = wins;
   document.getElementById('stat-games').textContent = games;
   document.getElementById('stat-winrate').textContent = rate + '%';
-  const chips = userProfile.chipBalance ?? 2500;
-  const chipsEl = document.getElementById('stat-chips');
-  if (chipsEl) chipsEl.textContent = chips.toLocaleString();
-  const streak = userProfile.dailyStreak || 0;
-  const streakEl = document.getElementById('stat-streak');
-  if (streakEl) streakEl.textContent = streak;
+  const chipsEl=document.getElementById('stat-chips'); if(chipsEl) chipsEl.textContent=(userProfile.chipBalance??2500).toLocaleString();
+  const streakEl=document.getElementById('stat-streak'); if(streakEl) streakEl.textContent=userProfile.dailyStreak||0;
   showScreen('screen-profile');
 }
 
@@ -3541,7 +3525,7 @@ function renderTournamentList(list){
     row.innerHTML = `
       <td class="col-start" style="color:#cd7f32;font-weight:700;">${fmtTime(slotDate)}<span class="col-date"> in ${countdownLabel(ms)}</span></td>
       <td class="col-buyin-ticket">500 chips</td>
-      <td class="col-name">Daily Tournament</td>
+      <td class="col-name">Satellite</td>
       <td class="col-prize-ticket" style="color:#ffd700;">🏆 Sat Ticket</td>
       <td class="col-state"><span class="t-badge ticket">DAILY</span></td>
       <td class="col-registered" style="color:#cd7f32;">${myDailyTickets} owned</td>
@@ -3688,7 +3672,7 @@ function renderTournamentList(list){
       ? `<span style="color:${tierColor};font-weight:700;">${t.buyIn.toLocaleString()} chips</span>`
       : `FREE`;
     const nameCell = t.isSas
-      ? `<span style="color:${tierColor};font-weight:700;">${t.label} Sit &amp; Stay</span>`
+      ? `<span style="color:${tierColor};font-weight:700;">Sit &amp; Stay</span>`
       : `Sit &amp; Stay`;
     const prizeCell = t.isSas
       ? `<span style="color:var(--gold);">${sasPrize.toLocaleString()} chips</span>`
@@ -3806,7 +3790,7 @@ function showTournamentModal(t) {
   const isPast = t.startTime < Date.now() && !isLive;
   const sasPrize = t.isSas ? Math.floor(t.buyIn * 10 * 0.95).toLocaleString() + ' chips' : 'Glory';
   const sasBuyIn = t.isSas ? t.buyIn.toLocaleString() + ' chips' : 'FREE';
-  const sasName = t.isSas ? (t.label + ' Sit & Stay') : 'Sit & Stay Tournament';
+  const sasName = t.isSas ? 'Sit & Stay' : 'Sit & Stay Tournament';
 
   document.getElementById('t-info-title').textContent = sasName;
   document.getElementById('t-info-id').textContent = shortGameId(t.id);
@@ -3900,8 +3884,7 @@ function initSocket(){
       const tier=SAS_CYCLE[i%SAS_CYCLE.length];
       t.tier=tier; t.label=SAS_LABEL[tier]; t.buyIn=SAS_BUYIN[tier];
     });
-    currentTournamentList=list||[];
-    renderTournamentList(list);
+    currentTournamentList=list||[]; renderTournamentList(list);
   });
   socket.on('lobbyUpdate',rooms=>{renderLobbyRooms(rooms);});
   socket.on('registeredTournament',data=>{
@@ -4682,12 +4665,8 @@ document.addEventListener('DOMContentLoaded',()=>{
       });
     } else socket.emit('startGame');
   });
-  document.getElementById('btn-game-menu').addEventListener('click',()=>{
-    document.getElementById('leave-game-modal').classList.add('show');
-  });
-  document.getElementById('btn-leave-cancel').addEventListener('click',()=>{
-    document.getElementById('leave-game-modal').classList.remove('show');
-  });
+  document.getElementById('btn-game-menu').addEventListener('click',()=>{ document.getElementById('leave-game-modal').classList.add('show'); });
+  document.getElementById('btn-leave-cancel').addEventListener('click',()=>{ document.getElementById('leave-game-modal').classList.remove('show'); });
   document.getElementById('btn-leave-confirm').addEventListener('click',()=>{
     document.getElementById('leave-game-modal').classList.remove('show');
     document.getElementById('hand-area').classList.remove('visible');
@@ -5849,6 +5828,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </div>
 </div>
+
 
 <!-- ── LEAVE GAME MODAL ── -->
 <div id="leave-game-modal">
