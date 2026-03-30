@@ -1368,28 +1368,15 @@
     }
 
     /* ── LEAVE GAME MODAL ── */
-    #leave-game-modal {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.88);
-      z-index: 500; display: none; place-items: center;
-    }
-    #leave-game-modal.show { display: grid; }
-    .leave-game-box {
-      background: linear-gradient(135deg,#18140a,#0e0c07);
-      border: 1px solid rgba(200,162,60,0.28);
-      border-radius: 20px; padding: 32px 28px;
-      width: min(300px,90vw); text-align: center;
-      display: flex; flex-direction: column; gap: 14px; align-items: center;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-      animation: task-pop .3s cubic-bezier(0.22,1,0.36,1);
-    }
-    .leave-game-icon { font-size: 44px; }
-    .leave-game-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--text); }
-    .leave-game-sub { font-family: sans-serif; font-size: 12px; color: var(--muted); letter-spacing: 0.5px; line-height: 1.5; }
-    .leave-game-actions { display: flex; gap: 10px; width: 100%; margin-top: 4px; }
-    .btn-leave-confirm { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,77,79,0.35); background: rgba(255,77,79,0.1); color: #ff4d4f; font-size: 12px; font-family: 'Orbitron',sans-serif; cursor: pointer; font-weight: 700; letter-spacing: 0.5px; transition: all .2s; }
-    .btn-leave-confirm:hover { background: rgba(255,77,79,0.2); }
-    .btn-leave-cancel { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid rgba(200,162,60,0.25); background: rgba(200,162,60,0.07); color: var(--accent); font-size: 12px; font-family: 'Orbitron',sans-serif; cursor: pointer; font-weight: 700; letter-spacing: 0.5px; transition: all .2s; }
-    .btn-leave-cancel:hover { background: rgba(200,162,60,0.14); }
+    #leave-game-modal { position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:500;display:none;place-items:center; }
+    #leave-game-modal.show { display:grid; }
+    .leave-game-box { background:linear-gradient(135deg,#18140a,#0e0c07);border:1px solid rgba(200,162,60,0.28);border-radius:20px;padding:32px 28px;width:min(300px,90vw);text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center;box-shadow:0 20px 60px rgba(0,0,0,0.8);animation:task-pop .3s cubic-bezier(0.22,1,0.36,1); }
+    .leave-game-icon { font-size:44px; }
+    .leave-game-title { font-family:'Playfair Display',serif;font-size:20px;color:var(--text); }
+    .leave-game-sub { font-family:sans-serif;font-size:12px;color:var(--muted);letter-spacing:0.5px;line-height:1.5; }
+    .leave-game-actions { display:flex;gap:10px;width:100%;margin-top:4px; }
+    .btn-leave-confirm { flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,77,79,0.35);background:rgba(255,77,79,0.1);color:#ff4d4f;font-size:12px;font-family:'Orbitron',sans-serif;cursor:pointer;font-weight:700;transition:all .2s; }
+    .btn-leave-cancel { flex:1;padding:12px;border-radius:10px;border:1px solid rgba(200,162,60,0.25);background:rgba(200,162,60,0.07);color:var(--accent);font-size:12px;font-family:'Orbitron',sans-serif;cursor:pointer;font-weight:700;transition:all .2s; }
 
     /* ── SAS Results screen ── */
     #sas-results { position:fixed; inset:0; background:rgba(0,0,0,0.96); display:none; place-items:center; z-index:45; }
@@ -1511,18 +1498,26 @@
       <button class="btn-edit-profile" id="btn-edit-profile">Edit</button>
     </div>
 
-    <div class="stats-grid">
+    <div class="stats-grid" style="grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;">
+      <div class="stat-card" style="grid-column:1/-1;background:linear-gradient(135deg,#1a1400,#0e0a00);border-color:rgba(200,162,60,0.25);">
+        <div class="stat-value gold" id="stat-chips" style="font-size:28px;">0</div>
+        <div class="stat-label">💰 Chip Balance</div>
+      </div>
       <div class="stat-card">
         <div class="stat-value gold" id="stat-wins">0</div>
-        <div class="stat-label">Wins</div>
+        <div class="stat-label">🏆 Wins</div>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="stat-games">0</div>
-        <div class="stat-label">Games</div>
+        <div class="stat-label">🃏 Games</div>
       </div>
       <div class="stat-card">
         <div class="stat-value cyan" id="stat-winrate">0%</div>
-        <div class="stat-label">Win Rate</div>
+        <div class="stat-label">📈 Win Rate</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-streak">0</div>
+        <div class="stat-label">🔥 Day Streak</div>
       </div>
     </div>
 
@@ -2623,6 +2618,12 @@ function openProfile() {
   document.getElementById('stat-wins').textContent = wins;
   document.getElementById('stat-games').textContent = games;
   document.getElementById('stat-winrate').textContent = rate + '%';
+  const chips = userProfile.chipBalance ?? 2500;
+  const chipsEl = document.getElementById('stat-chips');
+  if (chipsEl) chipsEl.textContent = chips.toLocaleString();
+  const streak = userProfile.dailyStreak || 0;
+  const streakEl = document.getElementById('stat-streak');
+  if (streakEl) streakEl.textContent = streak;
   showScreen('screen-profile');
 }
 
@@ -3467,7 +3468,7 @@ function showRoundResult(data){
 let currentTournamentList=[];
 let selectedTournamentId=null;
 
-let _tSortCol = 'startTime', _tSortAsc = true;
+let _tSortCol='startTime',_tSortAsc=true;
 function renderTournamentList(list){
   currentTournamentList=list||[];
   const filterState=document.getElementById('filter-state')?.value||'all';
@@ -3475,32 +3476,22 @@ function renderTournamentList(list){
   let filtered=currentTournamentList;
   if(filterState==='registering') filtered=filtered.filter(t=>t.status==='registering');
   else if(filterState==='inProgress') filtered=filtered.filter(t=>t.status==='inProgress');
-
-  filtered = [...filtered].sort((a,b)=>{
-    let av, bv;
-    if(_tSortCol==='startTime')        { av=a.startTime;     bv=b.startTime; }
-    else if(_tSortCol==='buyIn')       { av=a.buyIn||0;      bv=b.buyIn||0; }
-    else if(_tSortCol==='name')        { av=(a.label||a.type||'').toLowerCase(); bv=(b.label||b.type||'').toLowerCase(); }
-    else if(_tSortCol==='prize')       { av=a.buyIn?a.buyIn*10*0.95:0; bv=b.buyIn?b.buyIn*10*0.95:0; }
-    else if(_tSortCol==='status')      { av=a.status||''; bv=b.status||''; }
-    else if(_tSortCol==='playerCount') { av=a.playerCount||0; bv=b.playerCount||0; }
-    else { av=a.startTime; bv=b.startTime; }
-    if(av<bv) return _tSortAsc?-1:1;
-    if(av>bv) return _tSortAsc?1:-1;
-    return 0;
+  filtered=[...filtered].sort((a,b)=>{
+    let av,bv;
+    if(_tSortCol==='startTime'){av=a.startTime;bv=b.startTime;}
+    else if(_tSortCol==='buyIn'){av=a.buyIn||0;bv=b.buyIn||0;}
+    else if(_tSortCol==='name'){av=(a.label||a.type||'').toLowerCase();bv=(b.label||b.type||'').toLowerCase();}
+    else if(_tSortCol==='prize'){av=a.buyIn?a.buyIn*9.5:0;bv=b.buyIn?b.buyIn*9.5:0;}
+    else if(_tSortCol==='status'){av=a.status||'';bv=b.status||'';}
+    else if(_tSortCol==='playerCount'){av=a.playerCount||0;bv=b.playerCount||0;}
+    else{av=a.startTime;bv=b.startTime;}
+    return av<bv?(_tSortAsc?-1:1):av>bv?(_tSortAsc?1:-1):0;
   });
-
   document.querySelectorAll('.t-grid thead th[data-col]').forEach(th=>{
     const col=th.dataset.col;
-    if(col===_tSortCol){
-      th.classList.add('sorted');
-      th.textContent=th.textContent.replace(/[▲▼]/g,'').trim()+(_tSortAsc?' ▲':' ▼');
-    } else {
-      th.classList.remove('sorted');
-      th.textContent=th.textContent.replace(/[▲▼]/g,'').trim();
-    }
+    if(col===_tSortCol){th.classList.add('sorted');th.textContent=th.textContent.replace(/[▲▼]/g,'').trim()+(_tSortAsc?' ▲':' ▼');}
+    else{th.classList.remove('sorted');th.textContent=th.textContent.replace(/[▲▼]/g,'').trim();}
   });
-
   document.getElementById('filter-count').textContent=`${filtered.length} tournament${filtered.length!==1?'s':''}`;
   const tbody=document.getElementById('tournament-list');
   if(!tbody)return;
@@ -3902,15 +3893,12 @@ function initSocket(){
   socket=io();
   socket.on('connect',()=>{myId=socket.id;});
   socket.on('tournamentList',list=>{
-    const SAS_CYCLE = ['bronze','silver','gold','platinum'];
-    const SAS_BUYIN = { bronze:150, silver:225, gold:300, platinum:375 };
-    const SAS_LABEL = { bronze:'Bronze', silver:'Silver', gold:'Gold', platinum:'Platinum' };
-    const sasSorted = (list||[]).filter(t=>t.isSas).sort((a,b)=>a.startTime-b.startTime);
-    sasSorted.forEach((t,i)=>{
-      const tier = SAS_CYCLE[i % SAS_CYCLE.length];
-      t.tier  = tier;
-      t.label = SAS_LABEL[tier];
-      t.buyIn = SAS_BUYIN[tier];
+    const SAS_CYCLE=['bronze','silver','gold','platinum'];
+    const SAS_BUYIN={bronze:150,silver:225,gold:300,platinum:375};
+    const SAS_LABEL={bronze:'Bronze',silver:'Silver',gold:'Gold',platinum:'Platinum'};
+    (list||[]).filter(t=>t.isSas).sort((a,b)=>a.startTime-b.startTime).forEach((t,i)=>{
+      const tier=SAS_CYCLE[i%SAS_CYCLE.length];
+      t.tier=tier; t.label=SAS_LABEL[tier]; t.buyIn=SAS_BUYIN[tier];
     });
     currentTournamentList=list||[];
     renderTournamentList(list);
@@ -4331,8 +4319,7 @@ function initLobbyTabs(){
   document.querySelectorAll('.t-grid thead th[data-col]').forEach(th=>{
     th.addEventListener('click',()=>{
       const col=th.dataset.col;
-      if(_tSortCol===col){ _tSortAsc=!_tSortAsc; }
-      else { _tSortCol=col; _tSortAsc=true; }
+      if(_tSortCol===col){_tSortAsc=!_tSortAsc;}else{_tSortCol=col;_tSortAsc=true;}
       renderTournamentList(currentTournamentList);
     });
   });
@@ -5035,6 +5022,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   window.updateLobbyTopbar = updateLobbyTopbar;
 
   // ── Profile btn in lobby topbar ──
+  document.getElementById('lobby-profile-btn')?.addEventListener('click', openProfile);
   document.getElementById('lobby-nav-profile-btn')?.addEventListener('click', openProfile);
 
   // ── Settings btn in lobby topbar ──
@@ -5076,10 +5064,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     myId='human'; players=soloPlayers;
     loadAssets().then(()=>{
       showScreen('screen-game');
-      requestAnimationFrame(()=>{
-        buildTable();
-        setTimeout(()=>soloStartRound(), 100);
-      });
+      requestAnimationFrame(()=>{ buildTable(); setTimeout(()=>soloStartRound(), 100); });
     });
   });
 
@@ -5865,7 +5850,6 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 
-
 <!-- ── LEAVE GAME MODAL ── -->
 <div id="leave-game-modal">
   <div class="leave-game-box">
@@ -5878,6 +5862,5 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </div>
 </div>
-
 </body>
 </html>
