@@ -4055,38 +4055,30 @@ function soloProcessTurn(){
   const p=soloPlayers[soloCurrentIndex];
   currentPlayerId=p.id;myTurn=p.isHuman;
   document.getElementById('turn-banner').textContent=p.isHuman?'🎯 Your turn!':`${p.name} is thinking…`;
-  // Never show the deck automatically — it only appears when the last player clicks Pass
-  hideDeckOnTable();
   updateTable();
   if(!p.isHuman)setTimeout(soloBotAct,900);
 }
 function soloAdvance(){soloTurnsTaken++;if(soloTurnsTaken>=soloAlive().length){soloEndRound();return;}soloCurrentIndex=soloNextAlive(soloCurrentIndex,1);soloProcessTurn();}
-function soloKeep(){myTurn=false;hideDeckOnTable();updateTable();soloAdvance();}
+function soloKeep(){myTurn=false;updateTable();soloAdvance();}
 function soloPass(){
   myTurn=false;
-  hideDeckOnTable();
-  const fromP=soloPlayers[soloCurrentIndex];const toIdx=soloNextAlive(soloCurrentIndex,1);const toP=soloPlayers[toIdx];
+  const fromP=soloPlayers[soloCurrentIndex];
+  const toIdx=soloNextAlive(soloCurrentIndex,1);
+  const toP=soloPlayers[toIdx];
   if(toP?.card?.rank==='K'){showKingToast();soloKeep();return;}
   if(fromP?.card?.rank==='K'){soloKeep();return;}
-  // Track ace pass task
   if(fromP?.card?.rank==='A'&&typeof trackTaskProgress==='function') trackTaskProgress('pass_aces', 1);
-  // Check if this is the last player in the round (must exchange with deck)
   const isLastPlayer=(soloTurnsTaken+1)>=soloAlive().length;
   if(isLastPlayer){
-    // Show deck briefly so the animation has something to aim at
-    showDeckOnTable();
-    // Last player: swap with the deck (random new card), animate deck exchange
-    setTimeout(()=>animateDeckExchange(fromP.id, ()=>{
-      // Give last player a new random card from a fresh deck draw
+    // Last player passes — exchange with deck (animateDeckExchange builds its own deck visual)
+    animateDeckExchange(fromP.id, ()=>{
       const deck=(()=>{const d=[];for(const s of SUITS)for(const r of RANKS)d.push({rank:r,suit:s});for(let i=d.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[d[i],d[j]]=[d[j],d[i]];}return d;})();
-      // Filter out cards already in play
       const usedKeys=new Set(soloAlive().filter(p=>p.id!==fromP.id&&p.card).map(p=>p.card.rank+'_'+p.card.suit));
       const available=deck.filter(c=>!usedKeys.has(c.rank+'_'+c.suit));
       if(available.length>0) fromP.card=available[0];
       updateTable();soloAdvance();
-    }), 120);
+    });
   } else {
-    // Normal pass to next player
     animateCardPass(fromP.id, toP.id, ()=>{
       [fromP.card,toP.card]=[toP.card,fromP.card];
       updateTable();soloAdvance();
@@ -4094,22 +4086,23 @@ function soloPass(){
   }
 }
 function soloBotAct(){
-  const p=soloPlayers[soloCurrentIndex];const val=soloCardValue(p.card);
-  const toIdx=soloNextAlive(soloCurrentIndex,1);const toP=soloPlayers[toIdx];
+  const p=soloPlayers[soloCurrentIndex];
+  const val=soloCardValue(p.card);
+  const toIdx=soloNextAlive(soloCurrentIndex,1);
+  const toP=soloPlayers[toIdx];
   const blocked=toP?.card?.rank==='K'||p.card?.rank==='K';
   const isLastPlayer=(soloTurnsTaken+1)>=soloAlive().length;
   const wantPass=!blocked&&(val<=4||(val<=8&&Math.random()<0.55));
   if(wantPass){
     if(isLastPlayer){
-      // Last bot passes to deck — show deck then animate
-      showDeckOnTable();
-      setTimeout(()=>animateDeckExchange(p.id, ()=>{
+      // Last bot passes — exchange with deck
+      animateDeckExchange(p.id, ()=>{
         const deck=(()=>{const d=[];for(const s of SUITS)for(const r of RANKS)d.push({rank:r,suit:s});for(let i=d.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[d[i],d[j]]=[d[j],d[i]];}return d;})();
         const usedKeys=new Set(soloAlive().filter(q=>q.id!==p.id&&q.card).map(q=>q.card.rank+'_'+q.card.suit));
         const available=deck.filter(c=>!usedKeys.has(c.rank+'_'+c.suit));
         if(available.length>0) p.card=available[0];
         soloAdvance();
-      }), 120);
+      });
     } else {
       animateCardPass(p.id, toP.id, ()=>{
         [p.card,toP.card]=[toP.card,p.card];
@@ -4158,6 +4151,11 @@ function soloContinue(){
   document.getElementById('round-result').classList.remove('show');
   const alive=soloAlive();
   if(alive.length<=1){document.getElementById('over-winner').textContent=alive[0]?.name??'???';document.getElementById('game-over').classList.add('show');return;}
+  // Always clean up deck display before starting new round
+  hideDeckOnTable();
+  // Also force-remove any lingering animation deck
+  const animDeck = document.getElementById('deck-stack-anim');
+  if(animDeck) animDeck.remove();
   soloDealerIndex=soloNextAlive(soloDealerIndex,1);
   soloPlayers.forEach(p=>p.card=null);players=soloPlayers;buildTable();
   setTimeout(()=>soloStartRound(), 100);
@@ -4193,8 +4191,6 @@ function hideDeckOnTable(){
 // ── Deck exchange animation ──
 // Last player swaps card with the deck (centre of table)
 function animateDeckExchange(playerId, onDone){
-  // Hide the persistent deck indicator — the animation builds its own
-  hideDeckOnTable();
   const table=document.getElementById('game-table');
   const tableRect=table.getBoundingClientRect();
   const cx=table.offsetWidth/2, cy=table.offsetHeight/2;
@@ -4227,10 +4223,6 @@ function animateDeckExchange(playerId, onDone){
     drawCardFallback(sc.getContext('2d'),null,13,19,26,38,false);
     deckStack.appendChild(sc);
   }
-  const deckLabel=document.createElement('div');
-  deckLabel.textContent='DECK';
-  deckLabel.style.cssText='position:absolute;left:50%;top:'+(-19-stackCount*0.8-16)+'px;transform:translateX(-50%);font-family:Orbitron,sans-serif;font-size:7px;color:rgba(0,180,160,0.85);letter-spacing:2px;white-space:nowrap;text-shadow:0 0 8px rgba(0,180,160,0.5);';
-  deckStack.appendChild(deckLabel);
   deckStack.style.opacity='0';
   deckStack.style.transition='opacity 0.25s';
   table.appendChild(deckStack);
