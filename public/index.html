@@ -190,6 +190,84 @@
     }
     .btn-share:hover { background: rgba(200,162,60,0.16); border-color: rgba(200,162,60,0.5); }
 
+
+    /* ── LOBBY PROFILE BUTTON ── */
+    .lobby-profile-btn {
+      display: flex; align-items: center; gap: 6px; cursor: pointer;
+      padding: 4px 10px; border-radius: 20px;
+      border: 1px solid rgba(200,162,60,0.18);
+      background: rgba(200,162,60,0.04);
+      transition: all .2s; flex-shrink: 0;
+    }
+    .lobby-profile-btn:hover { background: rgba(200,162,60,0.09); border-color: rgba(200,162,60,0.35); }
+
+    /* Compact 5-tab bar */
+    #lobby-tab-bar .lobby-tab { font-size: 10px; padding: 8px 6px; letter-spacing: 0; }
+    @media (min-width: 500px) { #lobby-tab-bar .lobby-tab { font-size: 11px; padding: 8px 10px; } }
+    .tasks-badge { background:#e03a3c;color:#fff;font-size:9px;font-weight:700;
+      min-width:14px;height:14px;border-radius:7px;padding:0 3px;
+      display:inline-flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif; }
+
+
+    /* ── NEW LOBBY TOPBAR ── */
+    .lobby-topbar {
+      display: flex; align-items: center;
+      padding: 0 12px; gap: 8px;
+      background: rgba(6,5,2,0.97);
+      border-bottom: 1px solid rgba(200,162,60,0.15);
+      flex-shrink: 0; height: 48px;
+    }
+    .lobby-topbar-brand { flex: 0 0 auto; }
+    .lobby-brand-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px; letter-spacing: 2px;
+      background: linear-gradient(90deg,var(--accent2),var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .lobby-topbar-chips {
+      flex: 1; display: flex; align-items: center; gap: 4px;
+      justify-content: center;
+    }
+    .lobby-chips-icon { font-size: 14px; }
+    .lobby-chips-val {
+      font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 700;
+      background: linear-gradient(90deg,#ffd700,#ffaa00);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .lobby-topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .lobby-settings-btn {
+      background: none; border: none; font-size: 18px;
+      cursor: pointer; padding: 4px; line-height: 1;
+      opacity: 0.7; transition: opacity .2s;
+    }
+    .lobby-settings-btn:hover { opacity: 1; }
+    .lobby-profile-btn { padding: 4px 8px !important; }
+
+    /* ── UPDATED LOBBY TABS (5 tabs, smaller) ── */
+    .lobby-tabs {
+      display: flex; flex-shrink: 0;
+      background: rgba(10,8,2,0.95);
+      border-bottom: 1px solid rgba(200,162,60,0.1);
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+    }
+    .lobby-tab {
+      flex: 1; padding: 10px 4px; border: none;
+      background: transparent; color: var(--muted);
+      font-size: 9px; font-family: 'Orbitron', sans-serif;
+      cursor: pointer; letter-spacing: 0.5px;
+      border-bottom: 2px solid transparent;
+      transition: all .2s; white-space: nowrap;
+      min-width: 60px;
+    }
+    .lobby-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      background: rgba(200,162,60,0.05);
+    }
+
+    /* lb tab inside lobby */
+    #tab-leaderboard .lb-tab { flex: 1; }
+
     @media (max-width: 768px) and (orientation: portrait) {
       #rotate-prompt { display: flex; }
     }
@@ -206,7 +284,7 @@
     .screen { position:fixed; inset:0; display:none; z-index:10; }
     .screen.active { display:block; overflow-y:scroll; -webkit-overflow-scrolling:touch; }
     /* Login, profile, leaderboard, howto, home — block-scroll screens */
-    #screen-login.active,
+    #screen-login.active, #screen-lobby.active,
     #screen-profile.active,
     #screen-profile-setup.active,
     #screen-leaderboard.active,
@@ -1560,7 +1638,7 @@
 </div>
 
 <!-- ── HOME ── -->
-<div id="screen-home" class="screen">
+<div id="screen-home" class="screen" style="display:none!important;">
   <div class="home-wrap">
     <div class="home-logo">
       <div class="logo-icon">
@@ -1721,15 +1799,24 @@
 
   <!-- Top bar -->
   <div class="lobby-topbar">
-    <button class="lobby-back" id="btn-lobby-back">← HOME</button>
+    <div class="lobby-profile-btn" id="lobby-profile-btn">
+      <span id="lobby-nav-avatar">🎭</span>
+      <span id="lobby-nav-name" style="font-size:10px;color:var(--text);max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    </div>
     <div class="lobby-topbar-title">PASS THE ACE</div>
-    <div class="lobby-topbar-time" id="lobby-clock"></div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="lobby-topbar-time" id="lobby-clock"></div>
+      <button id="btn-lobby-settings" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;color:var(--muted);" title="Settings">⚙️</button>
+    </div>
   </div>
 
-  <!-- Tab nav -->
-  <div class="lobby-tabs">
-    <button class="lobby-tab active" data-tab="tournaments">Tournaments</button>
-    <button class="lobby-tab" data-tab="tables">Private Tables</button>
+  <!-- Tab nav — 5 tabs -->
+  <div class="lobby-tabs" id="lobby-tab-bar">
+    <button class="lobby-tab active" data-tab="tournaments">🏆 Tournaments</button>
+    <button class="lobby-tab" data-tab="quickplay">⚡ Quick Play</button>
+    <button class="lobby-tab" data-tab="tables">🔗 Private</button>
+    <button class="lobby-tab" data-tab="tasks">✅ Tasks<span class="tasks-badge" id="tasks-badge-lobby" style="display:none;position:relative;top:-2px;margin-left:4px;"></span></button>
+    <button class="lobby-tab" data-tab="leaderboard">🏅 Ranks</button>
   </div>
 
   <!-- Micro countdown banner -->
@@ -1775,6 +1862,31 @@
         </table>
       </div>
     </div>
+    <div id="tab-quickplay" style="display:none;padding:24px 16px;max-width:480px;margin:0 auto;">
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="font-size:40px;margin-bottom:8px;">⚡</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--text);margin-bottom:6px;">Quick Play</div>
+        <div style="font-family:sans-serif;font-size:13px;color:var(--muted);">Solo practice against bots. No entry fee.</div>
+      </div>
+      <button class="btn-primary" id="btn-quick-play-tab" style="margin-bottom:12px;">⚡ Start Solo Game</button>
+      <div style="font-family:sans-serif;font-size:11px;color:var(--muted);text-align:center;">Play against 9 bots · Earn chips · Practice your strategy</div>
+    </div>
+
+    <div id="tab-tasks" style="display:none;padding:16px;max-width:480px;margin:0 auto;">
+      <div class="tasks-subtitle" style="text-align:center;font-family:sans-serif;font-size:12px;color:var(--muted);margin-bottom:8px;">Complete 3 challenges to earn chips</div>
+      <div class="tasks-reset" id="tasks-reset-label-lobby" style="font-family:sans-serif;font-size:11px;color:var(--muted);text-align:center;margin-bottom:16px;"></div>
+      <div id="tasks-list-lobby"></div>
+    </div>
+
+    <div id="tab-leaderboard" style="display:none;padding:16px;max-width:480px;margin:0 auto;">
+      <div class="lb-tabs" style="margin-bottom:16px;">
+        <button class="lb-tab active" data-lb="wins">Most Wins</button>
+        <button class="lb-tab" data-lb="games">Most Games</button>
+        <button class="lb-tab" data-lb="winrate">Win Rate</button>
+      </div>
+      <div id="lobby-lb-content"></div>
+    </div>
+
     <div id="tab-tables" style="display:none;">
       <div id="room-list"></div>
       <div class="create-room-section">
@@ -1828,7 +1940,7 @@
 <div id="screen-howto" class="screen">
   <div class="howto-wrap">
     <div class="howto-header">
-      <button class="lobby-back" id="btn-back-howto" onclick="showScreen('screen-home')">← BACK</button>
+      <button class="lobby-back" id="btn-back-howto" onclick="showScreen('screen-lobby')">← BACK</button>
       <div class="howto-title">HOW TO PLAY</div>
     </div>
     <div class="howto-step">
@@ -2227,6 +2339,11 @@ function updateNavBar() {
   if (ticketEl) ticketEl.textContent = userProfile.dailyTickets ?? 0;
   const satEl = document.getElementById('home-saturday-count');
   if (satEl) satEl.textContent = userProfile.saturdayTickets ?? 0;
+  // Update lobby topbar profile
+  const lobbyAvatar = document.getElementById('lobby-nav-avatar');
+  const lobbyName = document.getElementById('lobby-nav-name');
+  if (lobbyAvatar) lobbyAvatar.textContent = userProfile.avatar || '🎭';
+  if (lobbyName) lobbyName.textContent = userProfile.displayName || 'Player';
 }
 
 // ── Ticket system ──
@@ -2363,7 +2480,7 @@ function initAuth() {
     });
     myAvatar = avatar;
     updateNavBar();
-    showScreen('screen-home');
+    showScreen('screen-lobby');
   });
 
   // Enter key on login
@@ -2488,8 +2605,8 @@ function initProfile() {
   // Nav profile click
   document.getElementById('nav-profile-btn').addEventListener('click', openProfile);
 
-  document.getElementById('btn-profile-back').addEventListener('click', () => showScreen('screen-home'));
-  document.getElementById('btn-profile-back').addEventListener('touchend', (e) => { e.preventDefault(); showScreen('screen-home'); });
+  document.getElementById('btn-profile-back').addEventListener('click', () => showScreen('screen-lobby'));
+  document.getElementById('btn-profile-back').addEventListener('touchend', (e) => { e.preventDefault(); showScreen('screen-lobby'); });
 
   // Edit profile
   document.getElementById('btn-edit-profile').addEventListener('click', () => {
@@ -2617,8 +2734,8 @@ function initLeaderboard() {
       loadLeaderboard(tab.dataset.lb);
     });
   });
-  document.getElementById('btn-lb-back').addEventListener('click', () => showScreen('screen-home'));
-  document.getElementById('btn-lb-back').addEventListener('touchend', (e) => { e.preventDefault(); showScreen('screen-home'); });
+  document.getElementById('btn-lb-back').addEventListener('click', () => showScreen('screen-lobby'));
+  document.getElementById('btn-lb-back').addEventListener('touchend', (e) => { e.preventDefault(); showScreen('screen-lobby'); });
 }
 
 // Build avatar picker for profile setup
@@ -2656,7 +2773,7 @@ auth.onAuthStateChanged(async user => {
       }
       updateNavBar();
       myAvatar = profile.avatar || AVATARS[0];
-      showScreen('screen-home');
+      showScreen('screen-lobby');
       setTimeout(() => checkDailyBonus(), 1200);
     }
   } else {
@@ -2706,7 +2823,7 @@ function buildAvatarPicker() {
   });
 }
 
-let _previousScreen = 'screen-home';
+let _previousScreen = 'screen-lobby';
 function showScreen(id) {
   const current = document.querySelector('.screen.active');
   // Only record previous screen when navigating TO settings (so back knows where to return)
@@ -2715,7 +2832,7 @@ function showScreen(id) {
   }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if (id === 'screen-home' && typeof Audio !== 'undefined') Audio.attachStartTrigger();
+  if ((id === 'screen-lobby' || id === 'screen-home') && typeof Audio !== 'undefined') Audio.attachStartTrigger();
 }
 function showToast(msg,color='#fff',ms=3000){const el=document.getElementById('toast');el.textContent=msg;el.style.color=color;el.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display='none',ms);}
 function showKingToast(){const el=document.getElementById('king-toast');el.style.display='block';clearTimeout(kingToastTimer);kingToastTimer=setTimeout(()=>el.style.display='none',2200);}
@@ -4067,17 +4184,82 @@ function animateDeckExchange(playerId){
     },550);
   });
 }
+function switchLobbyTab(tabName) {
+  const tabs = ['tournaments','quickplay','tables','tasks','leaderboard'];
+  document.querySelectorAll('.lobby-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+  tabs.forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) el.style.display = t === tabName ? 'block' : 'none';
+  });
+  document.getElementById('lobby-filterbar').style.display = tabName === 'tournaments' ? 'flex' : 'none';
+  document.getElementById('micro-countdown-bar').style.display = tabName === 'tournaments' ? 'flex' : 'none';
+  if (tabName === 'tasks') renderTasksScreenInline();
+  if (tabName === 'leaderboard') renderLobbyLeaderboard();
+}
+window.switchLobbyTab = switchLobbyTab;
+
+function renderTasksScreenInline() {
+  const tasks = loadDailyTasks ? loadDailyTasks() : [];
+  const list = document.getElementById('tasks-list-lobby');
+  const resetLabel = document.getElementById('tasks-reset-label-lobby');
+  if (resetLabel && typeof formatTimeUntilReset === 'function') resetLabel.textContent = formatTimeUntilReset();
+  if (!list) return;
+  list.innerHTML = '';
+  tasks.forEach(task => {
+    const pct = Math.min(100, Math.round((task.progress / task.target) * 100));
+    const done = task.progress >= task.target;
+    const card = document.createElement('div');
+    card.className = 'task-card' + (task.claimed ? ' claimed' : done ? ' done' : '');
+    card.innerHTML = `
+      <div class="task-header">
+        <div class="task-icon">${task.icon}</div>
+        <div class="task-info">
+          <div class="task-name">${task.name}</div>
+          <div class="task-reward">+${task.reward} chips</div>
+        </div>
+        <div class="task-status">${task.claimed ? '✅' : done ? '🎁' : ''}</div>
+      </div>
+      <div class="task-progress-bar">
+        <div class="task-progress-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="task-progress-label">${task.desc} — ${task.progress}/${task.target}</div>
+      ${done && !task.claimed ? '<button class="btn-claim-task" data-task-id="' + task.id + '">Claim +' + task.reward + ' chips</button>' : ''}
+    `;
+    const claimBtn = card.querySelector('.btn-claim-task');
+    if (claimBtn) {
+      claimBtn.addEventListener('click', async () => {
+        const tasks2 = loadDailyTasks();
+        const t = tasks2.find(x => x.id === task.id);
+        if (t && !t.claimed) {
+          t.claimed = true;
+          saveDailyTasks(tasks2);
+          await updateChipBalance(t.reward);
+          showToast(`+${t.reward} chips! ${t.icon}`, '#ffd700', 2500);
+          renderTasksScreenInline();
+          if (typeof updateTasksBadge === 'function') updateTasksBadge();
+        }
+      });
+    }
+    list.appendChild(card);
+  });
+}
+
+function renderLobbyLeaderboard() {
+  const el = document.getElementById('lobby-lb-content');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-family:sans-serif;font-size:13px;">Loading...</div>';
+  loadLeaderboard('wins').then(() => {
+    // loadLeaderboard renders into screen-leaderboard; copy the rows here
+    const lbWrap = document.getElementById('lb-list');
+    if (lbWrap) el.innerHTML = lbWrap.innerHTML;
+  }).catch(() => {
+    el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-family:sans-serif;">Could not load leaderboard</div>';
+  });
+}
+
 function initLobbyTabs(){
   document.querySelectorAll('.lobby-tab').forEach(tab=>{
-    tab.addEventListener('click',()=>{
-      document.querySelectorAll('.lobby-tab').forEach(t=>t.classList.remove('active'));
-      tab.classList.add('active');
-      const isTournaments=tab.dataset.tab==='tournaments';
-      document.getElementById('tab-tournaments').style.display=isTournaments?'block':'none';
-      document.getElementById('tab-tables').style.display=isTournaments?'none':'block';
-      document.getElementById('lobby-filterbar').style.display=isTournaments?'flex':'none';
-      // t-detail-panel replaced by modal
-    });
+    tab.addEventListener('click',()=>{ switchLobbyTab(tab.dataset.tab); });
   });
   document.getElementById('filter-state')?.addEventListener('change',()=>renderTournamentList(currentTournamentList));
 
@@ -4221,6 +4403,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     myAvatar = userProfile?.avatar || myAvatar;
     startSolo(name, 10);
   });
+  document.getElementById('btn-quick-play-tab')?.addEventListener('click',()=>{
+    const name = userProfile?.displayName || 'Player';
+    myAvatar = userProfile?.avatar || myAvatar;
+    startSolo(name, 10);
+  });
 
   // ── SAS queue data from server
   let sasQueuesData = [];
@@ -4338,15 +4525,14 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   document.getElementById('btn-tournaments').addEventListener('click', () => {
     showScreen('screen-lobby');
-    document.querySelectorAll('.lobby-tab').forEach(t => t.classList.remove('active'));
-    document.querySelector('[data-tab="tournaments"]').classList.add('active');
+    switchLobbyTab('tournaments');
     document.getElementById('tab-tournaments').style.display = 'block';
     document.getElementById('tab-tables').style.display = 'none';
     document.getElementById('lobby-filterbar').style.display = 'flex';
     socket.emit('getTournaments');
     if (currentTournamentList.length) renderTournamentList(currentTournamentList);
   });
-  document.getElementById('btn-leaderboard').addEventListener('click',()=>openLeaderboard());
+  document.getElementById('btn-leaderboard').addEventListener('click',()=>{ showScreen('screen-lobby'); switchLobbyTab('leaderboard'); });
   document.getElementById('btn-how-to-play').addEventListener('click',()=>showScreen('screen-howto'));
   document.getElementById('btn-settings').addEventListener('click',()=>{
     showScreen('screen-settings');
@@ -4355,18 +4541,17 @@ document.addEventListener('DOMContentLoaded',()=>{
     Audio.initTableThemePicker && Audio.initTableThemePicker();
   });
   document.getElementById('btn-back-settings').addEventListener('click',()=>{
-    showScreen(_previousScreen||'screen-home');
+    showScreen('screen-lobby');
     if(typeof updateTable==='function') setTimeout(()=>updateTable(),50);
   });
   document.getElementById('btn-back-settings').addEventListener('touchend',(e)=>{
     e.preventDefault();
-    showScreen(_previousScreen||'screen-home');
+    showScreen('screen-lobby');
     if(typeof updateTable==='function') setTimeout(()=>updateTable(),50);
   });
-  document.getElementById('btn-back-howto').addEventListener('click',()=>showScreen('screen-home'));
-  document.getElementById('btn-back-howto').addEventListener('touchend',(e)=>{e.preventDefault();showScreen('screen-home');});
-  document.getElementById('btn-lobby-back').addEventListener('click',()=>showScreen('screen-home'));
-  document.getElementById('btn-lobby-back').addEventListener('touchend',(e)=>{e.preventDefault();showScreen('screen-home');});
+  document.getElementById('btn-back-howto').addEventListener('click',()=>showScreen('screen-lobby'));
+  document.getElementById('btn-back-howto').addEventListener('touchend',(e)=>{e.preventDefault();showScreen('screen-lobby');});
+  // btn-lobby-back removed — lobby is now the home screen
 
   // Seat selectors
   document.querySelectorAll('#seat-row-lobby .seat-btn').forEach(btn=>{
@@ -4442,7 +4627,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       document.getElementById('round-result').classList.remove('show');
       document.getElementById('game-over').classList.remove('show');
       isSolo=false;isTournamentGame=false;gameTableBuilt=false;myId=socket?.id||null;
-      showScreen('screen-home');
+      showScreen('screen-lobby');
     }
   });
   // ── SAS Results screen ──
@@ -4496,7 +4681,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('sas-results').classList.remove('show');
     document.getElementById('hand-area').classList.remove('visible');
     isSolo = false; isTournamentGame = false; myId = socket?.id || null;
-    showScreen('screen-home');
+    showScreen('screen-lobby');
   });
 
   // ── Daily login bonus ──
@@ -4539,7 +4724,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('game-over').classList.remove('show');
     document.getElementById('hand-area').classList.remove('visible');
     isSolo=false;isTournamentGame=false;gameTableBuilt=false;myId=socket?.id||null;
-    showScreen('screen-home');
+    showScreen('screen-lobby');
   });
 
 
@@ -4601,48 +4786,51 @@ document.addEventListener('DOMContentLoaded',()=>{
     if (!currentUser) return;
     const tasks = loadDailyTasks();
     let changed = false;
+    let completedTask = null;
     tasks.forEach(t => {
       if (t.claimed) return;
       if (t.id !== eventId) return;
       const before = t.progress;
       t.progress = Math.min(t.target, t.progress + amount);
+      changed = true;
       if (t.progress >= t.target && before < t.target) {
-        changed = true;
-        // Show completion modal
-        showTaskCompleteModal(t);
+        // Mark claimed immediately so double-triggers can't award twice
+        t.claimed = true;
+        completedTask = t;
       }
     });
-    if (changed || tasks.some(t => t.id === eventId)) {
+    if (changed) {
       saveDailyTasks(tasks);
       if (typeof updateTasksBadge === 'function') updateTasksBadge();
-      // Re-render if tasks screen is active
       if (document.getElementById('screen-tasks').classList.contains('active')) {
         renderTasksScreen();
       }
     }
+    if (completedTask) showTaskCompleteModal(completedTask);
   };
 
   function showTaskCompleteModal(task) {
     document.getElementById('task-complete-emoji').textContent = task.icon;
     document.getElementById('task-complete-name').textContent = task.name.toUpperCase();
     document.getElementById('task-complete-reward').textContent = `+${task.reward} chips`;
-    document.getElementById('task-complete-modal').classList.add('show');
-    // Store which task to claim on OK
-    document.getElementById('task-complete-modal').dataset.taskId = task.id;
+    const modal = document.getElementById('task-complete-modal');
+    modal.dataset.taskId = task.id;
+    modal.dataset.taskReward = task.reward;
+    modal.dataset.taskIcon = task.icon;
+    modal.classList.add('show');
   }
 
   document.getElementById('btn-task-complete-ok').addEventListener('click', async () => {
     const modal = document.getElementById('task-complete-modal');
     const taskId = modal.dataset.taskId;
+    const reward = parseInt(modal.dataset.taskReward || '0');
+    const icon = modal.dataset.taskIcon || '🎉';
     modal.classList.remove('show');
-    // Award chips
-    const tasks = loadDailyTasks();
-    const task = tasks.find(t => t.id === taskId);
-    if (task && !task.claimed) {
-      task.claimed = true;
-      saveDailyTasks(tasks);
-      await updateChipBalance(task.reward);
-      showToast(`+${task.reward} chips! ${task.icon}`, '#ffd700', 2500);
+    // Chips are awarded here; task is already marked claimed in trackTaskProgress
+    if (taskId && reward > 0) {
+      await updateChipBalance(reward);
+      showToast(`+${reward} chips! ${icon}`, '#ffd700', 2500);
+      updateTasksBadge();
       if (document.getElementById('screen-tasks').classList.contains('active')) {
         renderTasksScreen();
       }
@@ -4651,22 +4839,19 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   function updateTasksBadge() {
     const badge = document.getElementById('tasks-badge');
-    if (!badge) return;
+    const badgeTab = document.getElementById('tasks-badge-lobby');
     const tasks = loadDailyTasks();
     const incomplete = tasks.filter(t => !t.claimed && t.progress < t.target).length;
     const claimable = tasks.filter(t => !t.claimed && t.progress >= t.target).length;
     if (claimable > 0) {
-      badge.textContent = claimable;
-      badge.style.display = 'flex';
-      badge.style.background = '#ffd700';
-      badge.style.color = '#0a0800';
+      if (badge) { badge.textContent = claimable; badge.style.display = 'flex'; badge.style.background = '#ffd700'; badge.style.color = '#0a0800'; }
+      if (badgeTab) { badgeTab.textContent = claimable; badgeTab.style.display = 'inline-flex'; badgeTab.style.background = '#ffd700'; badgeTab.style.color = '#0a0800'; }
     } else if (incomplete > 0) {
-      badge.textContent = incomplete;
-      badge.style.display = 'flex';
-      badge.style.background = '#e03a3c';
-      badge.style.color = '#fff';
+      if (badge) { badge.textContent = incomplete; badge.style.display = 'flex'; badge.style.background = '#e03a3c'; badge.style.color = '#fff'; }
+      if (badgeTab) { badgeTab.textContent = incomplete; badgeTab.style.display = 'inline-flex'; badgeTab.style.background = '#e03a3c'; badgeTab.style.color = '#fff'; }
     } else {
-      badge.style.display = 'none';
+      if (badge) badge.style.display = 'none';
+      if (badgeTab) badgeTab.style.display = 'none';
     }
   }
   window.updateTasksBadge = updateTasksBadge;
@@ -4718,12 +4903,12 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 
   document.getElementById('btn-tasks').addEventListener('click', () => {
-    renderTasksScreen();
-    showScreen('screen-tasks');
+    showScreen('screen-lobby');
+    switchLobbyTab('tasks');
   });
   updateTasksBadge();
-  document.getElementById('btn-back-tasks').addEventListener('click', () => showScreen('screen-home'));
-  document.getElementById('btn-back-tasks').addEventListener('touchend', e => { e.preventDefault(); showScreen('screen-home'); });
+  document.getElementById('btn-back-tasks').addEventListener('click', () => showScreen('screen-lobby'));
+  document.getElementById('btn-back-tasks').addEventListener('touchend', e => { e.preventDefault(); showScreen('screen-lobby'); });
 
 
   // Tournament info modal close
@@ -4749,6 +4934,162 @@ document.addEventListener('DOMContentLoaded',()=>{
       navigator.clipboard.writeText(text + '\nhttps://pass-the-ace.onrender.com')
         .then(() => showToast('Result copied to clipboard!', '#c8a23c', 2500))
         .catch(() => showToast('https://pass-the-ace.onrender.com', '#c8a23c', 4000));
+    }
+  });
+
+
+  // ── Sync topbar chip/ticket display ──
+  function updateLobbyTopbar() {
+    const bal = document.getElementById('lobby-chip-balance');
+    const daily = document.getElementById('lobby-daily-count');
+    const sat = document.getElementById('lobby-saturday-count');
+    const avatar = document.getElementById('lobby-nav-avatar');
+    if (bal) bal.textContent = (userProfile?.chipBalance ?? 0).toLocaleString();
+    if (daily) daily.textContent = userProfile?.dailyTickets ?? 0;
+    if (sat) sat.textContent = userProfile?.saturdayTickets ?? 0;
+    if (avatar) avatar.textContent = myAvatar || '🎭';
+  }
+  window.updateLobbyTopbar = updateLobbyTopbar;
+
+  // ── Profile btn in lobby topbar ──
+  document.getElementById('lobby-nav-profile-btn')?.addEventListener('click', openProfile);
+
+  // ── Settings btn in lobby topbar ──
+  document.getElementById('btn-lobby-settings')?.addEventListener('click', () => {
+    _previousScreen = 'screen-lobby';
+    showScreen('screen-settings');
+  });
+
+  // ── Quick Play tab ──
+  const AVATARS_QP = ['🦊','🐯','🦅','🦈','🐺','🦁','🐸','🦝','🤖','👽','💀','🎭'];
+  let selectedAvatarQuick = myAvatar || AVATARS_QP[0];
+  function initQuickPlayTab() {
+    const grid = document.getElementById('avatar-grid-quick');
+    if (!grid || grid.dataset.init) return;
+    grid.dataset.init = '1';
+    AVATARS_QP.forEach(av => {
+      const opt = document.createElement('div');
+      opt.className = 'av-opt' + (av === selectedAvatarQuick ? ' selected' : '');
+      opt.textContent = av;
+      opt.addEventListener('click', () => {
+        selectedAvatarQuick = av;
+        myAvatar = av;
+        grid.querySelectorAll('.av-opt').forEach(o => o.classList.toggle('selected', o.textContent === av));
+      });
+      grid.appendChild(opt);
+    });
+    const nameInp = document.getElementById('inp-name-quick');
+    if (nameInp && userProfile?.displayName) nameInp.value = userProfile.displayName;
+  }
+  document.getElementById('btn-quick-play-tab')?.addEventListener('click', () => {
+    const name = document.getElementById('inp-name-quick')?.value.trim() || userProfile?.displayName || 'Player';
+    if (!name) { showToast('Enter your name first', '#ff4d4f'); return; }
+    isSolo = true; isTournamentGame = false;
+    myAvatar = selectedAvatarQuick;
+    const BOT_NAMES=['Morgan','Taylor','Casey','Jordan','Riley','Sam','Alex','Avery','Quinn','Blake'];
+    const BOT_AVS=['🐍','🦅','🦈','🦁','👾','🐯','🐺','💀','🤖','🦊'];
+    soloPlayers=[{id:'human',name,avatar:myAvatar,chips:3,eliminated:false,card:null,seatIndex:0,isHuman:true}];
+    for(let i=0;i<9;i++) soloPlayers.push({id:'bot'+i,name:BOT_NAMES[i],avatar:BOT_AVS[i],chips:3,eliminated:false,card:null,seatIndex:i+1,isHuman:false});
+    myId='human'; players=soloPlayers;
+    loadAssets().then(()=>{showScreen('screen-game');buildTable();soloStartRound();});
+  });
+
+  // ── Tasks tab content ──
+  function renderTasksTabContent() {
+    const tasks = loadDailyTasks();
+    const list = document.getElementById('tasks-list-lobby');
+    const resetLabel = document.getElementById('tasks-reset-label-lobby');
+    if (resetLabel) resetLabel.textContent = formatTimeUntilReset();
+    if (!list) return;
+    list.innerHTML = '';
+    tasks.forEach(task => {
+      const pct = Math.min(100, Math.round((task.progress / task.target) * 100));
+      const done = task.progress >= task.target;
+      const card = document.createElement('div');
+      card.className = 'task-card' + (task.claimed ? ' claimed' : done ? ' done' : '');
+      card.innerHTML = `
+        <div class="task-header">
+          <div class="task-icon">${task.icon}</div>
+          <div class="task-info">
+            <div class="task-name">${task.name}</div>
+            <div class="task-reward">+${task.reward} chips</div>
+          </div>
+          <div class="task-status">${task.claimed ? '✅' : done ? '🎁' : ''}</div>
+        </div>
+        <div class="task-progress-bar">
+          <div class="task-progress-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="task-progress-label">${task.desc} — ${task.progress}/${task.target}</div>
+        ${done && !task.claimed ? '<button class="btn-claim-task" data-task-id="' + task.id + '">Claim +' + task.reward + ' chips</button>' : ''}
+      `;
+      const claimBtn = card.querySelector('.btn-claim-task');
+      if (claimBtn) {
+        claimBtn.addEventListener('click', async () => {
+          const tasks2 = loadDailyTasks();
+          const t = tasks2.find(x => x.id === task.id);
+          if (t && !t.claimed) {
+            t.claimed = true; saveDailyTasks(tasks2);
+            await updateChipBalance(t.reward);
+            showToast(`+${t.reward} chips! ${t.icon}`, '#ffd700', 2500);
+            renderTasksTabContent();
+          }
+        });
+      }
+      list.appendChild(card);
+    });
+    // Also update tab badge
+    const badge = document.getElementById('tasks-badge-lobby');
+    if (badge) {
+      const claimable = tasks.filter(t => !t.claimed && t.progress >= t.target).length;
+      const incomplete = tasks.filter(t => !t.claimed && t.progress < t.target).length;
+      if (claimable > 0) { badge.textContent = claimable; badge.style.display='inline-flex'; badge.style.background='#ffd700'; badge.style.color='#0a0800'; }
+      else if (incomplete > 0) { badge.textContent = incomplete; badge.style.display='inline-flex'; badge.style.background='#e03a3c'; badge.style.color='#fff'; }
+      else { badge.style.display = 'none'; }
+    }
+  }
+  window.renderTasksTabContent = renderTasksTabContent;
+
+  // ── Leaderboard tab content ──
+  let currentLbTabInLobby = 'wins';
+  async function renderLeaderboardTabContent(tab) {
+    tab = tab || currentLbTabInLobby;
+    currentLbTabInLobby = tab;
+    document.querySelectorAll('#tab-leaderboard .lb-tab').forEach(b => b.classList.toggle('active', b.dataset.lb === tab));
+    const list = document.getElementById('lobby-lb-content');
+    if (!list) return;
+    list.innerHTML = '<div style="text-align:center;color:var(--muted);font-family:sans-serif;font-size:13px;padding:24px;">Loading…</div>';
+    try {
+      let q = db.collection('users').orderBy('gamesPlayed','desc').limit(50);
+      const snap = await q.get();
+      let players = snap.docs.map(d => ({id:d.id,...d.data()}));
+      if (tab==='wins') players.sort((a,b)=>(b.wins||0)-(a.wins||0));
+      else if (tab==='games') players.sort((a,b)=>(b.gamesPlayed||0)-(a.gamesPlayed||0));
+      else { players=players.filter(p=>(p.gamesPlayed||0)>=3); players.sort((a,b)=>{const ra=a.gamesPlayed>0?a.wins/a.gamesPlayed:0;const rb=b.gamesPlayed>0?b.wins/b.gamesPlayed:0;return rb-ra;}); }
+      list.innerHTML = '';
+      players.slice(0,20).forEach((p,i) => {
+        const wins=p.wins||0; const games=p.gamesPlayed||0;
+        const rate=games>0?Math.round((wins/games)*100):0;
+        let scoreVal, scoreLabel;
+        if(tab==='wins'){scoreVal=wins;scoreLabel='WINS';}
+        else if(tab==='games'){scoreVal=games;scoreLabel='GAMES';}
+        else{scoreVal=rate+'%';scoreLabel='WIN RATE';}
+        const rankClass=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+        const isMe=p.id===currentUser?.uid;
+        const row=document.createElement('div');
+        row.className='lb-row'+(isMe?' me':'');
+        row.innerHTML=`<div class="lb-rank ${rankClass}">${i+1}</div><div class="lb-avatar">${p.avatar||'🎭'}</div><div class="lb-info"><div class="lb-name">${p.displayName||'Player'}${isMe?' (you)':''}</div><div class="lb-sub">${games} games</div></div><div class="lb-score"><div class="lb-score-val">${scoreVal}</div><div class="lb-score-label">${scoreLabel}</div></div>`;
+        list.appendChild(row);
+      });
+    } catch(e) { list.innerHTML='<div style="text-align:center;color:var(--muted);font-family:sans-serif;padding:24px;">Could not load leaderboard</div>'; }
+  }
+  document.querySelectorAll('#tab-leaderboard .lb-tab').forEach(b => {
+    b.addEventListener('click', () => renderLeaderboardTabContent(b.dataset.lb));
+  });
+
+  // Init quick play tab avatars when tab is clicked
+  document.querySelectorAll('.lobby-tab').forEach(tab => {
+    if (tab.dataset.tab === 'quickplay') {
+      tab.addEventListener('click', () => initQuickPlayTab());
     }
   });
 
