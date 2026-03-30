@@ -3145,13 +3145,13 @@ function animateDealCards(onDone){
 
     // Flying card element
     const fly=document.createElement('div');
-    fly.style.cssText=`position:absolute;width:22px;height:32px;left:${cx}px;top:${cy}px;
+    fly.style.cssText=`position:absolute;width:36px;height:52px;left:${cx}px;top:${cy}px;
       transform:translate(-50%,-50%);z-index:50;pointer-events:none;border-radius:3px;
       box-shadow:0 4px 12px rgba(0,0,0,0.8);overflow:hidden;`;
     const fc=document.createElement('canvas');
-    fc.width=22;fc.height=32;fc.style.cssText='width:22px;height:32px;display:block;';
+    fc.width=36;fc.height=52;fc.style.cssText='width:36px;height:52px;display:block;';
     const fcCtx=fc.getContext('2d');
-    drawCardFallback(fcCtx,null,11,16,22,32,false);
+    drawCardFallback(fcCtx,null,18,26,36,52,false);
     fly.appendChild(fc);
     table.appendChild(fly);
 
@@ -4034,10 +4034,10 @@ function animateDeckExchange(playerId){
 
   function makeCard(x,y){
     const fly=document.createElement('div');
-    fly.style.cssText='position:absolute;width:22px;height:32px;left:'+x+'px;top:'+y+'px;transform:translate(-50%,-50%);z-index:50;pointer-events:none;border-radius:3px;box-shadow:0 4px 12px rgba(0,0,0,0.8);';
+    fly.style.cssText='position:absolute;width:36px;height:52px;left:'+x+'px;top:'+y+'px;transform:translate(-50%,-50%);z-index:50;pointer-events:none;border-radius:3px;box-shadow:0 4px 12px rgba(0,0,0,0.8);';
     const fc=document.createElement('canvas');
-    fc.width=22;fc.height=32;fc.style.cssText='width:22px;height:32px;display:block;border-radius:3px;';
-    drawCardFallback(fc.getContext('2d'),null,11,16,22,32,false);
+    fc.width=36;fc.height=52;fc.style.cssText='width:36px;height:52px;display:block;border-radius:3px;';
+    drawCardFallback(fc.getContext('2d'),null,18,26,36,52,false);
     fly.appendChild(fc);
     table.appendChild(fly);
     return fly;
