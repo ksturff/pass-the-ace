@@ -3799,8 +3799,7 @@ function initSocket(){
       trackTaskProgress('play_rounds', 1);
       const me=players.find(p=>p.id===myId);
       if(me&&!losers.find(l=>l.name===me.name)) trackTaskProgress('win_round', 1);
-      const newElims=losers.filter(l=>{ const p=players.find(x=>x.name===l.name); return p&&p.eliminated&&p.id!==myId; });
-      if(newElims.length) trackTaskProgress('eliminations', newElims.length);
+      if(me && !losers.find(l=>l.name===me.name)) trackTaskProgress('survive_rounds', 1);
     }
   });
   socket.on('gameOver',data=>{
@@ -3940,8 +3939,7 @@ function soloEndRound(){
     trackTaskProgress('play_rounds', 1);
     const humanP=soloPlayers.find(p=>p.id==='human');
     if(humanP&&!losers.find(l=>l.name===humanP.name)) trackTaskProgress('win_round', 1);
-    const newElims=losers.filter(l=>l.name!==humanP?.name&&soloPlayers.find(p=>p.name===l.name&&p.eliminated));
-    if(newElims.length) trackTaskProgress('eliminations', newElims.length);
+    if(humanP && !losers.find(l=>l.name===humanP.name)) trackTaskProgress('survive_rounds', 1);
   }
 }
 function soloContinue(){
@@ -4554,7 +4552,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     { id:'win_round',     icon:'⭐', name:'Win a Round',          desc:'Have the highest card at round end',  target:1,  reward:75  },
     { id:'win_game',      icon:'🏆', name:'Win a Game',           desc:'Be the last player standing',        target:1,  reward:150 },
     { id:'pass_aces',     icon:'🂡', name:'Pass 4 Aces',          desc:'Pass an Ace to another player 4x',   target:4,  reward:100 },
-    { id:'eliminations',  icon:'💀', name:'Eliminate 5 Players',  desc:'Knock out 5 players across games',   target:5,  reward:200 },
+    { id:'survive_rounds', icon:'🛡️', name:'Survive 10 Rounds',    desc:'Stay alive for 10 rounds without being eliminated', target:10, reward:200 },
   ];
 
   function getTodayKey() {
