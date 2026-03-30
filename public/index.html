@@ -1366,6 +1366,31 @@
       animation:chipFloat 1.1s cubic-bezier(0.22,1,0.36,1) forwards;
       white-space:nowrap; left:50%;
     }
+
+    /* ── LEAVE GAME MODAL ── */
+    #leave-game-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.88);
+      z-index: 500; display: none; place-items: center;
+    }
+    #leave-game-modal.show { display: grid; }
+    .leave-game-box {
+      background: linear-gradient(135deg,#18140a,#0e0c07);
+      border: 1px solid rgba(200,162,60,0.28);
+      border-radius: 20px; padding: 32px 28px;
+      width: min(300px,90vw); text-align: center;
+      display: flex; flex-direction: column; gap: 14px; align-items: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+      animation: task-pop .3s cubic-bezier(0.22,1,0.36,1);
+    }
+    .leave-game-icon { font-size: 44px; }
+    .leave-game-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--text); }
+    .leave-game-sub { font-family: sans-serif; font-size: 12px; color: var(--muted); letter-spacing: 0.5px; line-height: 1.5; }
+    .leave-game-actions { display: flex; gap: 10px; width: 100%; margin-top: 4px; }
+    .btn-leave-confirm { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,77,79,0.35); background: rgba(255,77,79,0.1); color: #ff4d4f; font-size: 12px; font-family: 'Orbitron',sans-serif; cursor: pointer; font-weight: 700; letter-spacing: 0.5px; transition: all .2s; }
+    .btn-leave-confirm:hover { background: rgba(255,77,79,0.2); }
+    .btn-leave-cancel { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid rgba(200,162,60,0.25); background: rgba(200,162,60,0.07); color: var(--accent); font-size: 12px; font-family: 'Orbitron',sans-serif; cursor: pointer; font-weight: 700; letter-spacing: 0.5px; transition: all .2s; }
+    .btn-leave-cancel:hover { background: rgba(200,162,60,0.14); }
+
     /* ── SAS Results screen ── */
     #sas-results { position:fixed; inset:0; background:rgba(0,0,0,0.96); display:none; place-items:center; z-index:45; }
     #sas-results.show { display:grid; }
@@ -1812,7 +1837,7 @@
 
   <!-- Tab nav — 5 tabs -->
   <div class="lobby-tabs" id="lobby-tab-bar">
-    <button class="lobby-tab active" data-tab="tournaments">🏆 Tournaments</button>
+    <button class="lobby-tab active" data-tab="tournaments">🎮 Games</button>
     <button class="lobby-tab" data-tab="quickplay">⚡ Quick Play</button>
     <button class="lobby-tab" data-tab="tables">🔗 Private</button>
     <button class="lobby-tab" data-tab="tasks">✅ Tasks<span class="tasks-badge" id="tasks-badge-lobby" style="display:none;position:relative;top:-2px;margin-left:4px;"></span></button>
@@ -3451,14 +3476,13 @@ function renderTournamentList(list){
   if(filterState==='registering') filtered=filtered.filter(t=>t.status==='registering');
   else if(filterState==='inProgress') filtered=filtered.filter(t=>t.status==='inProgress');
 
-  // Sort filtered SAS entries by selected column (daily/saturday rows are prepended separately)
   filtered = [...filtered].sort((a,b)=>{
     let av, bv;
-    if(_tSortCol==='startTime')   { av=a.startTime;     bv=b.startTime; }
-    else if(_tSortCol==='buyIn')  { av=a.buyIn||0;      bv=b.buyIn||0; }
-    else if(_tSortCol==='name')   { av=(a.label||a.type||'').toLowerCase(); bv=(b.label||b.type||'').toLowerCase(); }
-    else if(_tSortCol==='prize')  { av=a.buyIn?a.buyIn*10*0.95:0; bv=b.buyIn?b.buyIn*10*0.95:0; }
-    else if(_tSortCol==='status') { av=a.status||''; bv=b.status||''; }
+    if(_tSortCol==='startTime')        { av=a.startTime;     bv=b.startTime; }
+    else if(_tSortCol==='buyIn')       { av=a.buyIn||0;      bv=b.buyIn||0; }
+    else if(_tSortCol==='name')        { av=(a.label||a.type||'').toLowerCase(); bv=(b.label||b.type||'').toLowerCase(); }
+    else if(_tSortCol==='prize')       { av=a.buyIn?a.buyIn*10*0.95:0; bv=b.buyIn?b.buyIn*10*0.95:0; }
+    else if(_tSortCol==='status')      { av=a.status||''; bv=b.status||''; }
     else if(_tSortCol==='playerCount') { av=a.playerCount||0; bv=b.playerCount||0; }
     else { av=a.startTime; bv=b.startTime; }
     if(av<bv) return _tSortAsc?-1:1;
@@ -3466,7 +3490,6 @@ function renderTournamentList(list){
     return 0;
   });
 
-  // Update header indicators
   document.querySelectorAll('.t-grid thead th[data-col]').forEach(th=>{
     const col=th.dataset.col;
     if(col===_tSortCol){
@@ -3668,7 +3691,7 @@ function renderTournamentList(list){
     // SAS: compute buy-in label and prize pool
     const sasPot = t.isSas ? t.buyIn * 10 : 0;
     const sasPrize = t.isSas ? Math.floor(sasPot * 0.95) : 0;
-    const tierColors = {bronze:'#cd7f32',silver:'#b0b0b0',gold:'#ffd700',platinum:'#cce8ff',diamond:'#88ccff',elite:'#dd88ff'};
+    const tierColors = {bronze:'#cd7f32',silver:'#b0b0b0',gold:'#ffd700',platinum:'#cce8ff'};
     const tierColor = t.isSas ? (tierColors[t.tier] || 'var(--accent)') : '';
     const buyInCell = t.isSas
       ? `<span style="color:${tierColor};font-weight:700;">${t.buyIn.toLocaleString()} chips</span>`
@@ -3878,7 +3901,20 @@ function renderLobbyRooms(rooms){
 function initSocket(){
   socket=io();
   socket.on('connect',()=>{myId=socket.id;});
-  socket.on('tournamentList',list=>{currentTournamentList=list||[];renderTournamentList(list);});
+  socket.on('tournamentList',list=>{
+    const SAS_CYCLE = ['bronze','silver','gold','platinum'];
+    const SAS_BUYIN = { bronze:150, silver:225, gold:300, platinum:375 };
+    const SAS_LABEL = { bronze:'Bronze', silver:'Silver', gold:'Gold', platinum:'Platinum' };
+    const sasSorted = (list||[]).filter(t=>t.isSas).sort((a,b)=>a.startTime-b.startTime);
+    sasSorted.forEach((t,i)=>{
+      const tier = SAS_CYCLE[i % SAS_CYCLE.length];
+      t.tier  = tier;
+      t.label = SAS_LABEL[tier];
+      t.buyIn = SAS_BUYIN[tier];
+    });
+    currentTournamentList=list||[];
+    renderTournamentList(list);
+  });
   socket.on('lobbyUpdate',rooms=>{renderLobbyRooms(rooms);});
   socket.on('registeredTournament',data=>{
     myTournamentId=data.tournamentId;
@@ -4305,7 +4341,7 @@ function initLobbyTabs(){
   function updateMicroCountdown(){
     const now=Date.now();
     const nextMicro=currentTournamentList
-      .filter(t=>t.type==='micro'&&t.status==='registering'&&t.startTime>now)
+      .filter(t=>t.type==='sas'&&t.status==='registering'&&t.startTime>now)
       .sort((a,b)=>a.startTime-b.startTime)[0];
     const el=document.getElementById('micro-countdown');
     const playerEl=document.getElementById('micro-player-count');
@@ -4466,13 +4502,13 @@ document.addEventListener('DOMContentLoaded',()=>{
       await updateChipBalance(-buyIn);
       socket.emit('joinSasQueue', { sasId, name, avatar: myAvatar });
       // Show waiting screen
-      const tierColors = { bronze:'#cd7f32',silver:'#b0b0b0',gold:'#ffd700',platinum:'#cce8ff',diamond:'#88ccff',elite:'#dd88ff' };
+      const tierColors = { bronze:'#cd7f32',silver:'#b0b0b0',gold:'#ffd700',platinum:'#cce8ff' };
       const badge = document.getElementById('ss-tier-badge');
       if (badge) { badge.textContent = label.toUpperCase(); badge.style.color = tierColors[tier] || 'var(--accent)'; }
       const buyinLabel = document.getElementById('ss-buyin-label');
       if (buyinLabel) buyinLabel.textContent = `${buyIn.toLocaleString()} chip buy-in`;
       const botNote = document.getElementById('ss-bot-note');
-      if (botNote) botNote.textContent = ['platinum','diamond','elite'].includes(tier)
+      if (botNote) botNote.textContent = tier === 'platinum'
         ? 'Real players only — waiting for full table'
         : 'Empty seats filled by bots';
       showScreen('screen-sit-and-stay-wait');
@@ -4660,17 +4696,22 @@ document.addEventListener('DOMContentLoaded',()=>{
     } else socket.emit('startGame');
   });
   document.getElementById('btn-game-menu').addEventListener('click',()=>{
-    if(confirm('Leave game and return to menu?')){
-      document.getElementById('hand-area').classList.remove('visible');
-      document.getElementById('round-result').classList.remove('show');
-      document.getElementById('game-over').classList.remove('show');
-      isSolo=false;isTournamentGame=false;gameTableBuilt=false;myId=socket?.id||null;
-      showScreen('screen-lobby');
-    }
+    document.getElementById('leave-game-modal').classList.add('show');
+  });
+  document.getElementById('btn-leave-cancel').addEventListener('click',()=>{
+    document.getElementById('leave-game-modal').classList.remove('show');
+  });
+  document.getElementById('btn-leave-confirm').addEventListener('click',()=>{
+    document.getElementById('leave-game-modal').classList.remove('show');
+    document.getElementById('hand-area').classList.remove('visible');
+    document.getElementById('round-result').classList.remove('show');
+    document.getElementById('game-over').classList.remove('show');
+    isSolo=false;isTournamentGame=false;gameTableBuilt=false;myId=socket?.id||null;
+    showScreen('screen-lobby');
   });
   // ── SAS Results screen ──
   function showSasResults(data, placement, payout) {
-    const tierColors = {bronze:'#cd7f32',silver:'#b0b0b0',gold:'#ffd700',platinum:'#cce8ff',diamond:'#88ccff',elite:'#dd88ff'};
+    const tierColors = {bronze:'#cd7f32',silver:'#b0b0b0',gold:'#ffd700',platinum:'#cce8ff'};
     const placeEmoji = ['🥇','🥈','🥉'];
     const placeLabel = ['1st Place','2nd Place','3rd Place'];
     const tier = data.tier || 'bronze';
@@ -4805,6 +4846,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   function saveDailyTasks(tasks) {
     localStorage.setItem(getTodayKey(), JSON.stringify(tasks));
   }
+  window.loadDailyTasks = loadDailyTasks;
+  window.saveDailyTasks = saveDailyTasks;
   window.loadDailyTasks = loadDailyTasks;
   window.saveDailyTasks = saveDailyTasks;
 
@@ -5031,7 +5074,13 @@ document.addEventListener('DOMContentLoaded',()=>{
     soloPlayers=[{id:'human',name,avatar:myAvatar,chips:3,eliminated:false,card:null,seatIndex:0,isHuman:true}];
     for(let i=0;i<9;i++) soloPlayers.push({id:'bot'+i,name:BOT_NAMES[i],avatar:BOT_AVS[i],chips:3,eliminated:false,card:null,seatIndex:i+1,isHuman:false});
     myId='human'; players=soloPlayers;
-    loadAssets().then(()=>{showScreen('screen-game');buildTable();soloStartRound();});
+    loadAssets().then(()=>{
+      showScreen('screen-game');
+      requestAnimationFrame(()=>{
+        buildTable();
+        setTimeout(()=>soloStartRound(), 100);
+      });
+    });
   });
 
   // ── Tasks tab content ──
@@ -5812,6 +5861,20 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="t-info-divider"></div>
     <div class="t-info-actions">
       <button class="btn-primary" id="btn-t-info-action">Register</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── LEAVE GAME MODAL ── -->
+<div id="leave-game-modal">
+  <div class="leave-game-box">
+    <div class="leave-game-icon">🚪</div>
+    <div class="leave-game-title">Leave Game?</div>
+    <div class="leave-game-sub">You'll lose your progress<br>in this game.</div>
+    <div class="leave-game-actions">
+      <button class="btn-leave-confirm" id="btn-leave-confirm">Leave</button>
+      <button class="btn-leave-cancel" id="btn-leave-cancel">Stay</button>
     </div>
   </div>
 </div>
