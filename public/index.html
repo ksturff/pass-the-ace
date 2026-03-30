@@ -3673,8 +3673,9 @@ function renderTournamentList(list){
       }
     });
     tbody.appendChild(tr);
-    if(!autoScrolled&&(isLive||isUpcoming)){
+    if(!autoScrolled&&(isLive||isUpcoming)&&!window._tournamentAutoScrolled){
       autoScrolled=true;
+      window._tournamentAutoScrolled=true;
       setTimeout(()=>tr.scrollIntoView({block:'center',behavior:'smooth'}),150);
       // don't auto-open modal on load
     }
