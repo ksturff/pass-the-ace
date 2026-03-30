@@ -163,6 +163,33 @@
     }
     #btn-t-info-close:hover { color: var(--text); }
 
+
+    /* ── TASKS BADGE ── */
+    .tasks-badge {
+      position: absolute; top: -6px; right: -6px;
+      background: #e03a3c; color: #fff;
+      font-size: 10px; font-weight: 700;
+      font-family: 'Orbitron', sans-serif;
+      min-width: 18px; height: 18px;
+      border-radius: 9px; padding: 0 5px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      pointer-events: none;
+    }
+    .mode-icon { position: relative; }
+
+
+    .btn-share {
+      padding: 10px 20px; border-radius: 10px;
+      border: 1px solid rgba(200,162,60,0.3);
+      background: rgba(200,162,60,0.08);
+      color: var(--accent); font-size: 12px;
+      font-family: 'Orbitron', sans-serif;
+      cursor: pointer; letter-spacing: 0.5px;
+      transition: all .2s;
+    }
+    .btn-share:hover { background: rgba(200,162,60,0.16); border-color: rgba(200,162,60,0.5); }
+
     @media (max-width: 768px) and (orientation: portrait) {
       #rotate-prompt { display: flex; }
     }
@@ -1654,7 +1681,7 @@
         <div class="mode-arrow">›</div>
       </button>
       <button class="mode-card" id="btn-tasks">
-        <div class="mode-icon">✅</div>
+        <div class="mode-icon">✅<span class="tasks-badge" id="tasks-badge" style="display:none;"></span></div>
         <div class="mode-info">
           <div class="mode-name">DAILY TASKS</div>
           <div class="mode-desc">3 challenges · resets at midnight</div>
@@ -2051,6 +2078,7 @@
       <button class="btn-again" id="btn-again">Play Again</button>
       <button class="btn-menu-over" id="btn-menu">Menu</button>
     </div>
+    <button class="btn-share" id="btn-share-result" style="margin-top:8px;">📤 Share Result</button>
   </div>
 </div>
 
@@ -4588,6 +4616,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     });
     if (changed || tasks.some(t => t.id === eventId)) {
       saveDailyTasks(tasks);
+      if (typeof updateTasksBadge === 'function') updateTasksBadge();
       // Re-render if tasks screen is active
       if (document.getElementById('screen-tasks').classList.contains('active')) {
         renderTasksScreen();
@@ -4621,6 +4650,28 @@ document.addEventListener('DOMContentLoaded',()=>{
       }
     }
   });
+
+  function updateTasksBadge() {
+    const badge = document.getElementById('tasks-badge');
+    if (!badge) return;
+    const tasks = loadDailyTasks();
+    const incomplete = tasks.filter(t => !t.claimed && t.progress < t.target).length;
+    const claimable = tasks.filter(t => !t.claimed && t.progress >= t.target).length;
+    if (claimable > 0) {
+      badge.textContent = claimable;
+      badge.style.display = 'flex';
+      badge.style.background = '#ffd700';
+      badge.style.color = '#0a0800';
+    } else if (incomplete > 0) {
+      badge.textContent = incomplete;
+      badge.style.display = 'flex';
+      badge.style.background = '#e03a3c';
+      badge.style.color = '#fff';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+  window.updateTasksBadge = updateTasksBadge;
 
   function renderTasksScreen() {
     const tasks = loadDailyTasks();
@@ -4672,6 +4723,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     renderTasksScreen();
     showScreen('screen-tasks');
   });
+  updateTasksBadge();
   document.getElementById('btn-back-tasks').addEventListener('click', () => showScreen('screen-home'));
   document.getElementById('btn-back-tasks').addEventListener('touchend', e => { e.preventDefault(); showScreen('screen-home'); });
 
@@ -4684,6 +4736,24 @@ document.addEventListener('DOMContentLoaded',()=>{
     if (e.target === document.getElementById('t-info-modal'))
       document.getElementById('t-info-modal').classList.remove('show');
   });
+
+  // Share result button
+  document.getElementById('btn-share-result').addEventListener('click', () => {
+    const winner = document.getElementById('over-winner').textContent || 'Someone';
+    const isMe = winner === (userProfile?.displayName || '');
+    const text = isMe
+      ? `I just won a game of Pass the Ace! 🏆 Think you can beat me? Download the app and let's play!`
+      : `Just played Pass the Ace — ${winner} took the win this time! 🃏 Join us: https://pass-the-ace.onrender.com`;
+    if (navigator.share) {
+      navigator.share({ title: 'Pass the Ace', text, url: 'https://pass-the-ace.onrender.com' })
+        .catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text + '\nhttps://pass-the-ace.onrender.com')
+        .then(() => showToast('Result copied to clipboard!', '#c8a23c', 2500))
+        .catch(() => showToast('https://pass-the-ace.onrender.com', '#c8a23c', 4000));
+    }
+  });
+
   // Expose functions needed by code outside this DOMContentLoaded block
   window.joinSasQueue = joinSasQueue;
   window.checkDailyBonus = checkDailyBonus;
