@@ -1850,12 +1850,12 @@
       <div class="t-grid-wrap">
         <table class="t-grid" id="tournament-grid">
           <thead><tr>
-            <th class="sorted">START ▲</th>
-            <th>BUY-IN</th>
-            <th>NAME</th>
-            <th>PRIZE POOL</th>
-            <th>STATE</th>
-            <th>REGISTERED</th>
+            <th class="sorted" data-col="startTime" style="cursor:pointer;">START ▲</th>
+            <th data-col="buyIn" style="cursor:pointer;">BUY-IN</th>
+            <th data-col="name" style="cursor:pointer;">NAME</th>
+            <th data-col="prize" style="cursor:pointer;">PRIZE POOL</th>
+            <th data-col="status" style="cursor:pointer;">STATE</th>
+            <th data-col="playerCount" style="cursor:pointer;">REGISTERED</th>
             <th></th>
           </tr></thead>
           <tbody id="tournament-list"></tbody>
@@ -3442,6 +3442,7 @@ function showRoundResult(data){
 let currentTournamentList=[];
 let selectedTournamentId=null;
 
+let _tSortCol = 'startTime', _tSortAsc = true;
 function renderTournamentList(list){
   currentTournamentList=list||[];
   const filterState=document.getElementById('filter-state')?.value||'all';
@@ -3449,6 +3450,34 @@ function renderTournamentList(list){
   let filtered=currentTournamentList;
   if(filterState==='registering') filtered=filtered.filter(t=>t.status==='registering');
   else if(filterState==='inProgress') filtered=filtered.filter(t=>t.status==='inProgress');
+
+  // Sort filtered SAS entries by selected column (daily/saturday rows are prepended separately)
+  filtered = [...filtered].sort((a,b)=>{
+    let av, bv;
+    if(_tSortCol==='startTime')   { av=a.startTime;     bv=b.startTime; }
+    else if(_tSortCol==='buyIn')  { av=a.buyIn||0;      bv=b.buyIn||0; }
+    else if(_tSortCol==='name')   { av=(a.label||a.type||'').toLowerCase(); bv=(b.label||b.type||'').toLowerCase(); }
+    else if(_tSortCol==='prize')  { av=a.buyIn?a.buyIn*10*0.95:0; bv=b.buyIn?b.buyIn*10*0.95:0; }
+    else if(_tSortCol==='status') { av=a.status||''; bv=b.status||''; }
+    else if(_tSortCol==='playerCount') { av=a.playerCount||0; bv=b.playerCount||0; }
+    else { av=a.startTime; bv=b.startTime; }
+    if(av<bv) return _tSortAsc?-1:1;
+    if(av>bv) return _tSortAsc?1:-1;
+    return 0;
+  });
+
+  // Update header indicators
+  document.querySelectorAll('.t-grid thead th[data-col]').forEach(th=>{
+    const col=th.dataset.col;
+    if(col===_tSortCol){
+      th.classList.add('sorted');
+      th.textContent=th.textContent.replace(/[▲▼]/g,'').trim()+(_tSortAsc?' ▲':' ▼');
+    } else {
+      th.classList.remove('sorted');
+      th.textContent=th.textContent.replace(/[▲▼]/g,'').trim();
+    }
+  });
+
   document.getElementById('filter-count').textContent=`${filtered.length} tournament${filtered.length!==1?'s':''}`;
   const tbody=document.getElementById('tournament-list');
   if(!tbody)return;
@@ -4263,6 +4292,14 @@ function initLobbyTabs(){
     tab.addEventListener('click',()=>{ switchLobbyTab(tab.dataset.tab); });
   });
   document.getElementById('filter-state')?.addEventListener('change',()=>renderTournamentList(currentTournamentList));
+  document.querySelectorAll('.t-grid thead th[data-col]').forEach(th=>{
+    th.addEventListener('click',()=>{
+      const col=th.dataset.col;
+      if(_tSortCol===col){ _tSortAsc=!_tSortAsc; }
+      else { _tSortCol=col; _tSortAsc=true; }
+      renderTournamentList(currentTournamentList);
+    });
+  });
 
   // ── Micro tournament countdown ──
   function updateMicroCountdown(){
