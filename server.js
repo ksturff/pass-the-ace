@@ -775,39 +775,37 @@ function getLobbyRooms() {
 //  SIT & STAY TIERED SYSTEM
 // ─────────────────────────────────────────
 
-// Tier definitions
+// Tier definitions — 4 tiers only, all with bot fill
 const SAS_TIERS = {
-  bronze:   { buyIn: 150,  label: 'Bronze',   color: '#cd7f32', botFill: true  },
-  silver:   { buyIn: 225,  label: 'Silver',   color: '#b0b0b0', botFill: true  },
-  gold:     { buyIn: 300,  label: 'Gold',     color: '#ffd700', botFill: true  },
-  platinum: { buyIn: 375,  label: 'Platinum', color: '#e0f0ff', botFill: false },
-  diamond:  { buyIn: 450,  label: 'Diamond',  color: '#a0d8ff', botFill: false },
-  elite:    { buyIn: 500,  label: 'Elite',    color: '#ff90ff', botFill: false },
+  bronze:   { buyIn: 150,  label: 'Bronze',   color: '#cd7f32', botFill: true },
+  silver:   { buyIn: 225,  label: 'Silver',   color: '#b0b0b0', botFill: true },
+  gold:     { buyIn: 300,  label: 'Gold',     color: '#ffd700', botFill: true },
+  platinum: { buyIn: 375,  label: 'Platinum', color: '#cce8ff', botFill: true },
 };
 
-// 20-slot rotation per hour (slots 0–19, each = 3 minutes)
-// Bronze=8 slots, Silver=5, Gold=4, Platinum=2, Diamond=1 (slot 0), Elite=1 (slot 10)
+// 4-slot repeating rotation per hour (slots 0–19, each = 3 minutes)
+// Strict ordered cycle: bronze → silver → gold → platinum → repeat
 const SAS_ROTATION = [
-  'diamond',  // :00
-  'bronze',   // :03
-  'silver',   // :06
-  'bronze',   // :09
-  'gold',     // :12
-  'bronze',   // :15
-  'silver',   // :18
-  'bronze',   // :21
-  'platinum', // :24
-  'bronze',   // :27
-  'elite',    // :30
-  'bronze',   // :33
-  'silver',   // :36
-  'bronze',   // :39
+  'bronze',   // :00
+  'silver',   // :03
+  'gold',     // :06
+  'platinum', // :09
+  'bronze',   // :12
+  'silver',   // :15
+  'gold',     // :18
+  'platinum', // :21
+  'bronze',   // :24
+  'silver',   // :27
+  'gold',     // :30
+  'platinum', // :33
+  'bronze',   // :36
+  'silver',   // :39
   'gold',     // :42
-  'bronze',   // :45
-  'silver',   // :48
-  'bronze',   // :51
-  'platinum', // :54
-  'bronze',   // :57
+  'platinum', // :45
+  'bronze',   // :48
+  'silver',   // :51
+  'gold',     // :54
+  'platinum', // :57
 ];
 
 // Map of active queues: sasId -> queue object
