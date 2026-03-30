@@ -1480,7 +1480,7 @@
   <div class="nav-logo">PASS THE ACE</div>
   <div class="nav-spacer"></div>
   <div class="nav-profile" id="nav-profile-btn">
-    <span class="nav-avatar" id="nav-avatar">🎭</span>
+    <span class="nav-avatar" id="nav-avatar"></span>
     <span class="nav-name" id="nav-username">Player</span>
   </div>
   <span class="nav-signout" id="btn-signout">Sign out</span>
@@ -1490,7 +1490,7 @@
 <div id="screen-profile" class="screen">
   <div class="profile-wrap">
     <div class="profile-header">
-      <div class="profile-big-avatar" id="profile-big-avatar">🎭</div>
+      <div class="profile-big-avatar" id="profile-big-avatar"></div>
       <div class="profile-header-info">
         <div class="profile-display-name" id="profile-display-name">—</div>
         <div class="profile-email" id="profile-email">—</div>
@@ -1808,7 +1808,7 @@
   <!-- Top bar -->
   <div class="lobby-topbar">
     <div class="lobby-profile-btn" id="lobby-profile-btn">
-      <span id="lobby-nav-avatar">🎭</span>
+      <span id="lobby-nav-avatar"></span>
       <span id="lobby-nav-name" style="font-size:10px;color:var(--text);max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
     </div>
     <div class="lobby-topbar-title">PASS THE ACE</div>
@@ -2095,7 +2095,7 @@
 <div id="screen-game" class="screen">
   <button id="btn-mute" title="Toggle sound">🔊</button>
   <div id="game-topbar" style="position:fixed;top:0;left:0;right:0;height:36px;display:flex;align-items:center;padding:0 12px;z-index:25;pointer-events:none;">
-    <button id="btn-game-menu" style="pointer-events:all;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 12px;color:var(--muted);font-size:10px;font-family:'Orbitron',sans-serif;cursor:pointer;letter-spacing:1px;backdrop-filter:blur(4px);">← HOME</button>
+    <button id="btn-game-menu" style="pointer-events:all;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 12px;color:var(--muted);font-size:10px;font-family:'Orbitron',sans-serif;cursor:pointer;letter-spacing:1px;backdrop-filter:blur(4px);">← BACK</button>
   </div>
   <div id="table-area">
     <div id="game-table">
@@ -2152,7 +2152,7 @@
   <div id="turn-banner">—</div>
   <div id="king-toast">👑 King blocks the pass!</div>
   <div id="hand-area">
-    <div id="my-avatar-display">🎭</div>
+    <div id="my-avatar-display"></div>
     <div id="my-card-display">
       <canvas id="my-card-canvas" width="70" height="100"></canvas>
       <div id="my-name-label">YOU</div>
@@ -2338,7 +2338,8 @@ async function saveUserProfile(uid, data) {
 
 function updateNavBar() {
   if (!userProfile) return;
-  document.getElementById('nav-avatar').textContent = userProfile.avatar || '🎭';
+  const navAvEl = document.getElementById('nav-avatar');
+  if (navAvEl) navAvEl.innerHTML = avatarHtml(userProfile.avatar || AVATARS[0], 24, 'width:24px;height:24px;vertical-align:middle;');
   document.getElementById('nav-username').textContent = userProfile.displayName || 'Player';
   document.getElementById('top-nav').classList.add('visible');
   const balEl = document.getElementById('home-chip-balance');
@@ -2350,7 +2351,7 @@ function updateNavBar() {
   // Update lobby topbar profile
   const lobbyAvatar = document.getElementById('lobby-nav-avatar');
   const lobbyName = document.getElementById('lobby-nav-name');
-  if (lobbyAvatar) lobbyAvatar.textContent = userProfile.avatar || '🎭';
+  if (lobbyAvatar) lobbyAvatar.innerHTML = avatarHtml(userProfile.avatar || AVATARS[0], 24, 'width:24px;height:24px;vertical-align:middle;');
   if (lobbyName) lobbyName.textContent = userProfile.displayName || 'Player';
 }
 
@@ -2475,7 +2476,7 @@ function initAuth() {
     const name = document.getElementById('inp-display-name').value.trim();
     if (!name) { showToast('Enter a display name', '#ff4d4f'); return; }
     const selectedAv = document.querySelector('#avatar-grid-setup .av-opt.selected');
-    const avatar = selectedAv ? selectedAv.textContent : AVATARS[0];
+    const avatar = selectedAv ? selectedAv.dataset.seed : AVATARS[0];
     await saveUserProfile(currentUser.uid, {
       displayName: name,
       avatar,
@@ -2518,9 +2519,9 @@ async function recordGameResult(won, placement=0, tournamentType=null) {
       else showToast('+50 chips for playing', '#8a7a50', 2000);
     } else {
       let payout = 50;
-      if (placement === 1) payout += 2200;
-      else if (placement === 2) payout += 1400;
-      else if (placement === 3) payout += 900;
+      if (placement === 1) payout += 2000;
+      else if (placement === 2) payout += 1200;
+      else if (placement === 3) payout += 800;
       await updateChipBalance(payout);
       if (payout > 50) showToast(`+${payout.toLocaleString()} chips! 🏆`, '#ffd700', 3000);
       else showToast('+50 chips participation bonus', '#8a7a50', 2500);
@@ -2597,7 +2598,8 @@ function checkChipsAndProceed(cost, onProceed) {
 // ── Profile screen ──
 function openProfile() {
   if (!userProfile) return;
-  document.getElementById('profile-big-avatar').textContent = userProfile.avatar || '🎭';
+  const bigAv = document.getElementById('profile-big-avatar');
+  if (bigAv) bigAv.innerHTML = avatarHtml(userProfile.avatar || AVATARS[0], 64, 'width:64px;height:64px;');
   document.getElementById('profile-display-name').textContent = userProfile.displayName || '—';
   document.getElementById('profile-email').textContent = currentUser?.email || '—';
   const wins = userProfile.wins || 0;
@@ -2623,7 +2625,7 @@ function initProfile() {
     document.getElementById('inp-edit-name').value = userProfile?.displayName || '';
     // Set current avatar selected
     document.querySelectorAll('#avatar-grid-edit .av-opt').forEach(b => {
-      b.classList.toggle('selected', b.textContent === (userProfile?.avatar || AVATARS[0]));
+      b.classList.toggle('selected', b.dataset.seed === (userProfile?.avatar || AVATARS[0]));
     });
     document.getElementById('edit-modal').classList.add('show');
   });
@@ -2636,7 +2638,7 @@ function initProfile() {
     const name = document.getElementById('inp-edit-name').value.trim();
     if (!name) { showToast('Enter a display name', '#ff4d4f'); return; }
     const selectedAv = document.querySelector('#avatar-grid-edit .av-opt.selected');
-    const avatar = selectedAv ? selectedAv.textContent : (userProfile?.avatar || AVATARS[0]);
+    const avatar = selectedAv ? selectedAv.dataset.seed : (userProfile?.avatar || AVATARS[0]);
     await saveUserProfile(currentUser.uid, { displayName: name, avatar });
     myAvatar = avatar;
     updateNavBar();
@@ -2649,10 +2651,11 @@ function initProfile() {
 function buildEditAvatarPicker() {
   const grid = document.getElementById('avatar-grid-edit');
   if (!grid || grid.children.length > 0) return;
-  AVATARS.forEach((em, i) => {
+  AVATARS.forEach((seed, i) => {
     const btn = document.createElement('div');
     btn.className = 'av-opt' + (i === 0 ? ' selected' : '');
-    btn.textContent = em;
+    btn.dataset.seed = seed;
+    btn.innerHTML = avatarHtml(seed, 36, 'width:36px;height:36px;');
     btn.addEventListener('click', () => {
       document.querySelectorAll('#avatar-grid-edit .av-opt').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
@@ -2720,7 +2723,7 @@ async function loadLeaderboard(tab) {
       const trophyBadge = trophies > 0 ? ` <span style="color:#ffd700;font-size:10px;letter-spacing:0.5px;">🏆×${trophies}</span>` : '';
       row.innerHTML = `
         <div class="lb-rank ${rankClass}">${rankDisplay}</div>
-        <div class="lb-avatar">${p.avatar || '🎭'}</div>
+        <div class="lb-avatar">${avatarHtml(p.avatar || AVATARS[0], 32, 'width:32px;height:32px;')}</div>
         <div class="lb-info">
           <div class="lb-name">${p.displayName || 'Player'}${isMe ? ' <span style="color:var(--accent);font-size:9px;">YOU</span>' : ''}${trophyBadge}</div>
           <div class="lb-sub">${games} games played</div>
@@ -2752,10 +2755,11 @@ function initLeaderboard() {
 function buildSetupAvatarPicker() {
   const grid = document.getElementById('avatar-grid-setup');
   if (!grid) return;
-  AVATARS.forEach((em, i) => {
+  AVATARS.forEach((seed, i) => {
     const btn = document.createElement('div');
     btn.className = 'av-opt' + (i === 0 ? ' selected' : '');
-    btn.textContent = em;
+    btn.dataset.seed = seed;
+    btn.innerHTML = avatarHtml(seed, 36, 'width:36px;height:36px;');
     btn.addEventListener('click', () => {
       document.querySelectorAll('#avatar-grid-setup .av-opt').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
@@ -2801,8 +2805,31 @@ const RANKS=[2,3,4,5,6,7,8,9,10,'J','Q','K','A'];
 const RANK_VALUE={2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,J:11,Q:12,K:13,A:1};
 const SUIT_NAME={S:'spades',H:'hearts',D:'diamonds',C:'clubs'};
 const RANK_NAME={J:'jack',Q:'queen',K:'king',A:'ace'};
-const AVATARS=['🦊','🐺','🦁','🐯','🦅','🐉','🦈','👾','🤖','🎭','💀','🦂','🔱','⚡','🃏'];
-const BOT_AVATARS=['🐺','🦁','🐯','🦅','🐉','🦈','👾','🤖','💀','🦂','⚡','🔱','🃏','🎪','🌀'];
+const AVATARS=['seed_fox','seed_wolf','seed_lion','seed_tiger','seed_eagle','seed_dragon','seed_shark','seed_robot','seed_alien','seed_joker','seed_skull','seed_scorpion','seed_trident','seed_thunder','seed_card'];
+const BOT_AVATARS=['seed_wolf','seed_lion','seed_tiger','seed_eagle','seed_dragon','seed_shark','seed_robot','seed_robot2','seed_skull','seed_scorpion','seed_thunder','seed_trident','seed_card','seed_circus','seed_vortex'];
+
+function dicebearUrl(seed, size=40) {
+  // Use adventurer style from DiceBear CDN
+  const cleanSeed = encodeURIComponent(seed);
+  return `https://api.dicebear.com/7.x/adventurer/svg?seed=${cleanSeed}&size=${size}&backgroundColor=transparent`;
+}
+
+function avatarHtml(seed, size=40, style='') {
+  const url = dicebearUrl(seed, size);
+  return `<img src="${url}" width="${size}" height="${size}" style="border-radius:50%;${style}" alt="avatar" loading="lazy" onerror="this.style.display='none';this.nextSibling&&(this.nextSibling.style.display='inline')">`;
+}
+
+// Display name for avatar seed (strip 'seed_' prefix for display)
+function avatarDisplayEmoji(seed) {
+  const map = {
+    'seed_fox':'🦊','seed_wolf':'🐺','seed_lion':'🦁','seed_tiger':'🐯',
+    'seed_eagle':'🦅','seed_dragon':'🐉','seed_shark':'🦈','seed_robot':'🤖',
+    'seed_robot2':'👾','seed_alien':'👽','seed_joker':'🃏','seed_skull':'💀',
+    'seed_scorpion':'🦂','seed_trident':'🔱','seed_thunder':'⚡','seed_card':'🎭',
+    'seed_circus':'🎪','seed_vortex':'🌀'
+  };
+  return map[seed] || seed || '🎭';
+}
 
 let myAvatar=AVATARS[0];
 let selectedSeatsLobby=6, selectedSeatsSolo=6;
@@ -2821,13 +2848,14 @@ let _ssLastPlayerCount = 0;
 function buildAvatarPicker() {
   const grid=document.getElementById('avatar-grid');
   if(!grid)return;
-  AVATARS.forEach((em,i)=>{
+  AVATARS.forEach((seed,i)=>{
     const btn=document.createElement('div');
     btn.className='av-opt'+(i===0?' selected':'');
-    btn.textContent=em;
+    btn.dataset.seed=seed;
+    btn.innerHTML=avatarHtml(seed,36,'width:36px;height:36px;');
     btn.addEventListener('click',()=>{
       document.querySelectorAll('.av-opt').forEach(b=>b.classList.remove('selected'));
-      btn.classList.add('selected'); myAvatar=em;
+      btn.classList.add('selected'); myAvatar=seed;
     });
     grid.appendChild(btn);
   });
@@ -3225,7 +3253,8 @@ function buildTable(){
     const avatar=document.createElement('div');
     avatar.className='p-avatar';
     avatar.id=`avatar-${p.id}`;
-    avatar.textContent=p.avatar||BOT_AVATARS[seatIdx%BOT_AVATARS.length];
+    const avatarSeed = p.avatar || BOT_AVATARS[seatIdx%BOT_AVATARS.length];
+    avatar.innerHTML = avatarHtml(avatarSeed, 28, 'width:28px;height:28px;border-radius:0;');
     const info=document.createElement('div');
     info.className='p-info';
     const name=document.createElement('div');
@@ -3241,7 +3270,8 @@ function buildTable(){
     slot.appendChild(inner);
     table.appendChild(slot);
   });
-  document.getElementById('my-avatar-display').textContent=myAvatar;
+  const myAvatarDisplay = document.getElementById('my-avatar-display');
+  if (myAvatarDisplay) myAvatarDisplay.innerHTML = avatarHtml(myAvatar, 44, 'width:44px;height:44px;border-radius:50%;');
 }
 
 // ── Card deal animation ──
@@ -3393,7 +3423,8 @@ function updateHandArea(){
   if(!me)return;
   document.getElementById('hand-area').classList.add('visible');
   document.getElementById('my-name-label').textContent=me.name||'YOU';
-  document.getElementById('my-avatar-display').textContent=myAvatar;
+  const myAvatarEl = document.getElementById('my-avatar-display');
+  myAvatarEl.innerHTML = avatarHtml(myAvatar, 44, 'width:44px;height:44px;border-radius:50%;');
   const chipsEl=document.getElementById('my-chips-dots');
   chipsEl.innerHTML=me.eliminated?'<span style="color:#555;font-size:16px;">☠</span>':premiumChips(me.chips,me.chips<=1);
   document.getElementById('waiting-label').textContent=myTurn?'':me.eliminated?'Eliminated':'Waiting…';
@@ -3851,7 +3882,7 @@ function startTournamentCountdown(startTime){
 
 function updateWaitingRoom(list){
   const ul=document.getElementById('waiting-players');
-  ul.innerHTML=list.map(p=>`<li><span class="player-dot"></span><span>${p.avatar||'🎭'}</span> ${p.name}${p.id===myId?' (you)':''}</li>`).join('');
+  ul.innerHTML=list.map(p=>`<li><span class="player-dot"></span>${avatarHtml(p.avatar||AVATARS[0],24,'width:24px;height:24px;vertical-align:middle;')} ${p.name}${p.id===myId?' (you)':''}</li>`).join('');
   document.getElementById('btn-start-game').style.display=isHost?'block':'none';
 }
 
@@ -3878,7 +3909,7 @@ function initSocket(){
   socket.on('connect',()=>{myId=socket.id;});
   socket.on('tournamentList',list=>{
     const SAS_CYCLE=['bronze','silver','gold','platinum'];
-    const SAS_BUYIN={bronze:150,silver:225,gold:300,platinum:375};
+    const SAS_BUYIN={bronze:150,silver:200,gold:300,platinum:400};
     const SAS_LABEL={bronze:'Bronze',silver:'Silver',gold:'Gold',platinum:'Platinum'};
     (list||[]).filter(t=>t.isSas).sort((a,b)=>a.startTime-b.startTime).forEach((t,i)=>{
       const tier=SAS_CYCLE[i%SAS_CYCLE.length];
@@ -4040,22 +4071,49 @@ function soloPass(){
   if(fromP?.card?.rank==='K'){soloKeep();return;}
   // Track ace pass task
   if(fromP?.card?.rank==='A'&&typeof trackTaskProgress==='function') trackTaskProgress('pass_aces', 1);
-  // Pass animation then swap
-  animateCardPass(fromP.id, toP.id, ()=>{
-    [fromP.card,toP.card]=[toP.card,fromP.card];
-    updateTable();soloAdvance();
-  });
+  // Check if this is the last player in the round (must exchange with deck)
+  const isLastPlayer=(soloTurnsTaken+1)>=soloAlive().length;
+  if(isLastPlayer){
+    // Last player: swap with the deck (random new card), animate deck exchange
+    animateDeckExchange(fromP.id, ()=>{
+      // Give last player a new random card from a fresh deck draw
+      const deck=(()=>{const d=[];for(const s of SUITS)for(const r of RANKS)d.push({rank:r,suit:s});for(let i=d.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[d[i],d[j]]=[d[j],d[i]];}return d;})();
+      // Filter out cards already in play
+      const usedKeys=new Set(soloAlive().filter(p=>p.id!==fromP.id&&p.card).map(p=>p.card.rank+'_'+p.card.suit));
+      const available=deck.filter(c=>!usedKeys.has(c.rank+'_'+c.suit));
+      if(available.length>0) fromP.card=available[0];
+      updateTable();soloAdvance();
+    });
+  } else {
+    // Normal pass to next player
+    animateCardPass(fromP.id, toP.id, ()=>{
+      [fromP.card,toP.card]=[toP.card,fromP.card];
+      updateTable();soloAdvance();
+    });
+  }
 }
 function soloBotAct(){
   const p=soloPlayers[soloCurrentIndex];const val=soloCardValue(p.card);
   const toIdx=soloNextAlive(soloCurrentIndex,1);const toP=soloPlayers[toIdx];
   const blocked=toP?.card?.rank==='K'||p.card?.rank==='K';
+  const isLastPlayer=(soloTurnsTaken+1)>=soloAlive().length;
   const wantPass=!blocked&&(val<=4||(val<=8&&Math.random()<0.55));
   if(wantPass){
-    animateCardPass(p.id, toP.id, ()=>{
-      [p.card,toP.card]=[toP.card,p.card];
-      soloAdvance();
-    });
+    if(isLastPlayer){
+      // Last bot passes to deck
+      animateDeckExchange(p.id, ()=>{
+        const deck=(()=>{const d=[];for(const s of SUITS)for(const r of RANKS)d.push({rank:r,suit:s});for(let i=d.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[d[i],d[j]]=[d[j],d[i]];}return d;})();
+        const usedKeys=new Set(soloAlive().filter(q=>q.id!==p.id&&q.card).map(q=>q.card.rank+'_'+q.card.suit));
+        const available=deck.filter(c=>!usedKeys.has(c.rank+'_'+c.suit));
+        if(available.length>0) p.card=available[0];
+        soloAdvance();
+      });
+    } else {
+      animateCardPass(p.id, toP.id, ()=>{
+        [p.card,toP.card]=[toP.card,p.card];
+        soloAdvance();
+      });
+    }
   } else {
     soloAdvance();
   }
@@ -4065,9 +4123,6 @@ function soloEndRound(){
   updateTable(true);
   const alive=soloAlive();const minVal=Math.min(...alive.map(p=>soloCardValue(p.card)));
   const losers=alive.filter(p=>soloCardValue(p.card)===minVal);
-  // Deck exchange animation for last player
-  const lastP=soloPlayers[soloCurrentIndex];
-  if(lastP&&!lastP.eliminated) animateDeckExchange(lastP.id);
   losers.forEach(p=>{
     const hadChips=p.chips;
     p.chips--;
@@ -4122,15 +4177,6 @@ function showDeckOnTable(){
     drawCardFallback(sc.getContext('2d'),null,15,22,30,44,false);
     deckStack.appendChild(sc);
   }
-  const deckLabel=document.createElement('div');
-  deckLabel.textContent='DECK';
-  deckLabel.style.cssText='position:absolute;left:50%;top:'+(-22-stackCount*1-18)+'px;transform:translateX(-50%);font-family:Orbitron,sans-serif;font-size:8px;color:rgba(0,200,180,0.9);letter-spacing:2px;white-space:nowrap;text-shadow:0 0 10px rgba(0,200,180,0.6);';
-  deckStack.appendChild(deckLabel);
-  // Pulse hint label
-  const hint=document.createElement('div');
-  hint.textContent='PASS TO DRAW';
-  hint.style.cssText='position:absolute;left:50%;top:'+(-22-stackCount*1-30)+'px;transform:translateX(-50%);font-family:Orbitron,sans-serif;font-size:6px;color:rgba(200,162,60,0.7);letter-spacing:1.5px;white-space:nowrap;animation:pta-deck-pulse 1.4s ease-in-out infinite;';
-  deckStack.appendChild(hint);
   table.appendChild(deckStack);
   requestAnimationFrame(()=>{ deckStack.style.opacity='1'; });
 }
@@ -4144,7 +4190,7 @@ function hideDeckOnTable(){
 
 // ── Deck exchange animation ──
 // Last player swaps card with the deck (centre of table)
-function animateDeckExchange(playerId){
+function animateDeckExchange(playerId, onDone){
   const table=document.getElementById('game-table');
   const tableRect=table.getBoundingClientRect();
   const cx=table.offsetWidth/2, cy=table.offsetHeight/2;
@@ -4215,7 +4261,7 @@ function animateDeckExchange(playerId){
           inCard.remove();
           deckStack.style.transition='opacity 0.4s';
           deckStack.style.opacity='0';
-          setTimeout(()=>deckStack.remove(), 450);
+          setTimeout(()=>{deckStack.remove(); if(onDone)onDone();}, 450);
         }, 550);
       });
     },550);
@@ -4479,7 +4525,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       if (buyinLabel) buyinLabel.textContent = `${buyIn.toLocaleString()} chip buy-in`;
       const botNote = document.getElementById('ss-bot-note');
       if (botNote) botNote.textContent = tier === 'platinum'
-        ? 'Real players only — waiting for full table'
+        ? 'Waiting for a full table'
         : 'Empty seats filled by bots';
       showScreen('screen-sit-and-stay-wait');
     });
@@ -4494,13 +4540,13 @@ document.addEventListener('DOMContentLoaded',()=>{
       for (let i = 0; i < 10; i++) {
         const div = document.createElement('div');
         div.className = 'ss-seat ' + (i < playerCount ? 'filled' : 'empty');
-        div.textContent = i < playerCount ? '🧑' : '○';
+        div.innerHTML = i < playerCount ? avatarHtml('seat_player_'+i, 36, 'width:36px;height:36px;') : '○';
         seats.appendChild(div);
       }
     } else {
       for (let i = _ssLastPlayerCount; i < playerCount && i < 10; i++) {
         const div = seats.children[i];
-        if (div) { div.className = 'ss-seat filled'; div.textContent = '🧑'; }
+        if (div) { div.className = 'ss-seat filled'; div.innerHTML = avatarHtml('seat_player_'+i, 36, 'width:36px;height:36px;'); }
       }
     }
     _ssLastPlayerCount = playerCount;
@@ -5011,20 +5057,21 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 
   // ── Quick Play tab ──
-  const AVATARS_QP = ['🦊','🐯','🦅','🦈','🐺','🦁','🐸','🦝','🤖','👽','💀','🎭'];
+  const AVATARS_QP = AVATARS;
   let selectedAvatarQuick = myAvatar || AVATARS_QP[0];
   function initQuickPlayTab() {
     const grid = document.getElementById('avatar-grid-quick');
     if (!grid || grid.dataset.init) return;
     grid.dataset.init = '1';
-    AVATARS_QP.forEach(av => {
+    AVATARS_QP.forEach(seed => {
       const opt = document.createElement('div');
-      opt.className = 'av-opt' + (av === selectedAvatarQuick ? ' selected' : '');
-      opt.textContent = av;
+      opt.className = 'av-opt' + (seed === selectedAvatarQuick ? ' selected' : '');
+      opt.dataset.seed = seed;
+      opt.innerHTML = avatarHtml(seed, 36, 'width:36px;height:36px;');
       opt.addEventListener('click', () => {
-        selectedAvatarQuick = av;
-        myAvatar = av;
-        grid.querySelectorAll('.av-opt').forEach(o => o.classList.toggle('selected', o.textContent === av));
+        selectedAvatarQuick = seed;
+        myAvatar = seed;
+        grid.querySelectorAll('.av-opt').forEach(o => o.classList.toggle('selected', o.dataset.seed === seed));
       });
       grid.appendChild(opt);
     });
@@ -5037,9 +5084,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     isSolo = true; isTournamentGame = false;
     myAvatar = selectedAvatarQuick;
     const BOT_NAMES=['Morgan','Taylor','Casey','Jordan','Riley','Sam','Alex','Avery','Quinn','Blake'];
-    const BOT_AVS=['🐍','🦅','🦈','🦁','👾','🐯','🐺','💀','🤖','🦊'];
     soloPlayers=[{id:'human',name,avatar:myAvatar,chips:3,eliminated:false,card:null,seatIndex:0,isHuman:true}];
-    for(let i=0;i<9;i++) soloPlayers.push({id:'bot'+i,name:BOT_NAMES[i],avatar:BOT_AVS[i],chips:3,eliminated:false,card:null,seatIndex:i+1,isHuman:false});
+    for(let i=0;i<9;i++) soloPlayers.push({id:'bot'+i,name:BOT_NAMES[i],avatar:BOT_AVATARS[i%BOT_AVATARS.length],chips:3,eliminated:false,card:null,seatIndex:i+1,isHuman:false});
     myId='human'; players=soloPlayers;
     loadAssets().then(()=>{
       showScreen('screen-game');
@@ -5130,7 +5176,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         const isMe=p.id===currentUser?.uid;
         const row=document.createElement('div');
         row.className='lb-row'+(isMe?' me':'');
-        row.innerHTML=`<div class="lb-rank ${rankClass}">${i+1}</div><div class="lb-avatar">${p.avatar||'🎭'}</div><div class="lb-info"><div class="lb-name">${p.displayName||'Player'}${isMe?' (you)':''}</div><div class="lb-sub">${games} games</div></div><div class="lb-score"><div class="lb-score-val">${scoreVal}</div><div class="lb-score-label">${scoreLabel}</div></div>`;
+        row.innerHTML=`<div class="lb-rank ${rankClass}">${i+1}</div><div class="lb-avatar">${avatarHtml(p.avatar||AVATARS[0],32,'width:32px;height:32px;')}</div><div class="lb-info"><div class="lb-name">${p.displayName||'Player'}${isMe?' (you)':''}</div><div class="lb-sub">${games} games</div></div><div class="lb-score"><div class="lb-score-val">${scoreVal}</div><div class="lb-score-label">${scoreLabel}</div></div>`;
         list.appendChild(row);
       });
     } catch(e) { list.innerHTML='<div style="text-align:center;color:var(--muted);font-family:sans-serif;padding:24px;">Could not load leaderboard</div>'; }
