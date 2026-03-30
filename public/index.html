@@ -1449,7 +1449,7 @@
 <div id="splash">
   <div class="splash-spade">♠</div>
   <div class="splash-title">PASS THE ACE</div>
-  <div class="splash-sub">by Pop the Crowd</div>
+
   <div class="splash-bar-wrap">
     <div class="splash-bar" id="splash-bar"></div>
   </div>
@@ -4767,6 +4767,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   function saveDailyTasks(tasks) {
     localStorage.setItem(getTodayKey(), JSON.stringify(tasks));
   }
+  window.loadDailyTasks = loadDailyTasks;
+  window.saveDailyTasks = saveDailyTasks;
 
   function msUntilMidnight() {
     const now = new Date();
