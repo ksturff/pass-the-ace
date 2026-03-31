@@ -2220,8 +2220,8 @@
     <div class="ticket-modal-title">DAILY REQUIRED</div>
     <div class="ticket-modal-body">
       You need a <strong>Daily Ticket</strong> to enter this tournament.<br><br>
-      Win a Sit & Stay Tournament (3-min) to earn one!<br>
-      <span style="font-size:11px;color:var(--muted);">(awarded to 1st place)</span>
+      Play <strong>5 games</strong> in any mode today to earn one automatically!<br>
+      <span style="font-size:11px;color:var(--muted);">(resets at midnight each day)</span>
     </div>
     <button class="btn-primary" id="btn-no-ticket-play" style="background:linear-gradient(90deg,#8B4513,#cd7f32);color:#fff;">⚡ Play Quick Play</button>
     <button class="btn-ghost" id="btn-no-ticket-cancel">Close</button>
@@ -2234,7 +2234,7 @@
     <div class="ticket-modal-icon" style="animation:pulse 1s ease-in-out 3;">🎟️</div>
     <div class="ticket-modal-title" style="color:#ffd700;">DAILY TICKET EARNED!</div>
     <div class="ticket-modal-body">
-      You won and earned a <strong>🎟️ Daily Ticket</strong>!<br><br>
+      You played 5 games today and earned a <strong>🎟️ Daily Ticket</strong>!<br><br>
       Use it to enter a <strong>Daily Tournament</strong> at 2PM, 6PM, or 10PM.<br>
       <span style="font-size:11px;color:var(--muted);">Win the Daily to earn a Saturday Ticket.</span>
     </div>
@@ -2510,6 +2510,17 @@ async function recordGameResult(won, placement=0, tournamentType=null) {
       lastPlayed: firebase.firestore.FieldValue.serverTimestamp()
     });
     await loadUserProfile(currentUser.uid);
+
+    // ── Daily ticket: awarded after playing 5 games in a day (volume, not winning) ──
+    if (isSolo || (!isSolo && tournamentType !== 'daily' && tournamentType !== 'saturday')) {
+      const todayKey = `pta_daily_games_${new Date().toDateString()}`;
+      const dailyGames = parseInt(localStorage.getItem(todayKey) || '0') + 1;
+      localStorage.setItem(todayKey, dailyGames);
+      if (dailyGames === 5) {
+        await awardDailyTicket();
+      }
+    }
+
     if (isSolo) {
       const payout = won ? 200 : 50;
       await updateChipBalance(payout);
@@ -2577,14 +2588,18 @@ async function updateChipBalance(delta) {
 function checkChipsAndProceed(cost, onProceed) {
   const balance = userProfile?.chipBalance ?? 0;
   if (balance >= cost) { onProceed(); return true; }
+  const shortfall = cost - balance;
+  // Ad reward always covers the shortfall (min 300, rounded up to nearest 100)
+  const adReward = Math.max(300, Math.ceil(shortfall / 100) * 100);
   const modal = document.getElementById('low-chip-modal');
   document.getElementById('low-chip-msg').textContent =
-    `You need ${cost.toLocaleString()} chips to enter but only have ${balance.toLocaleString()}. Watch an ad to get +300 chips.`;
+    `You need ${cost.toLocaleString()} chips to enter but only have ${balance.toLocaleString()}. Watch a short ad to get +${adReward.toLocaleString()} chips and jump in.`;
+  document.getElementById('btn-low-chip-ad').textContent = `📺 Watch Ad for +${adReward.toLocaleString()} Chips`;
   modal.style.display = 'grid';
   document.getElementById('btn-low-chip-ad').onclick = async () => {
     modal.style.display = 'none';
-    await updateChipBalance(300);
-    showToast('+300 chips!', '#ffd700', 2500);
+    await updateChipBalance(adReward);
+    showToast(`+${adReward.toLocaleString()} chips!`, '#ffd700', 2500);
     const newBalance = userProfile?.chipBalance ?? 0;
     if (newBalance >= cost) onProceed();
     else showToast('Still not enough chips', '#ff4d4f', 3000);
@@ -4457,10 +4472,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('no-ticket-modal').classList.remove('show');
     const name=userProfile?.displayName||'Player';
     myAvatar=userProfile?.avatar||myAvatar;
-    checkChipsAndProceed(100, async ()=>{
-      await updateChipBalance(-100);
-      startSolo(name,10);
-    });
+    startSolo(name,10);
   });
   document.getElementById('btn-ticket-earned-ok').addEventListener('click',()=>{
     document.getElementById('ticket-earned-modal').classList.remove('show');
@@ -4700,11 +4712,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('btn-again').addEventListener('click',()=>{
     document.getElementById('game-over').classList.remove('show');
     if(isSolo){
-      checkChipsAndProceed(100, async ()=>{
-        await updateChipBalance(-100);
-        soloPlayers.forEach(p=>{p.chips=3;p.eliminated=false;p.card=null;});
-        players=soloPlayers;buildTable();soloStartRound();
-      });
+      soloPlayers.forEach(p=>{p.chips=3;p.eliminated=false;p.card=null;});
+      players=soloPlayers;buildTable();soloStartRound();
     } else socket.emit('startGame');
   });
   document.getElementById('btn-game-menu').addEventListener('click',()=>{ document.getElementById('leave-game-modal').classList.add('show'); });
@@ -4782,8 +4791,16 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     // Streak: reset if > 48h gap, else increment
     const newStreak = hoursSince > 48 ? 1 : streak + 1;
-    // Bonus scales with streak: 250 base + 50 per day, max 750
-    const bonus = Math.min(750, 250 + (newStreak - 1) * 50);
+    // Bonus scales with streak: 250 base + 50/day up to day 14 (+25/day up to day 30, then holds at 1,000)
+    let bonus;
+    if (newStreak <= 14) {
+      bonus = 250 + (newStreak - 1) * 50;
+    } else if (newStreak <= 30) {
+      bonus = 900 + (newStreak - 14) * 25; // 900 at day 14, grows to 1,300 at day 30... cap at 1000
+      bonus = Math.min(1000, bonus);
+    } else {
+      bonus = 1000;
+    }
 
     await saveUserProfile(currentUser.uid, {
       lastDailyBonus: now,
@@ -4797,9 +4814,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     const nextEl = document.getElementById('daily-bonus-next');
     if (streakEl) streakEl.textContent = `DAY ${newStreak} STREAK 🔥`;
     if (amountEl) amountEl.textContent = `+${bonus.toLocaleString()} chips`;
-    if (nextEl) nextEl.textContent = newStreak >= 7
-      ? '🔥 Max streak! Keep it up!'
-      : `Day ${newStreak + 1} bonus: +${Math.min(750, 250 + newStreak * 50).toLocaleString()} chips`;
+    if (nextEl) nextEl.textContent = newStreak >= 30
+      ? '🔥 30-day legend! Max bonus unlocked!'
+      : newStreak >= 14
+      ? `Day ${newStreak + 1} bonus: +${Math.min(1000, 900 + (newStreak - 13) * 25).toLocaleString()} chips`
+      : `Day ${newStreak + 1} bonus: +${Math.min(1000, 250 + newStreak * 50).toLocaleString()} chips`;
     document.getElementById('daily-bonus-modal').classList.add('show');
   }
 
