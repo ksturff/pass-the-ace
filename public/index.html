@@ -2234,9 +2234,9 @@
     <div class="ticket-modal-icon" style="animation:pulse 1s ease-in-out 3;">🎟️</div>
     <div class="ticket-modal-title" style="color:#ffd700;">DAILY TICKET EARNED!</div>
     <div class="ticket-modal-body">
-      You played 5 games today and earned a <strong>🎟️ Daily Ticket</strong>!<br><br>
-      Use it to enter a <strong>Daily Tournament</strong> at 2PM, 6PM, or 10PM.<br>
-      <span style="font-size:11px;color:var(--muted);">Win the Daily to earn a Saturday Ticket.</span>
+      You finished in the top 20 of a Satellite and earned a <strong>🏆 Weekly Ticket</strong>!<br><br>
+      Use it to enter the <strong>Saturday Championship</strong>.<br>
+      <span style="font-size:11px;color:var(--muted);">Win the championship to earn a permanent trophy on your profile.</span>
     </div>
     <button class="btn-primary" id="btn-ticket-earned-ok" style="background:linear-gradient(90deg,#8B4513,#cd7f32);color:#fff;">Nice! 🎉</button>
   </div>
@@ -3554,7 +3554,7 @@ function renderTournamentList(list){
   const myDailyTickets = userProfile?.dailyTickets ?? 0;
   const mySatTickets   = userProfile?.saturdayTickets ?? 0;
 
-  // ── DAILY TOURNAMENTS — 2pm, 6pm, 10pm every day ──
+  // ── SATELLITES — free entry, top 20 earn weekly championship ticket — 2pm, 6pm, 10pm every day ──
   const dailyHours = [14, 18, 22];
   dailyHours.forEach((hr, idx) => {
     const d = nextOccurrence(new Date().getDay(), hr);
@@ -3570,35 +3570,34 @@ function renderTournamentList(list){
     row.id = `trow-daily-${hr}`;
     row.innerHTML = `
       <td class="col-start" style="color:#cd7f32;font-weight:700;">${fmtTime(slotDate)}<span class="col-date"> in ${countdownLabel(ms)}</span></td>
-      <td class="col-buyin-ticket">500 chips</td>
+      <td class="col-buyin-ticket" style="color:#3aaa5a;font-weight:700;">FREE</td>
       <td class="col-name">Satellite</td>
-      <td class="col-prize-ticket" style="color:#ffd700;">🏆 Sat Ticket</td>
-      <td class="col-state"><span class="t-badge ticket">DAILY</span></td>
+      <td class="col-prize-ticket" style="color:#ffd700;">🏆 Weekly Ticket (top 20)</td>
+      <td class="col-state"><span class="t-badge ticket">SATELLITE</span></td>
       <td class="col-registered" style="color:#cd7f32;">${myDailyTickets} owned</td>
-      <td class="col-action">${!registered ? `<button class="btn-register" id="btn-daily-${hr}" style="border-color:rgba(205,127,50,0.4);background:rgba(205,127,50,0.1);color:#cd7f32;">Enter</button>` : `<button class="btn-register unregister" id="btn-daily-${hr}">Leave</button>`}</td>`;
+      <td class="col-action">${!registered ? `<button class="btn-register" id="btn-daily-${hr}" style="border-color:rgba(58,170,90,0.4);background:rgba(58,170,90,0.1);color:#3aaa5a;">Enter Free</button>` : `<button class="btn-register unregister" id="btn-daily-${hr}">Leave</button>`}</td>`;
     row.querySelector(`#btn-daily-${hr}`).addEventListener('click', e => {
       e.stopPropagation();
       if (registered) {
         window[regId] = false;
         renderTournamentList(currentTournamentList);
-        showToast('Left Daily Tournament', '#8a7a50');
+        showToast('Left Satellite', '#8a7a50');
       } else {
-        tryEnterTicketTournament({type:'ticket', ticketType:'daily'}, () => {
-          // Find the matching server tournament for this time slot
-          const targetTime = slotDate.getTime();
-          const match = currentTournamentList.find(t =>
-            t.type === 'daily' &&
-            Math.abs(t.startTime - targetTime) < 60000 &&
-            t.status === 'registering'
-          );
-          if (!match) { showToast('No server tournament found for this slot yet', '#ff4d4f', 3000); return; }
-          const name = userProfile?.displayName || 'Player';
-          socket.emit('registerTournament', { tournamentId: match.id, name, avatar: myAvatar, ticketType: 'daily' });
-          myTournamentId = match.id;
-          window[regId] = true;
-          renderTournamentList(currentTournamentList);
-          showToast(`🎟️ Registered for ${fmtTime(slotDate)} Daily!`, '#cd7f32', 3000);
-        });
+        const name = userProfile?.displayName || '';
+        if (!name) { showToast('Please complete your profile first', '#ff4d4f'); return; }
+        // Free entry — no ticket required
+        const targetTime = slotDate.getTime();
+        const match = currentTournamentList.find(t =>
+          t.type === 'daily' &&
+          Math.abs(t.startTime - targetTime) < 60000 &&
+          t.status === 'registering'
+        );
+        if (!match) { showToast('No server tournament found for this slot yet', '#ff4d4f', 3000); return; }
+        socket.emit('registerTournament', { tournamentId: match.id, name, avatar: myAvatar, ticketType: 'satellite' });
+        myTournamentId = match.id;
+        window[regId] = true;
+        renderTournamentList(currentTournamentList);
+        showToast(`Registered for ${fmtTime(slotDate)} Satellite — top 20 win a Weekly Ticket!`, '#3aaa5a', 3500);
       }
     });
     row.addEventListener('click', e => {
@@ -3711,7 +3710,7 @@ function renderTournamentList(list){
     tr.id=`trow-${t.id}`;
     // SAS: compute buy-in label and prize pool
     const sasPot = t.isSas ? t.buyIn * 10 : 0;
-    const sasPrize = t.isSas ? Math.floor(sasPot * 0.95) : 0;
+    const sasPrize = t.isSas ? sasPot : 0;
     const tierColors = {bronze:'#cd7f32',silver:'#b0b0b0',gold:'#ffd700',platinum:'#cce8ff'};
     const tierColor = t.isSas ? (tierColors[t.tier] || 'var(--accent)') : '';
     const buyInCell = t.isSas
@@ -3834,7 +3833,7 @@ function showTournamentModal(t) {
   const isFull = t.playerCount >= (t.maxPlayers || 10);
   const isLive = t.status === 'inProgress';
   const isPast = t.startTime < Date.now() && !isLive;
-  const sasPrize = t.isSas ? Math.floor(t.buyIn * 10 * 0.95).toLocaleString() + ' chips' : 'Glory';
+  const sasPrize = t.isSas ? (t.buyIn * 10).toLocaleString() + ' chips' : 'Glory';
   const sasBuyIn = t.isSas ? t.buyIn.toLocaleString() + ' chips' : 'FREE';
   const sasName = t.isSas ? 'Sit & Stay' : 'Sit & Stay Tournament';
 
@@ -3924,7 +3923,7 @@ function initSocket(){
   socket.on('connect',()=>{myId=socket.id;});
   socket.on('tournamentList',list=>{
     const SAS_CYCLE=['bronze','silver','gold','platinum'];
-    const SAS_BUYIN={bronze:150,silver:200,gold:300,platinum:400};
+    const SAS_BUYIN={bronze:50,silver:250,gold:500,platinum:1000};
     const SAS_LABEL={bronze:'Bronze',silver:'Silver',gold:'Gold',platinum:'Platinum'};
     (list||[]).filter(t=>t.isSas).sort((a,b)=>a.startTime-b.startTime).forEach((t,i)=>{
       const tier=SAS_CYCLE[i%SAS_CYCLE.length];
