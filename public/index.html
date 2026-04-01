@@ -4845,9 +4845,20 @@ document.addEventListener('DOMContentLoaded',()=>{
     { id:'survive_rounds', icon:'🛡️', name:'Survive 10 Rounds',    desc:'Stay alive for 10 rounds without being eliminated', target:10, reward:200 },
   ];
 
+  // Weekly rotation: 7 days, each day has 3 task IDs (0=Sun,1=Mon,...,6=Sat)
+  const WEEKLY_SCHEDULE = [
+    ['survive_rounds', 'pass_aces',     'play_rounds'],  // Sun
+    ['play_rounds',    'win_round',     'pass_aces'],    // Mon
+    ['win_game',       'survive_rounds','play_rounds'],  // Tue
+    ['pass_aces',      'win_round',     'win_game'],     // Wed
+    ['survive_rounds', 'play_rounds',   'win_round'],    // Thu
+    ['win_game',       'pass_aces',     'survive_rounds'], // Fri
+    ['play_rounds',    'win_game',      'win_round'],    // Sat
+  ];
+
   function getTodayKey() {
     const d = new Date();
-    return `pta_tasks_v2_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`;
+    return `pta_tasks_v3_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`;
   }
 
   function loadDailyTasks() {
@@ -4856,15 +4867,13 @@ document.addEventListener('DOMContentLoaded',()=>{
     if (saved) {
       try { return JSON.parse(saved); } catch(e) {}
     }
-    // Pick 3 random tasks for today using date as seed
-    const d = new Date();
-    const seed = d.getFullYear() * 10000 + d.getMonth() * 100 + d.getDate();
-    const shuffled = [...TASK_DEFS].sort((a, b) => {
-      const ha = ((seed ^ a.id.charCodeAt(0) * 31) >>> 0) % 997;
-      const hb = ((seed ^ b.id.charCodeAt(0) * 31) >>> 0) % 997;
-      return ha - hb;
+    // Pick today's tasks from the weekly schedule
+    const dayOfWeek = new Date().getDay(); // 0=Sun, 6=Sat
+    const todayIds = WEEKLY_SCHEDULE[dayOfWeek];
+    const tasks = todayIds.map(id => {
+      const def = TASK_DEFS.find(t => t.id === id);
+      return { ...def, progress: 0, claimed: false };
     });
-    const tasks = shuffled.slice(0, 3).map(t => ({ ...t, progress: 0, claimed: false }));
     localStorage.setItem(key, JSON.stringify(tasks));
     return tasks;
   }
