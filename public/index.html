@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <meta name="screen-orientation" content="landscape"/>
+  <!-- CAPACITOR: set "orientation": "landscape" in capacitor.config.json and AndroidManifest.xml screenOrientation="landscape" -->
   <title>Pass the Ace</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Playfair+Display:wght@700&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet"/>
   <!-- Firebase -->
@@ -2089,6 +2090,40 @@
       </div>
     </div>
 
+    <div class="settings-section">
+      <div class="settings-section-label">Shop</div>
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+        <div style="font-family:sans-serif;font-size:12px;color:var(--muted);line-height:1.5;">Chips can be used in the Shop tab to unlock card backs and table themes. Seasonal cosmetics are available for a limited time only.</div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">Account</div>
+      <div class="settings-row" style="cursor:pointer;" id="btn-delete-account-row">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🗑️</div>
+          <div class="settings-row-info">
+            <div class="settings-row-name" style="color:#ff4d4f;">Delete Account</div>
+            <div class="settings-row-desc">Permanently remove your account and all data</div>
+          </div>
+        </div>
+        <span style="color:var(--muted);font-size:18px;">›</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── DELETE ACCOUNT MODAL ── -->
+<div id="delete-account-modal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.88);place-items:center;">
+  <div style="background:linear-gradient(135deg,#1a0608,#100404);border:1px solid rgba(255,77,79,0.3);border-radius:20px;padding:32px 28px;width:min(320px,90vw);text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center;">
+    <div style="font-size:40px;">⚠️</div>
+    <div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--text);">Delete Account?</div>
+    <div style="font-family:sans-serif;font-size:13px;color:var(--muted);line-height:1.6;">This will permanently delete your account, chip balance, and all game history. This cannot be undone.</div>
+    <div style="width:100%;display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+      <button id="btn-delete-account-confirm" style="width:100%;padding:13px;border-radius:10px;border:0;background:#e03a3c;color:#fff;font-weight:700;font-size:13px;font-family:'Orbitron',sans-serif;cursor:pointer;letter-spacing:0.5px;">Delete My Account</button>
+      <button id="btn-delete-account-cancel" class="btn-ghost">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -2097,7 +2132,7 @@
 
 <div id="screen-sit-and-stay-wait" class="screen">
   <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;background:radial-gradient(ellipse 120% 60% at 50% -5%,#1a1200 0%,#0a0800 55%);">
-    <div id="ss-tier-badge" style="font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:3px;margin-bottom:8px;color:var(--accent);">BRONZE</div>
+    <div id="ss-tier-badge" style="font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:3px;margin-bottom:8px;color:var(--accent);">SIT &amp; STAY</div>
     <div style="font-family:'Orbitron',sans-serif;font-size:16px;letter-spacing:3px;background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;">SIT &amp; STAY</div>
     <div id="ss-buyin-label" style="font-family:sans-serif;font-size:13px;color:var(--muted);margin-bottom:28px;">150 chip buy-in</div>
 
@@ -2299,6 +2334,24 @@
 
 <div id="toast"></div>
 
+<!-- ── FIRST LAUNCH ONBOARDING ── -->
+<div id="onboarding-modal" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,0.92);place-items:center;">
+  <div style="background:linear-gradient(135deg,#18140a,#0e0c07);border:1px solid rgba(200,162,60,0.28);border-radius:20px;padding:32px 24px;width:min(340px,92vw);display:flex;flex-direction:column;gap:16px;text-align:center;align-items:center;">
+    <div style="font-size:48px;">🃏</div>
+    <div style="font-family:'Playfair Display',serif;font-size:22px;color:var(--text);">Welcome to Pass the Ace</div>
+    <div style="font-family:sans-serif;font-size:13px;color:var(--muted);line-height:1.7;text-align:left;">
+      <div style="margin-bottom:10px;">Each player gets one card. On your turn you can <strong style="color:var(--text);">Keep</strong> it or <strong style="color:var(--text);">Pass</strong> it to the next player.</div>
+      <div style="margin-bottom:10px;">At the end of the round, the player with the <strong style="color:var(--text);">lowest card</strong> loses a chip. Lose all 3 chips and you're out.</div>
+      <div style="margin-bottom:10px;"><strong style="color:var(--text);">Kings</strong> can't be passed — they block the swap. <strong style="color:var(--text);">Aces</strong> are low (value 1).</div>
+      <div>Last player standing <strong style="color:var(--text);">wins</strong>. 🏆</div>
+    </div>
+    <div style="width:100%;padding:10px;background:rgba(200,162,60,0.06);border:1px solid rgba(200,162,60,0.12);border-radius:10px;font-family:sans-serif;font-size:12px;color:var(--muted);line-height:1.6;">
+      Play 5 games to earn a <strong style="color:var(--text);">Daily Ticket</strong> for free tournaments. Log in every day to build your streak bonus.
+    </div>
+    <button id="btn-onboarding-ok" class="btn-primary" style="margin-top:4px;">Let's Play! 🎉</button>
+  </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
 // ── Splash screen ──
@@ -2497,6 +2550,41 @@ function initAuth() {
   // Sign out
   document.getElementById('btn-signout').addEventListener('click', async () => {
     await auth.signOut();
+  });
+
+  // Delete account
+  document.getElementById('btn-delete-account-row')?.addEventListener('click', () => {
+    document.getElementById('delete-account-modal').style.display = 'grid';
+  });
+  document.getElementById('btn-delete-account-cancel')?.addEventListener('click', () => {
+    document.getElementById('delete-account-modal').style.display = 'none';
+  });
+  document.getElementById('btn-delete-account-confirm')?.addEventListener('click', async () => {
+    if (!currentUser) return;
+    try {
+      // Delete Firestore data first
+      await db.collection('users').doc(currentUser.uid).delete();
+      // Clear local storage
+      localStorage.removeItem('pta_table_theme');
+      localStorage.removeItem('pta_card_back');
+      localStorage.removeItem('pta_owned_items');
+      localStorage.removeItem('pta_muted');
+      localStorage.removeItem('pta_sfx_muted');
+      localStorage.removeItem('pta_music_muted');
+      // Delete Firebase Auth account
+      await currentUser.delete();
+      document.getElementById('delete-account-modal').style.display = 'none';
+      showToast('Account deleted.', '#8a7a50', 3000);
+      showScreen('screen-login');
+    } catch(e) {
+      // If re-authentication is needed (session too old)
+      if (e.code === 'auth/requires-recent-login') {
+        document.getElementById('delete-account-modal').style.display = 'none';
+        showToast('Please sign out and sign back in, then try again.', '#ff4d4f', 4000);
+      } else {
+        showToast('Could not delete account. Please try again.', '#ff4d4f', 3000);
+      }
+    }
   });
 
   // Profile setup
@@ -2832,6 +2920,12 @@ auth.onAuthStateChanged(async user => {
       myAvatar = profile.avatar || AVATARS[0];
       showScreen('screen-lobby');
       setTimeout(() => checkDailyBonus(), 1200);
+      // First launch onboarding
+      if (!localStorage.getItem('pta_onboarded')) {
+        setTimeout(() => {
+          document.getElementById('onboarding-modal').style.display = 'grid';
+        }, 1600);
+      }
     }
   } else {
     currentUser = null;
@@ -3947,8 +4041,24 @@ function renderLobbyRooms(rooms){
 
 // ── Socket ──
 function initSocket(){
-  socket=io();
-  socket.on('connect',()=>{myId=socket.id;});
+  socket=io({ reconnectionDelay: 1000, reconnectionAttempts: 10 });
+  socket.on('connect',()=>{
+    myId=socket.id;
+    // Clear any disconnect toast
+    const el=document.getElementById('toast');
+    if(el&&el.textContent.includes('Connection'))el.style.display='none';
+  });
+  socket.on('disconnect',()=>{
+    showToast('Connection lost — reconnecting…','#ff4d4f',8000);
+  });
+  socket.on('reconnect',()=>{
+    showToast('Reconnected!','#3aaa5a',2500);
+    // Re-request lobby state
+    socket.emit('getTournaments');
+  });
+  socket.on('reconnect_failed',()=>{
+    showToast('Could not reconnect. Please refresh.','#ff4d4f',10000);
+  });
   socket.on('tournamentList',list=>{
     const SAS_CYCLE=['tier50','tier250','tier500','tier1000'];
     const SAS_BUYIN={tier50:50,tier250:250,tier500:500,tier1000:1000};
@@ -4044,6 +4154,11 @@ function initSocket(){
     // Clear all registration flags
     [12,15,18,21].forEach(h=>window[`_satReg_${h}`]=false);
     [14,18,22].forEach(h=>window[`_dailyReg_${h}`]=false);
+
+    // Satellite top-20 weekly ticket
+    if (data.earnedWeeklyTicket) {
+      setTimeout(() => awardDailyTicket(), 1400);
+    }
 
     // SAS payout — show rich results screen
     if(tType === 'sas' && data.sasPayouts && data.sasPayouts[myId] !== undefined) {
@@ -5038,6 +5153,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('daily-bonus-modal').classList.remove('show');
   });
 
+  document.getElementById('btn-onboarding-ok')?.addEventListener('click', () => {
+    localStorage.setItem('pta_onboarded', '1');
+    document.getElementById('onboarding-modal').style.display = 'none';
+  });
+
     document.getElementById('btn-menu').addEventListener('click',()=>{
     document.getElementById('game-over').classList.remove('show');
     document.getElementById('hand-area').classList.remove('visible');
@@ -6028,7 +6148,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- ── SAS RESULTS SCREEN ── -->
 <div id="sas-results">
   <div class="sas-result-box">
-    <div class="sas-result-tier" id="sas-result-tier">BRONZE SIT &amp; STAY</div>
+    <div class="sas-result-tier" id="sas-result-tier">SIT &amp; STAY</div>
     <div class="sas-result-place" id="sas-result-place">🥇</div>
     <div class="sas-result-label" id="sas-result-label">1st Place</div>
     <div class="sas-result-payout win" id="sas-result-payout">+1,425 chips</div>

@@ -444,12 +444,10 @@ function endTournamentRound(t) {
       placements[id] = idx + 2;
     });
 
-    // SAS payout: 60% / 25% / 15% of prize pool
+    // SAS payout: 60% / 25% / 15% of full prize pool — no rake
     let sasPayouts = null;
     if (t.isSas) {
-      const totalPot = humanPlayers.length * t.buyIn;
-      const rake = Math.floor(totalPot * 0.05); // 5% rake
-      const prizePot = totalPot - rake;
+      const prizePot = humanPlayers.length * t.buyIn;
       sasPayouts = {};
       humanPlayers.forEach(p => {
         const place = placements[p.id] || 99;
@@ -461,6 +459,9 @@ function endTournamentRound(t) {
     }
 
     t.allPlayers.filter(p => !p.isBot).forEach(player => {
+      const playerPlacement = placements[player.id] || 99;
+      // Satellites: top 20 earn a weekly ticket
+      const earnedWeeklyTicket = t.type === 'daily' && playerPlacement <= 20;
       io.to(player.id).emit('gameOver', {
         winner: { name: winner.name, id: winner.id },
         isTournament: true,
@@ -469,6 +470,7 @@ function endTournamentRound(t) {
         placements,
         sasPayouts,
         buyIn: t.buyIn || null,
+        earnedWeeklyTicket,
       });
     });
     io.emit('tournamentList', getPublicTournaments());
@@ -613,10 +615,8 @@ io.on('connection', socket => {
     if (t.players.find(p => p.id === socket.id)) { socket.emit('error', 'Already registered.'); return; }
 
     // Ticket-gated tournaments: client already spent the ticket via Firestore
-    // Server just validates the type matches
-    if (t.type === 'daily' && ticketType !== 'daily') {
-      socket.emit('error', 'Daily Ticket required.'); return;
-    }
+    // Satellites (daily type) are free — no ticket check needed
+    // Saturday championships require a saturday ticket
     if (t.type === 'saturday' && ticketType !== 'saturday') {
       socket.emit('error', 'Saturday Ticket required.'); return;
     }
@@ -748,10 +748,24 @@ io.on('connection', socket => {
     if (code) {
       const room = getRoom(code);
       if (room) {
-        room.players = room.players.filter(p => p.id !== socket.id);
-        if (room.players.length === 0) rooms.delete(code);
-        else io.to(code).emit('playerList', room.players);
+        if (room.gameState) {
+          // Replace disconnected player with a bot mid-game
+          const p = room.players.find(p => p.id === socket.id);
+          if (p) { p.isBot = true; p.name = p.name + ' (left)'; }
+        } else {
+          room.players = room.players.filter(p => p.id !== socket.id);
+          if (room.players.length === 0) rooms.delete(code);
+          else io.to(code).emit('playerList', room.players);
+        }
         io.emit('lobbyUpdate', getLobbyRooms());
+      }
+    }
+    const sasId = socket.data.sasQueueId;
+    if (sasId) {
+      const q = sasQueues.get(sasId);
+      if (q && q.status === 'registering') {
+        q.players = q.players.filter(p => p.id !== socket.id);
+        io.emit('sasQueues', getPublicSasQueues());
       }
     }
     const tid = socket.data.tournamentId;
@@ -775,37 +789,37 @@ function getLobbyRooms() {
 //  SIT & STAY TIERED SYSTEM
 // ─────────────────────────────────────────
 
-// Tier definitions — 4 tiers only, all with bot fill
+// Tier definitions — 4 tiers, matching client SAS_BUYIN
 const SAS_TIERS = {
-  bronze:   { buyIn: 150,  label: 'Bronze',   color: '#cd7f32', botFill: true },
-  silver:   { buyIn: 225,  label: 'Silver',   color: '#b0b0b0', botFill: true },
-  gold:     { buyIn: 300,  label: 'Gold',     color: '#ffd700', botFill: true },
-  platinum: { buyIn: 375,  label: 'Platinum', color: '#cce8ff', botFill: true },
+  tier50:    { buyIn: 50,   label: '50',    color: '#5dcaa5', botFill: true },
+  tier250:   { buyIn: 250,  label: '250',   color: '#c8a23c', botFill: true },
+  tier500:   { buyIn: 500,  label: '500',   color: '#e08030', botFill: true },
+  tier1000:  { buyIn: 1000, label: '1,000', color: '#cce8ff', botFill: true },
 };
 
 // 4-slot repeating rotation per hour (slots 0–19, each = 3 minutes)
 // Strict ordered cycle: bronze → silver → gold → platinum → repeat
 const SAS_ROTATION = [
-  'bronze',   // :00
-  'silver',   // :03
-  'gold',     // :06
-  'platinum', // :09
-  'bronze',   // :12
-  'silver',   // :15
-  'gold',     // :18
-  'platinum', // :21
-  'bronze',   // :24
-  'silver',   // :27
-  'gold',     // :30
-  'platinum', // :33
-  'bronze',   // :36
-  'silver',   // :39
-  'gold',     // :42
-  'platinum', // :45
-  'bronze',   // :48
-  'silver',   // :51
-  'gold',     // :54
-  'platinum', // :57
+  'tier50',    // :00
+  'tier250',   // :03
+  'tier500',   // :06
+  'tier1000',  // :09
+  'tier50',    // :12
+  'tier250',   // :15
+  'tier500',   // :18
+  'tier1000',  // :21
+  'tier50',    // :24
+  'tier250',   // :27
+  'tier500',   // :30
+  'tier1000',  // :33
+  'tier50',    // :36
+  'tier250',   // :39
+  'tier500',   // :42
+  'tier1000',  // :45
+  'tier50',    // :48
+  'tier250',   // :51
+  'tier500',   // :54
+  'tier1000',  // :57
 ];
 
 // Map of active queues: sasId -> queue object
