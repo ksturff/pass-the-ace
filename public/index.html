@@ -3676,22 +3676,22 @@ function renderTournamentList(list){
   const myDailyTickets = userProfile?.dailyTickets ?? 0;
   const mySatTickets   = userProfile?.saturdayTickets ?? 0;
   const nowMs = Date.now();
-  const sixHours = 6 * 60 * 60 * 1000;
+  const sixteenHours = 16 * 60 * 60 * 1000;
   const isTodaySaturday = new Date().getDay() === 6;
 
-  // ── Build satellite rows (upcoming within 6 hours) ──
+  // ── Build satellite rows (today only, upcoming within 16 hours) ──
   const satelliteRows = [];
-  const dailyHours = [14, 18, 22];
+  const dailyHours = [11, 14, 18, 22];
   dailyHours.forEach((hr) => {
     const now2 = new Date();
     const todaySlot = new Date(now2); todaySlot.setHours(hr,0,0,0);
-    const slotDate = now2 < todaySlot ? todaySlot : new Date(todaySlot.getTime() + 86400000);
-    const ms = slotDate - now2;
-    if (ms > sixHours) return; // only show if within 6 hours
-    satelliteRows.push({ slotDate, ms, hr, type: 'satellite' });
+    if (now2 >= todaySlot) return; // already passed today, skip
+    const ms = todaySlot - now2;
+    if (ms > sixteenHours) return; // only show if within 16 hours
+    satelliteRows.push({ slotDate: todaySlot, ms, hr, type: 'satellite' });
   });
 
-  // ── Build saturday rows (only on Saturdays, within 6 hours) ──
+  // ── Build saturday rows (only on Saturdays, upcoming within 16 hours) ──
   const satRows = [];
   if (isTodaySaturday) {
     const satHours = [12, 15, 18, 21];
@@ -3700,7 +3700,7 @@ function renderTournamentList(list){
       const todaySlot = new Date(now2); todaySlot.setHours(hr,0,0,0);
       if (now2 >= todaySlot) return; // already passed today
       const ms = todaySlot - now2;
-      if (ms > sixHours) return; // only show if within 6 hours
+      if (ms > sixteenHours) return; // only show if within 16 hours
       satRows.push({ slotDate: todaySlot, ms, hr, type: 'saturday' });
     });
   }
@@ -3709,7 +3709,7 @@ function renderTournamentList(list){
   const extraRows = [
     ...satelliteRows.map(r => ({ ...r, startTime: r.slotDate.getTime() })),
     ...satRows.map(r => ({ ...r, startTime: r.slotDate.getTime() })),
-    ...filtered.map(t => ({ ...t, startTime: t.startTime, type: t.isSas ? 'sas' : 'other' }))
+    ...filtered.filter(t => t.startTime <= Date.now() + 16 * 60 * 60 * 1000).map(t => ({ ...t, startTime: t.startTime, type: t.isSas ? 'sas' : 'other' }))
   ].sort((a, b) => a.startTime - b.startTime);
 
   // ── Render function for a satellite row ──

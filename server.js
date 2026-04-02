@@ -149,7 +149,7 @@ function getPublicTournaments() {
 
   // SAS queues — show upcoming + recently started
   const sasEntries = Array.from(sasQueues.values())
-    .filter(q => q.startTime >= now - 10 * 60 * 1000)
+    .filter(q => q.startTime >= now - 10 * 60 * 1000 && q.startTime <= now + 16 * 60 * 60 * 1000)
     .map(q => ({
       id: q.id,
       startTime: q.startTime,
@@ -835,7 +835,7 @@ function slotStartTime(hourEpoch, slotIdx) {
 }
 
 // Build all SAS slots for upcoming windows
-function ensureSasQueues(windowHours = 3) {
+function ensureSasQueues(windowHours = 16) {
   const now = Date.now();
   // Round down to current hour
   const currentHour = Math.floor(now / (60 * 60 * 1000)) * (60 * 60 * 1000);
@@ -874,7 +874,7 @@ function getPublicSasQueues() {
   ensureSasQueues();
   const now = Date.now();
   return Array.from(sasQueues.values())
-    .filter(q => q.startTime >= now - 10 * 60 * 1000)
+    .filter(q => q.startTime >= now - 10 * 60 * 1000 && q.startTime <= now + 16 * 60 * 60 * 1000)
     .sort((a, b) => a.startTime - b.startTime)
     .map(q => ({
       id: q.id,
