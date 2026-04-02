@@ -31,7 +31,29 @@
     .rotate-title { font-size: 16px; letter-spacing: 2px; color: var(--accent); }
 
 
-    /* ── TASKS SCREEN ── */
+    /* ── SHOP ── */
+    .shop-section { margin-bottom:20px; }
+    .shop-section-title { font-size:10px; letter-spacing:2px; color:var(--muted); font-family:'Orbitron',sans-serif; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid rgba(200,162,60,0.1); }
+    .shop-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+    .shop-item { background:linear-gradient(135deg,#0e0c06,#090700); border:1px solid rgba(200,162,60,0.12); border-radius:12px; padding:12px; cursor:pointer; transition:border-color .2s; position:relative; }
+    .shop-item:hover { border-color:rgba(200,162,60,0.3); }
+    .shop-item.owned { border-color:rgba(58,170,90,0.4); }
+    .shop-item.equipped { border-color:rgba(200,162,60,0.6); }
+    .shop-item.coming-soon { opacity:0.45; cursor:default; }
+    .shop-item-preview { width:100%; height:70px; border-radius:8px; margin-bottom:8px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .shop-item-name { font-size:12px; font-weight:700; color:var(--text); margin-bottom:3px; }
+    .shop-item-price { font-size:11px; font-family:sans-serif; }
+    .shop-item-badge { position:absolute; top:8px; right:8px; font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; font-family:sans-serif; letter-spacing:0.5px; }
+    .badge-owned { background:rgba(58,170,90,0.2); color:#3aaa5a; }
+    .badge-equipped { background:rgba(200,162,60,0.2); color:var(--accent); }
+    .badge-soon { background:rgba(255,255,255,0.06); color:var(--muted); }
+    .btn-shop-buy { width:100%; padding:7px; border-radius:7px; border:0; background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#0a0800; font-weight:700; font-size:11px; font-family:'Orbitron',sans-serif; cursor:pointer; margin-top:6px; transition:opacity .2s; }
+    .btn-shop-buy:hover { opacity:.85; }
+    .btn-shop-equip { width:100%; padding:7px; border-radius:7px; border:1px solid rgba(200,162,60,0.3); background:transparent; color:var(--accent); font-size:11px; font-family:'Orbitron',sans-serif; cursor:pointer; margin-top:6px; transition:all .2s; }
+    .btn-shop-equip:hover { background:rgba(200,162,60,0.08); }
+    .btn-shop-equipped { width:100%; padding:7px; border-radius:7px; border:1px solid rgba(58,170,90,0.3); background:transparent; color:#3aaa5a; font-size:11px; font-family:'Orbitron',sans-serif; cursor:default; margin-top:6px; }
+
+
     #screen-tasks {
       background: var(--bg);
       padding: 60px 16px 24px;
@@ -1824,6 +1846,7 @@
     <button class="lobby-tab" data-tab="quickplay">⚡ Quick Play</button>
     <button class="lobby-tab" data-tab="tables">🔗 Private</button>
     <button class="lobby-tab" data-tab="tasks">✅ Tasks<span class="tasks-badge" id="tasks-badge-lobby" style="display:none;position:relative;top:-2px;margin-left:4px;"></span></button>
+    <button class="lobby-tab" data-tab="shop">🛍 Shop</button>
     <button class="lobby-tab" data-tab="leaderboard">🏅 Ranks</button>
   </div>
 
@@ -1884,6 +1907,11 @@
       <div class="tasks-subtitle" style="text-align:center;font-family:sans-serif;font-size:12px;color:var(--muted);margin-bottom:8px;">Complete 3 challenges to earn chips</div>
       <div class="tasks-reset" id="tasks-reset-label-lobby" style="font-family:sans-serif;font-size:11px;color:var(--muted);text-align:center;margin-bottom:16px;"></div>
       <div id="tasks-list-lobby"></div>
+    </div>
+
+    <div id="tab-shop" style="display:none;padding:16px;max-width:520px;margin:0 auto;">
+      <div id="shop-chip-balance" style="text-align:center;font-family:'Orbitron',sans-serif;font-size:13px;color:var(--accent);margin-bottom:16px;letter-spacing:1px;"></div>
+      <div id="shop-content"></div>
     </div>
 
     <div id="tab-leaderboard" style="display:none;padding:16px;max-width:480px;margin:0 auto;">
@@ -3711,7 +3739,7 @@ function renderTournamentList(list){
     // SAS: compute buy-in label and prize pool
     const sasPot = t.isSas ? t.buyIn * 10 : 0;
     const sasPrize = t.isSas ? sasPot : 0;
-    const tierColors = {bronze:'#cd7f32',silver:'#b0b0b0',gold:'#ffd700',platinum:'#cce8ff'};
+    const tierColors = {tier50:'#5dcaa5',tier250:'#c8a23c',tier500:'#e08030',tier1000:'#cce8ff'};
     const tierColor = t.isSas ? (tierColors[t.tier] || 'var(--accent)') : '';
     const buyInCell = t.isSas
       ? `<span style="color:${tierColor};font-weight:700;">${t.buyIn.toLocaleString()} chips</span>`
@@ -3922,9 +3950,9 @@ function initSocket(){
   socket=io();
   socket.on('connect',()=>{myId=socket.id;});
   socket.on('tournamentList',list=>{
-    const SAS_CYCLE=['bronze','silver','gold','platinum'];
-    const SAS_BUYIN={bronze:50,silver:250,gold:500,platinum:1000};
-    const SAS_LABEL={bronze:'Bronze',silver:'Silver',gold:'Gold',platinum:'Platinum'};
+    const SAS_CYCLE=['tier50','tier250','tier500','tier1000'];
+    const SAS_BUYIN={tier50:50,tier250:250,tier500:500,tier1000:1000};
+    const SAS_LABEL={tier50:'50',tier250:'250',tier500:'500',tier1000:'1,000'};
     (list||[]).filter(t=>t.isSas).sort((a,b)=>a.startTime-b.startTime).forEach((t,i)=>{
       const tier=SAS_CYCLE[i%SAS_CYCLE.length];
       t.tier=tier; t.label=SAS_LABEL[tier]; t.buyIn=SAS_BUYIN[tier];
@@ -4278,7 +4306,7 @@ function animateDeckExchange(playerId, onDone){
   });
 }
 function switchLobbyTab(tabName) {
-  const tabs = ['tournaments','quickplay','tables','tasks','leaderboard'];
+  const tabs = ['tournaments','quickplay','tables','tasks','shop','leaderboard'];
   document.querySelectorAll('.lobby-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
   tabs.forEach(t => {
     const el = document.getElementById('tab-' + t);
@@ -4288,6 +4316,7 @@ function switchLobbyTab(tabName) {
   document.getElementById('micro-countdown-bar').style.display = tabName === 'tournaments' ? 'flex' : 'none';
   if (tabName === 'tasks') renderTasksScreenInline();
   if (tabName === 'leaderboard') renderLobbyLeaderboard();
+  if (tabName === 'shop') renderShop();
 }
 window.switchLobbyTab = switchLobbyTab;
 
@@ -4336,6 +4365,190 @@ function renderTasksScreenInline() {
     list.appendChild(card);
   });
 }
+
+// ── SHOP ──
+const SHOP_ITEMS = {
+  card_backs: [
+    { id:'teal_diamond',   name:'Teal Diamond',  price:4000,  type:'card_back' },
+    { id:'gold_crosshatch',name:'Gold Classic',  price:4000,  type:'card_back' },
+    { id:'crimson',        name:'Crimson',        price:4000,  type:'card_back' },
+    { id:'midnight',       name:'Midnight',       price:4000,  type:'card_back' },
+    { id:'forest',         name:'Forest',         price:4000,  type:'card_back' },
+    { id:'rose_gold',      name:'Rose Gold',      price:7500,  type:'card_back' },
+  ],
+  table_themes: [
+    { id:'burgundy', name:'Burgundy',       price:3000, type:'table_theme' },
+    { id:'green',    name:'Classic Green',  price:3000, type:'table_theme' },
+    { id:'navy',     name:'Midnight Navy',  price:3000, type:'table_theme' },
+    { id:'slate',    name:'Slate',          price:3000, type:'table_theme' },
+    { id:'purple',   name:'Royal Purple',   price:3000, type:'table_theme' },
+    { id:'crimson',  name:'Crimson',        price:3000, type:'table_theme' },
+  ],
+  avatar_frames: [
+    { id:'frame_coming1', name:'Classic Frame',  price:750,  type:'avatar_frame', comingSoon:true },
+    { id:'frame_coming2', name:'Gold Frame',     price:1500, type:'avatar_frame', comingSoon:true },
+    { id:'frame_coming3', name:'Champion Frame', price:5000, type:'avatar_frame', comingSoon:true },
+  ],
+  badges: [
+    { id:'badge_coming1', name:'Ace Badge',      price:500,  type:'badge', comingSoon:true },
+    { id:'badge_coming2', name:'Shark Badge',    price:500,  type:'badge', comingSoon:true },
+    { id:'badge_coming3', name:'Legend Badge',   price:1500, type:'badge', comingSoon:true },
+  ]
+};
+
+function getOwnedItems() {
+  try { return JSON.parse(localStorage.getItem('pta_owned_items') || '[]'); } catch(e) { return []; }
+}
+function saveOwnedItems(items) {
+  localStorage.setItem('pta_owned_items', JSON.stringify(items));
+}
+function isOwned(itemId) { return getOwnedItems().includes(itemId); }
+function isEquipped(item) {
+  if (item.type === 'card_back') return selectedCardBack === item.id;
+  if (item.type === 'table_theme') return selectedTableTheme === item.id;
+  return false;
+}
+
+function equipItem(item) {
+  if (item.type === 'card_back') {
+    selectedCardBack = item.id;
+    localStorage.setItem('pta_card_back', item.id);
+    if (typeof updateTable === 'function') updateTable();
+  }
+  if (item.type === 'table_theme') {
+    selectedTableTheme = item.id;
+    localStorage.setItem('pta_table_theme', item.id);
+    if (typeof applyTableTheme === 'function') applyTableTheme(item.id);
+  }
+  renderShop();
+}
+
+async function purchaseItem(item) {
+  const balance = userProfile?.chipBalance ?? 0;
+  if (balance < item.price) {
+    checkChipsAndProceed(item.price, () => purchaseItem(item));
+    return;
+  }
+  await updateChipBalance(-item.price);
+  const owned = getOwnedItems();
+  owned.push(item.id);
+  saveOwnedItems(owned);
+  showToast(`${item.name} unlocked!`, '#ffd700', 2500);
+  equipItem(item);
+}
+
+function renderShopItemPreview(item) {
+  if (item.type === 'card_back') {
+    const canvas = document.createElement('canvas');
+    canvas.width = 52; canvas.height = 72;
+    canvas.style.cssText = 'width:52px;height:72px;border-radius:4px;';
+    const ctx = canvas.getContext('2d');
+    const style = CARD_BACKS[item.id];
+    if (style) style.draw(ctx, 0, 0, 52, 72, 26, 36);
+    const wrap = document.createElement('div');
+    wrap.className = 'shop-item-preview';
+    wrap.style.background = 'rgba(0,0,0,0.3)';
+    wrap.appendChild(canvas);
+    return wrap;
+  }
+  if (item.type === 'table_theme') {
+    const theme = TABLE_THEMES[item.id];
+    const wrap = document.createElement('div');
+    wrap.className = 'shop-item-preview';
+    wrap.style.cssText = `background:${theme ? theme.felt[1] : '#1a1a1a'};border-radius:8px;`;
+    const swatch = document.createElement('div');
+    swatch.style.cssText = `width:36px;height:36px;border-radius:50%;background:${theme ? theme.felt[0] : '#2a2a2a'};border:3px solid ${theme ? theme.rail[0] : '#444'};`;
+    wrap.appendChild(swatch);
+    return wrap;
+  }
+  const wrap = document.createElement('div');
+  wrap.className = 'shop-item-preview';
+  wrap.style.cssText = 'background:rgba(255,255,255,0.04);border-radius:8px;';
+  const lbl = document.createElement('span');
+  lbl.style.cssText = 'font-size:11px;color:var(--muted);font-family:sans-serif;letter-spacing:1px;';
+  lbl.textContent = 'SOON';
+  wrap.appendChild(lbl);
+  return wrap;
+}
+
+function renderShop() {
+  const balEl = document.getElementById('shop-chip-balance');
+  if (balEl) balEl.textContent = `🪙 ${(userProfile?.chipBalance ?? 0).toLocaleString()} chips`;
+  const container = document.getElementById('shop-content');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const sections = [
+    { key:'card_backs',    title:'CARD BACKS' },
+    { key:'table_themes',  title:'TABLE THEMES' },
+    { key:'avatar_frames', title:'AVATAR FRAMES' },
+    { key:'badges',        title:'PROFILE BADGES' },
+  ];
+
+  sections.forEach(({ key, title }) => {
+    const items = SHOP_ITEMS[key];
+    const section = document.createElement('div');
+    section.className = 'shop-section';
+    const heading = document.createElement('div');
+    heading.className = 'shop-section-title';
+    heading.textContent = title;
+    section.appendChild(heading);
+    const grid = document.createElement('div');
+    grid.className = 'shop-grid';
+
+    items.forEach(item => {
+      const FREE_ITEMS = ['teal_diamond','gold_crosshatch','burgundy'];
+      const owned = isOwned(item.id) || FREE_ITEMS.includes(item.id);
+      const equipped = isEquipped(item);
+      const card = document.createElement('div');
+      card.className = 'shop-item' + (item.comingSoon ? ' coming-soon' : equipped ? ' equipped' : owned ? ' owned' : '');
+
+      const badge = document.createElement('span');
+      badge.className = 'shop-item-badge ' + (item.comingSoon ? 'badge-soon' : equipped ? 'badge-equipped' : owned ? 'badge-owned' : '');
+      badge.textContent = item.comingSoon ? 'SOON' : equipped ? 'ON' : owned ? '✓' : '';
+      if (badge.textContent) card.appendChild(badge);
+
+      card.appendChild(renderShopItemPreview(item));
+
+      const name = document.createElement('div');
+      name.className = 'shop-item-name';
+      name.textContent = item.name;
+      card.appendChild(name);
+
+      const price = document.createElement('div');
+      price.className = 'shop-item-price';
+      if (item.comingSoon) {
+        price.style.color = 'var(--muted)';
+        price.textContent = 'Coming soon';
+      } else {
+        price.style.color = 'var(--accent)';
+        price.textContent = item.price.toLocaleString() + ' chips';
+      }
+      card.appendChild(price);
+
+      if (!item.comingSoon) {
+        const btn = document.createElement('button');
+        if (equipped) {
+          btn.className = 'btn-shop-equipped';
+          btn.textContent = 'Equipped';
+        } else if (owned) {
+          btn.className = 'btn-shop-equip';
+          btn.textContent = 'Equip';
+          btn.onclick = () => equipItem(item);
+        } else {
+          btn.className = 'btn-shop-buy';
+          btn.textContent = 'Buy — ' + item.price.toLocaleString();
+          btn.onclick = () => purchaseItem(item);
+        }
+        card.appendChild(btn);
+      }
+      grid.appendChild(card);
+    });
+    section.appendChild(grid);
+    container.appendChild(section);
+  });
+}
+window.renderShop = renderShop;
 
 function renderLobbyLeaderboard() {
   const el = document.getElementById('lobby-lb-content');
@@ -4531,7 +4744,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       const buyinLabel = document.getElementById('ss-buyin-label');
       if (buyinLabel) buyinLabel.textContent = `${buyIn.toLocaleString()} chip buy-in`;
       const botNote = document.getElementById('ss-bot-note');
-      if (botNote) botNote.textContent = tier === 'platinum'
+      if (botNote) botNote.textContent = tier === 'tier1000'
         ? 'Waiting for a full table'
         : 'Empty seats filled by bots';
       showScreen('screen-sit-and-stay-wait');
@@ -4727,14 +4940,14 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   // ── SAS Results screen ──
   function showSasResults(data, placement, payout) {
-    const tierColors = {bronze:'#cd7f32',silver:'#b0b0b0',gold:'#ffd700',platinum:'#cce8ff'};
+    const tierColors = {tier50:'#5dcaa5',tier250:'#c8a23c',tier500:'#e08030',tier1000:'#cce8ff'};
     const placeEmoji = ['🥇','🥈','🥉'];
     const placeLabel = ['1st Place','2nd Place','3rd Place'];
-    const tier = data.tier || 'bronze';
+    const tier = data.tier || 'tier50';
     const label = data.label || 'Sit & Stay';
     const color = tierColors[tier] || 'var(--accent)';
 
-    document.getElementById('sas-result-tier').textContent = label.toUpperCase() + ' SIT & STAY';
+    document.getElementById('sas-result-tier').textContent = (data.buyIn ? data.buyIn.toLocaleString() + ' CHIP' : label.toUpperCase()) + ' SIT & STAY';
     document.getElementById('sas-result-tier').style.color = color;
     document.getElementById('sas-result-place').textContent = placeEmoji[placement - 1] || '🃏';
     document.getElementById('sas-result-label').textContent = placeLabel[placement - 1] || 'Thanks for playing';
@@ -5066,6 +5279,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     if (daily) daily.textContent = userProfile?.dailyTickets ?? 0;
     if (sat) sat.textContent = userProfile?.saturdayTickets ?? 0;
     if (avatar) avatar.textContent = myAvatar || '🎭';
+    const shopBal = document.getElementById('shop-chip-balance');
+    if (shopBal) shopBal.textContent = `🪙 ${(userProfile?.chipBalance ?? 0).toLocaleString()} chips`;
   }
   window.updateLobbyTopbar = updateLobbyTopbar;
 
