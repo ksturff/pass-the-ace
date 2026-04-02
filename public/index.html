@@ -3650,6 +3650,18 @@ function renderTournamentList(list){
   if(!filtered.length){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);font-family:sans-serif;font-size:13px;">No tournaments found</td></tr>`;return;}
   tbody.innerHTML='';
 
+  // ── Saturday Championship banner (visible all week, not just Saturday) ──
+  const satBanner = document.getElementById('sat-champ-banner');
+  if (!satBanner) {
+    const banner = document.createElement('tr');
+    banner.id = 'sat-champ-banner';
+    banner.innerHTML = `<td colspan="7" style="padding:10px 12px;background:linear-gradient(90deg,rgba(255,215,0,0.06),rgba(255,215,0,0.02));border-bottom:1px solid rgba(255,215,0,0.12);">
+      <span style="font-family:'Orbitron',sans-serif;font-size:10px;color:#ffd700;letter-spacing:1px;">⭐ SATURDAY CHAMPIONSHIP</span>
+      <span style="font-family:sans-serif;font-size:11px;color:var(--muted);margin-left:10px;">Every Saturday · 12pm, 3pm, 6pm, 9pm · Requires a 🏆 Weekly Ticket · Win a permanent trophy</span>
+    </td>`;
+    tbody.appendChild(banner);
+  }
+
   // ── Helper: next occurrence of a given weekday + hour ──
   function nextOccurrence(targetDay, targetHour) {
     const now = new Date();
@@ -3710,7 +3722,7 @@ function renderTournamentList(list){
   const extraRows = [
     ...satelliteRows.map(r => ({ ...r, startTime: r.slotDate.getTime() })),
     ...satRows.map(r => ({ ...r, startTime: r.slotDate.getTime() })),
-    ...filtered.filter(t => t.startTime <= Date.now() + 16 * 60 * 60 * 1000).map(t => ({ ...t, startTime: t.startTime, type: t.isSas ? 'sas' : 'other' }))
+    ...filtered.filter(t => t.startTime <= Date.now() + 16 * 60 * 60 * 1000 && (!t.isSas || t.buyIn > 0)).map(t => ({ ...t, startTime: t.startTime, type: t.isSas ? 'sas' : 'other' }))
   ].sort((a, b) => a.startTime - b.startTime);
 
   // ── Render function for a satellite row ──
