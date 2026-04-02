@@ -3679,16 +3679,17 @@ function renderTournamentList(list){
   const sixteenHours = 16 * 60 * 60 * 1000;
   const isTodaySaturday = new Date().getDay() === 6;
 
-  // ── Build satellite rows (today only, upcoming within 16 hours) ──
+  // ── Build satellite rows (next upcoming occurrence, within 16 hours) ──
   const satelliteRows = [];
   const dailyHours = [11, 14, 18, 22];
   dailyHours.forEach((hr) => {
     const now2 = new Date();
-    const todaySlot = new Date(now2); todaySlot.setHours(hr,0,0,0);
-    if (now2 >= todaySlot) return; // already passed today, skip
-    const ms = todaySlot - now2;
+    const todaySlot = new Date(now2); todaySlot.setHours(hr,0,0,0); todaySlot.setMinutes(0); todaySlot.setSeconds(0); todaySlot.setMilliseconds(0);
+    // If today's slot has passed, try tomorrow's
+    const slotDate = now2 < todaySlot ? todaySlot : new Date(todaySlot.getTime() + 86400000);
+    const ms = slotDate - now2;
     if (ms > sixteenHours) return; // only show if within 16 hours
-    satelliteRows.push({ slotDate: todaySlot, ms, hr, type: 'satellite' });
+    satelliteRows.push({ slotDate, ms, hr, type: 'satellite' });
   });
 
   // ── Build saturday rows (only on Saturdays, upcoming within 16 hours) ──

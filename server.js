@@ -71,7 +71,17 @@ function getAllTournamentSlots(count = 60) {
   }
 
   // ── DAILY: 2pm, 6pm, 10pm — next 14 days ──
-  const dailyHours = [14, 18, 22];
+  // Daily satellite times: 11am, 2pm, 6pm, 10pm Toronto (ET)
+  // Convert Toronto local hours to UTC hours accounting for DST
+  function torontoHourToUTC(localHour) {
+    const now = new Date();
+    const testDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), localHour, 0, 0);
+    const toronto = new Date(testDate.toLocaleString('en-US', { timeZone: 'America/Toronto' }));
+    const utc = new Date(testDate.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const offsetHours = (utc - toronto) / 3600000;
+    return (localHour + offsetHours + 24) % 24;
+  }
+  const dailyHours = [11, 14, 18, 22].map(torontoHourToUTC);
   for (let d = 0; d < 14; d++) {
     const base = new Date(startOfDay.getTime() + d * 86400000);
     dailyHours.forEach(hr => {
