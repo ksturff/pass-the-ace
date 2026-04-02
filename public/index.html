@@ -3722,7 +3722,7 @@ function renderTournamentList(list){
   const extraRows = [
     ...satelliteRows.map(r => ({ ...r, startTime: r.slotDate.getTime() })),
     ...satRows.map(r => ({ ...r, startTime: r.slotDate.getTime() })),
-    ...filtered.filter(t => t.startTime <= Date.now() + 16 * 60 * 60 * 1000 && (!t.isSas || t.buyIn > 0)).map(t => ({ ...t, startTime: t.startTime, type: t.isSas ? 'sas' : 'other' }))
+    ...filtered.filter(t => t.startTime <= Date.now() + 16 * 60 * 60 * 1000 && t.isSas && t.buyIn > 0).map(t => ({ ...t, startTime: t.startTime, type: 'sas' }))
   ].sort((a, b) => a.startTime - b.startTime);
 
   // ── Render function for a satellite row ──
