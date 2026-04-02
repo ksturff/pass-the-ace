@@ -1847,6 +1847,7 @@
     <button class="lobby-tab" data-tab="quickplay">⚡ Quick Play</button>
     <button class="lobby-tab" data-tab="tables">🔗 Private</button>
     <button class="lobby-tab" data-tab="tasks">✅ Tasks<span class="tasks-badge" id="tasks-badge-lobby" style="display:none;position:relative;top:-2px;margin-left:4px;"></span></button>
+    <button class="lobby-tab" data-tab="battlepass">🌞 Pass</button>
     <button class="lobby-tab" data-tab="shop">🛍 Shop</button>
     <button class="lobby-tab" data-tab="leaderboard">🏅 Ranks</button>
   </div>
@@ -1855,13 +1856,16 @@
   <div id="micro-countdown-bar" style="
     flex-shrink:0; background:linear-gradient(90deg,rgba(200,162,60,0.08),rgba(200,162,60,0.04));
     border-bottom:1px solid rgba(200,162,60,0.15);
-    padding:8px 16px; display:flex; align-items:center; gap:10px;
+    padding:7px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
   ">
-    <span style="font-size:14px;">🪑</span>
-    <span style="font-family:'Orbitron',sans-serif;font-size:10px;color:var(--muted);letter-spacing:1px;">NEXT SIT & STAY</span>
-    <span id="micro-countdown" style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--accent);">—:——</span>
+    <span style="font-size:13px;">🪑</span>
+    <span style="font-family:'Orbitron',sans-serif;font-size:9px;color:var(--muted);letter-spacing:1px;">NEXT SIT &amp; STAY</span>
+    <span id="micro-countdown" style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:var(--accent);">—:——</span>
+    <span id="micro-player-count" style="font-family:sans-serif;font-size:10px;color:var(--muted);"></span>
     <span style="flex:1"></span>
-    <span id="micro-player-count" style="font-family:sans-serif;font-size:11px;color:var(--muted);"></span>
+    <span style="font-size:13px;">🛰️</span>
+    <span style="font-family:'Orbitron',sans-serif;font-size:9px;color:var(--muted);letter-spacing:1px;">NEXT SATELLITE</span>
+    <span id="micro-satellite-countdown" style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:#cd7f32;">—:——</span>
   </div>
 
   <!-- Filter bar (tournaments) -->
@@ -1913,6 +1917,10 @@
     <div id="tab-shop" style="display:none;padding:16px;max-width:520px;margin:0 auto;">
       <div id="shop-chip-balance" style="text-align:center;font-family:'Orbitron',sans-serif;font-size:13px;color:var(--accent);margin-bottom:16px;letter-spacing:1px;"></div>
       <div id="shop-content"></div>
+    </div>
+
+    <div id="tab-battlepass" style="display:none;padding:16px;max-width:520px;margin:0 auto;">
+      <div id="bp-inline-content"></div>
     </div>
 
     <div id="tab-leaderboard" style="display:none;padding:16px;max-width:480px;margin:0 auto;">
@@ -1998,7 +2006,13 @@
     </div>
     <div class="howto-step">
       <div class="howto-num">5</div>
-      <div class="howto-text">Every player starts with <strong>3 CHIPS</strong>. Lose all three and you're eliminated. Last player standing wins!</div>
+      <div class="howto-text">Every player starts with chips. Lose all of them and you're eliminated. Last player standing wins!
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
+          <div style="background:rgba(200,162,60,0.06);border:1px solid rgba(200,162,60,0.12);border-radius:8px;padding:8px 12px;font-family:sans-serif;font-size:12px;color:var(--muted);">🪑 <strong style="color:var(--text);">Sit &amp; Stay</strong> — starts with <strong style="color:var(--accent);">3 chips</strong></div>
+          <div style="background:rgba(205,127,50,0.06);border:1px solid rgba(205,127,50,0.15);border-radius:8px;padding:8px 12px;font-family:sans-serif;font-size:12px;color:var(--muted);">🛰️ <strong style="color:var(--text);">Satellites</strong> — starts with <strong style="color:#cd7f32;">2 chips</strong></div>
+          <div style="background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:8px;padding:8px 12px;font-family:sans-serif;font-size:12px;color:var(--muted);">⭐ <strong style="color:var(--text);">Championship</strong> — starts with <strong style="color:#ffd700;">2 chips</strong></div>
+        </div>
+      </div>
     </div>
     <div class="howto-step">
       <div class="howto-num">★</div>
@@ -2011,6 +2025,29 @@
           <span class="cv-item">K = 13 (highest + blocks pass)</span>
         </div>
       </div>
+    </div>
+
+    <!-- Tournament modes section -->
+    <div style="margin-top:8px;margin-bottom:4px;font-family:'Orbitron',sans-serif;font-size:11px;color:var(--accent);letter-spacing:2px;">GAME MODES</div>
+
+    <div class="howto-step">
+      <div class="howto-num">🪑</div>
+      <div class="howto-text"><strong>SIT &amp; STAY</strong> — Quick cash games. Pay a chip buy-in, play a single 10-player table. Top 3 win chips. Starts with <strong style="color:var(--accent);">3 chips</strong>. Games run continuously — join any time.</div>
+    </div>
+    <div class="howto-step">
+      <div class="howto-num">🛰️</div>
+      <div class="howto-text"><strong>SATELLITES</strong> — Free entry tournaments running every 3 hours (midnight, 3am, 6am … 9pm). Up to 24 players per satellite. Top finishers earn a <strong style="color:#cd7f32;">🏆 Weekly Ticket</strong>. Starts with <strong style="color:#cd7f32;">2 chips</strong>.</div>
+    </div>
+    <div class="howto-step">
+      <div class="howto-num">⭐</div>
+      <div class="howto-text"><strong>SATURDAY CHAMPIONSHIP</strong> — Requires a Weekly Ticket earned from a Satellite. Held every Saturday at 12pm, 3pm, 6pm, and 9pm. Win to earn a permanent 🏆 trophy on your profile. Starts with <strong style="color:#ffd700;">2 chips</strong>.</div>
+    </div>
+
+    <!-- Battle pass section -->
+    <div style="margin-top:8px;margin-bottom:4px;font-family:'Orbitron',sans-serif;font-size:11px;color:var(--accent);letter-spacing:2px;">BATTLE PASS</div>
+    <div class="howto-step">
+      <div class="howto-num">🌞</div>
+      <div class="howto-text"><strong>SEASONAL BATTLE PASS</strong> — Each season (quarterly) has 12 weekly prizes. Complete all 3 of your daily tasks at least once during a week to unlock that week's reward — chips, cosmetics, and a Season Champion badge for finishing all 12 weeks. The first season is the <strong style="color:#ffd700;">Summer Pass</strong>, launching mid-June.</div>
     </div>
   </div>
 </div>
@@ -2978,6 +3015,7 @@ let toastTimer=null, kingToastTimer=null;
 let soloPlayers=[], soloDealerIndex=0, soloCurrentIndex=0, soloTurnsTaken=0;
 let myTournamentId=null, tournamentCountdownInterval=null;
 let isTournamentGame=false;
+let _gameChipTotal=3; // 3 for SAS/solo, 2 for satellite/champ
 let gameTableBuilt=false; // true once we've built+dealt for the current game session
 let ssCountdownInterval = null;  // SAS waiting screen countdown
 let _ssLastPlayerCount = 0;
@@ -3014,8 +3052,7 @@ function showToast(msg,color='#fff',ms=3000){const el=document.getElementById('t
 function showKingToast(){const el=document.getElementById('king-toast');el.style.display='block';clearTimeout(kingToastTimer);kingToastTimer=setTimeout(()=>el.style.display='none',2200);}
 function cardKey(card){if(!card||card==='hidden')return 'back';const r=typeof card.rank==='number'?card.rank:RANK_NAME[card.rank];return `${r}_of_${SUIT_NAME[card.suit]}`;}
 
-function premiumChips(chips,danger){
-  const total=3;
+function premiumChips(chips,danger,total=3){
   return Array.from({length:total},(_,i)=>{
     if(i<chips){const cls=(danger||chips<=1)?'p-chip-dot danger':'p-chip-dot';return `<span class="${cls}"></span>`;}
     return '<span class="p-chip-dot empty"></span>';
@@ -3550,7 +3587,7 @@ function updateTable(revealAll=false){
         }
       }
     }
-    if(chipsEl)chipsEl.innerHTML=p.eliminated?'<span style="color:#333;font-size:9px;letter-spacing:1px;">OUT</span>':premiumChips(p.chips,p.chips<=1);
+    if(chipsEl)chipsEl.innerHTML=p.eliminated?'<span style="color:#333;font-size:9px;letter-spacing:1px;">OUT</span>':premiumChips(p.chips,p.chips<=1,_gameChipTotal);
   });
   updateHandArea();
 }
@@ -3564,7 +3601,7 @@ function updateHandArea(){
   const myAvatarEl = document.getElementById('my-avatar-display');
   myAvatarEl.innerHTML = avatarHtml(myAvatar, 44, 'width:44px;height:44px;border-radius:50%;');
   const chipsEl=document.getElementById('my-chips-dots');
-  chipsEl.innerHTML=me.eliminated?'<span style="color:#555;font-size:16px;">☠</span>':premiumChips(me.chips,me.chips<=1);
+  chipsEl.innerHTML=me.eliminated?'<span style="color:#555;font-size:16px;">☠</span>':premiumChips(me.chips,me.chips<=1,_gameChipTotal);
   document.getElementById('waiting-label').textContent=myTurn?'':me.eliminated?'Eliminated':'Waiting…';
   const handCanvas=document.getElementById('my-card-canvas');
   const handCtx=handCanvas.getContext('2d');
@@ -3658,7 +3695,7 @@ function renderTournamentList(list){
     banner.id = 'sat-champ-banner';
     banner.innerHTML = `<td colspan="7" style="padding:10px 12px;background:linear-gradient(90deg,rgba(255,215,0,0.06),rgba(255,215,0,0.02));border-bottom:1px solid rgba(255,215,0,0.12);">
       <span style="font-family:'Orbitron',sans-serif;font-size:10px;color:#ffd700;letter-spacing:1px;">⭐ SATURDAY CHAMPIONSHIP</span>
-      <span style="font-family:sans-serif;font-size:11px;color:var(--muted);margin-left:10px;">Every Saturday · 12pm, 3pm, 6pm, 9pm · Requires a 🏆 Weekly Ticket · Win a permanent trophy</span>
+      <span style="font-family:sans-serif;font-size:11px;color:var(--muted);margin-left:10px;">Every Saturday · 12pm, 3pm, 6pm, 9pm · Requires a 🏆 Weekly Ticket · 2 chips · Win a permanent trophy</span>
     </td>`;
     tbody.appendChild(banner);
   }
@@ -3694,7 +3731,7 @@ function renderTournamentList(list){
 
   // ── Build satellite rows (next upcoming occurrence, within 16 hours) ──
   const satelliteRows = [];
-  const dailyHours = [11, 14, 18, 22];
+  const dailyHours = [0, 3, 6, 9, 12, 15, 18, 21];
   dailyHours.forEach((hr) => {
     const now2 = new Date();
     const todaySlot = new Date(now2); todaySlot.setHours(hr,0,0,0); todaySlot.setMinutes(0); todaySlot.setSeconds(0); todaySlot.setMilliseconds(0);
@@ -3736,7 +3773,7 @@ function renderTournamentList(list){
     row.innerHTML = `
       <td class="col-start" style="color:#cd7f32;font-weight:700;">${fmtTime(slotDate)}<span class="col-date"> in ${countdownLabel(ms)}</span></td>
       <td class="col-buyin-ticket" style="color:#3aaa5a;font-weight:700;">FREE</td>
-      <td class="col-name">Satellite</td>
+      <td class="col-name">Satellite · 2 chips</td>
       <td class="col-prize-ticket" style="color:#ffd700;">🏆 Weekly Ticket (top 20)</td>
       <td class="col-state"><span class="t-badge ticket">SATELLITE</span></td>
       <td class="col-registered" style="color:#cd7f32;">${myDailyTickets} owned</td>
@@ -3769,7 +3806,7 @@ function renderTournamentList(list){
       const match = currentTournamentList.find(t =>
         t.type === 'daily' && Math.abs(t.startTime - slotDate.getTime()) < 60000
       );
-      const fake = match || { id: 'daily-'+hr+'-'+slotDate.getTime(), startTime: slotDate.getTime(), status: 'registering', playerCount: 0, maxPlayers: 10, buyIn: 0, isSas: false, label: 'Daily', type: 'daily' };
+      const fake = match || { id: 'daily-'+hr+'-'+slotDate.getTime(), startTime: slotDate.getTime(), status: 'registering', playerCount: 0, maxPlayers: 24, buyIn: 0, isSas: false, label: 'Daily', type: 'daily' };
       showDailyOrSatModal(fake, 'daily', slotDate, myDailyTickets, hr);
     });
     return row;
@@ -4113,6 +4150,14 @@ function initSocket(){
   socket.on('gameState',state=>{
     players=state.players;currentPlayerId=state.currentPlayerId;myTurn=currentPlayerId===myId;
     isTournamentGame=!!state.isTournament;
+    // Determine chip total for display (satellite/champ = 2, everything else = 3)
+    const tTypeNow = state.tournamentType || '';
+    _gameChipTotal = (tTypeNow === 'satellite' || tTypeNow === 'daily' || tTypeNow === 'saturday') ? 2 : 3;
+    // Infer from actual player chip counts on first state if server doesn't send type
+    if (!tTypeNow && state.players && state.players.length > 0) {
+      const maxChips = Math.max(...state.players.map(p => p.chips || 0));
+      if (maxChips <= 2) _gameChipTotal = 2;
+    }
     players.forEach((p,i)=>{ if(p.seatIndex===undefined) p.seatIndex=i; });
     const cur=players.find(p=>p.id===currentPlayerId);
     document.getElementById('turn-banner').textContent=myTurn?'🎯 Your turn!':`${cur?.name??'…'} is thinking…`;
@@ -4177,7 +4222,7 @@ function initSocket(){
     const tType = data.tournamentType || (isTournamentGame ? 'micro' : null);
     // Clear all registration flags
     [12,15,18,21].forEach(h=>window[`_satReg_${h}`]=false);
-    [14,18,22].forEach(h=>window[`_dailyReg_${h}`]=false);
+    [0,3,6,9,12,15,18,21].forEach(h=>window[`_dailyReg_${h}`]=false);
 
     // Final table — all participants earn a weekly ticket
     if (data.earnedWeeklyTicket) {
@@ -4202,6 +4247,25 @@ function initSocket(){
       document.getElementById('over-winner').textContent = data.winner.name;
       document.getElementById('game-over').classList.add('show');
       showToast('🏆 Final Table complete — Weekly Ticket earned!', '#ffd700', 4000);
+      recordGameResult(iWon, placement, tType);
+      return;
+    }
+
+    // ── Satellite elimination → placement popup ──
+    if (tType === 'satellite' || tType === 'daily') {
+      const totalPlayers = data.totalPlayers || (data.allPlayers ? data.allPlayers.length : 0);
+      setTimeout(() => {
+        if (typeof showPlacementModal === 'function') showPlacementModal(placement, 'Satellite');
+      }, 800);
+      recordGameResult(iWon, placement, tType);
+      return;
+    }
+
+    // ── Saturday Championship elimination → placement popup ──
+    if (tType === 'saturday') {
+      setTimeout(() => {
+        if (typeof showPlacementModal === 'function') showPlacementModal(placement, 'Saturday Championship');
+      }, 800);
       recordGameResult(iWon, placement, tType);
       return;
     }
@@ -4251,7 +4315,7 @@ function soloAlive(){return soloPlayers.filter(p=>!p.eliminated&&p.chips>0);}
 function soloNextAlive(from,step=1){const n=soloPlayers.length;let idx=from;for(let i=0;i<n*2;i++){idx=((idx+step)%n+n)%n;if(!soloPlayers[idx].eliminated&&soloPlayers[idx].chips>0)return idx;}return -1;}
 
 function startSolo(name,seats){
-  isSolo=true;isTournamentGame=false;gameTableBuilt=true;
+  isSolo=true;isTournamentGame=false;gameTableBuilt=true;_gameChipTotal=3;
   const botNames=['Alex','Sam','Jordan','Taylor','Morgan','Casey','Riley','Quinn','Avery'];
   soloPlayers=Array.from({length:seats},(_,i)=>({
     id:i===0?'human':`bot_${i}`,name:i===0?name:botNames[(i-1)%botNames.length],
@@ -4490,7 +4554,7 @@ function animateDeckExchange(playerId, onDone){
   });
 }
 function switchLobbyTab(tabName) {
-  const tabs = ['tournaments','quickplay','tables','tasks','shop','leaderboard'];
+  const tabs = ['tournaments','quickplay','tables','tasks','shop','leaderboard','battlepass'];
   document.querySelectorAll('.lobby-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
   tabs.forEach(t => {
     const el = document.getElementById('tab-' + t);
@@ -4501,6 +4565,7 @@ function switchLobbyTab(tabName) {
   if (tabName === 'tasks') renderTasksScreenInline();
   if (tabName === 'leaderboard') renderLobbyLeaderboard();
   if (tabName === 'shop') renderShop();
+  if (tabName === 'battlepass') renderBattlePassInline();
 }
 window.switchLobbyTab = switchLobbyTab;
 
@@ -4769,14 +4834,40 @@ function initLobbyTabs(){
     const el=document.getElementById('micro-countdown');
     const playerEl=document.getElementById('micro-player-count');
     if(!el)return;
-    if(!nextMicro){el.textContent='—:——';return;}
-    const ms=Math.max(0,nextMicro.startTime-now);
-    const m=Math.floor(ms/60000);
-    const s=Math.floor((ms%60000)/1000);
-    el.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    if(playerEl)playerEl.textContent=nextMicro.playerCount>0?`${nextMicro.playerCount} registered`:'';
-    // Pulse red when under 30s
-    el.style.color=ms<30000?'#ff4d4f':'var(--accent)';
+    if(!nextMicro){el.textContent='—:——';}
+    else {
+      const ms=Math.max(0,nextMicro.startTime-now);
+      const m=Math.floor(ms/60000);
+      const s=Math.floor((ms%60000)/1000);
+      el.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      if(playerEl)playerEl.textContent=nextMicro.playerCount>0?`${nextMicro.playerCount} registered`:'';
+      el.style.color=ms<30000?'#ff4d4f':'var(--accent)';
+    }
+    // ── Next satellite countdown ──
+    const satEl=document.getElementById('micro-satellite-countdown');
+    if(satEl){
+      const SATELLITE_HOURS=[0,3,6,9,12,15,18,21];
+      const nowD=new Date();
+      let nextSatMs=Infinity;
+      SATELLITE_HOURS.forEach(hr=>{
+        const slot=new Date(nowD);slot.setHours(hr,0,0,0);slot.setSeconds(0);slot.setMilliseconds(0);
+        if(slot<=nowD) slot.setDate(slot.getDate()+1);
+        const diff=slot-nowD;
+        if(diff<nextSatMs) nextSatMs=diff;
+      });
+      if(nextSatMs===Infinity){satEl.textContent='—:——';}
+      else if(nextSatMs>3600000){
+        const h=Math.floor(nextSatMs/3600000);
+        const m=Math.floor((nextSatMs%3600000)/60000);
+        satEl.textContent=`${h}h ${String(m).padStart(2,'0')}m`;
+        satEl.style.color='#cd7f32';
+      } else {
+        const m=Math.floor(nextSatMs/60000);
+        const s=Math.floor((nextSatMs%60000)/1000);
+        satEl.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        satEl.style.color=nextSatMs<30000?'#ff4d4f':'#cd7f32';
+      }
+    }
   }
   updateMicroCountdown();
   setInterval(updateMicroCountdown,1000);
@@ -5045,6 +5136,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   document.getElementById('btn-back-howto').addEventListener('click',()=>showScreen('screen-lobby'));
   document.getElementById('btn-back-howto').addEventListener('touchend',(e)=>{e.preventDefault();showScreen('screen-lobby');});
+  document.getElementById('btn-back-battlepass')?.addEventListener('click',()=>showScreen('screen-lobby'));
+  document.getElementById('btn-back-battlepass')?.addEventListener('touchend',(e)=>{e.preventDefault();showScreen('screen-lobby');});
   // btn-lobby-back removed — lobby is now the home screen
 
   // Seat selectors
@@ -5282,6 +5375,18 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   function saveDailyTasks(tasks) {
     localStorage.setItem(getTodayKey(), JSON.stringify(tasks));
+    // Check if all tasks for today are now claimed — award battle pass week progress
+    if (typeof recordBattlePassProgress === 'function') {
+      const allClaimed = tasks.every(t => t.claimed);
+      if (allClaimed) {
+        // Only fire once per day — store flag keyed to today
+        const bpKey = 'pta_bp_day_' + getTodayKey();
+        if (!localStorage.getItem(bpKey)) {
+          localStorage.setItem(bpKey, '1');
+          setTimeout(() => recordBattlePassProgress(), 500);
+        }
+      }
+    }
   }
   window.loadDailyTasks = loadDailyTasks;
   window.saveDailyTasks = saveDailyTasks;
@@ -5508,7 +5613,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('btn-quick-play-tab')?.addEventListener('click', () => {
     const name = document.getElementById('inp-name-quick')?.value.trim() || userProfile?.displayName || 'Player';
     if (!name) { showToast('Enter your name first', '#ff4d4f'); return; }
-    isSolo = true; isTournamentGame = false;
+    isSolo = true; isTournamentGame = false; _gameChipTotal = 3;
     myAvatar = selectedAvatarQuick;
     const BOT_NAMES=['Morgan','Taylor','Casey','Jordan','Riley','Sam','Alex','Avery','Quinn','Blake'];
     soloPlayers=[{id:'human',name,avatar:myAvatar,chips:3,eliminated:false,card:null,seatIndex:0,isHuman:true}];
@@ -5623,7 +5728,113 @@ document.addEventListener('DOMContentLoaded',()=>{
   window.joinSasQueue = joinSasQueue;
   window.checkDailyBonus = checkDailyBonus;
   window.showSasResults = showSasResults;
+
+  // ── Placement popup (satellite / champ) ──
+  function showPlacementModal(placement, tournamentLabel) {
+    const placeEmojis = ['🥇','🥈','🥉'];
+    const placeLabels = ['1st Place','2nd Place','3rd Place'];
+    const emoji = placeEmojis[placement - 1] || '🃏';
+    const label = placeLabels[placement - 1] || `${placement}th Place`;
+    document.getElementById('placement-emoji').textContent = emoji;
+    document.getElementById('placement-title').textContent = tournamentLabel || 'Tournament Over';
+    document.getElementById('placement-place').textContent = `You placed ${label}`;
+    document.getElementById('placement-sub').textContent =
+      placement <= 3 ? 'Well played! Check your rewards.' : 'Better luck next time!';
+    document.getElementById('placement-modal').style.display = 'grid';
+  }
+  window.showPlacementModal = showPlacementModal;
+
+  document.getElementById('btn-placement-lobby')?.addEventListener('click', () => {
+    document.getElementById('placement-modal').style.display = 'none';
+    document.getElementById('game-over').classList.remove('show');
+    document.getElementById('hand-area').classList.remove('visible');
+    isSolo = false; isTournamentGame = false; gameTableBuilt = false; myId = socket?.id || null;
+    showScreen('screen-lobby');
+  });
 });
+</script>
+
+<script>
+// ── Battle Pass inline renderer (runs outside DOMContentLoaded so it can use renderBattlePass) ──
+function renderBattlePassInline() {
+  const container = document.getElementById('bp-inline-content');
+  if (!container) return;
+  const season = (typeof getCurrentSeason === 'function') ? getCurrentSeason() : null;
+  if (!season) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);font-family:sans-serif;">No active season</div>';
+    return;
+  }
+  const save = getBattlePassSave();
+  const sd = save[season.id] || { weeksCompleted: [], weeksClaimed: [] };
+  const currentWeek = getSeasonWeek(season);
+  const doneCount = sd.weeksCompleted.length;
+
+  container.innerHTML = '';
+
+  // Header
+  const header = document.createElement('div');
+  header.style.cssText = 'text-align:center;margin-bottom:16px;';
+  header.innerHTML = `
+    <div style="font-size:28px;margin-bottom:6px;">${season.emoji}</div>
+    <div style="font-family:'Playfair Display',serif;font-size:18px;background:linear-gradient(90deg,#ffd700,#ffaa00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;">${season.name}</div>
+    <div style="font-family:sans-serif;font-size:11px;color:var(--muted);margin-top:4px;">${season.start.toLocaleDateString([],{month:'short',day:'numeric'})} – ${season.end.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'})}</div>
+  `;
+  container.appendChild(header);
+
+  // Progress bar
+  const progWrap = document.createElement('div');
+  progWrap.style.cssText = 'background:rgba(200,162,60,0.06);border:1px solid rgba(200,162,60,0.12);border-radius:10px;padding:12px 14px;margin-bottom:16px;';
+  progWrap.innerHTML = `
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+      <span style="font-family:'Orbitron',sans-serif;font-size:9px;color:var(--muted);letter-spacing:1px;">SEASON PROGRESS</span>
+      <span style="font-family:'Orbitron',sans-serif;font-size:10px;color:var(--accent);">${doneCount}/${season.weeks} weeks</span>
+    </div>
+    <div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.07);overflow:hidden;">
+      <div style="height:100%;width:${Math.round((doneCount/season.weeks)*100)}%;border-radius:3px;background:linear-gradient(90deg,#b8860b,#ffd700);"></div>
+    </div>
+    <div style="font-family:sans-serif;font-size:11px;color:var(--muted);margin-top:8px;">Complete all 3 daily tasks in a week to unlock that week's reward.</div>
+  `;
+  container.appendChild(progWrap);
+
+  // Week rows
+  season.prizes.forEach(prize => {
+    const w = prize.week;
+    const isCompleted = sd.weeksCompleted.includes(w);
+    const isClaimed   = sd.weeksClaimed.includes(w);
+    const isCurrent   = w === currentWeek;
+    const isFuture    = w > currentWeek;
+    const canClaim    = isCompleted && !isClaimed;
+
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid ${isClaimed?'rgba(58,170,90,0.35)':canClaim?'rgba(255,215,0,0.45)':isCurrent?'rgba(200,162,60,0.25)':'rgba(200,162,60,0.08)'};background:${isClaimed?'linear-gradient(135deg,#070e08,#050a06)':'linear-gradient(135deg,#0e0c06,#090700)'};margin-bottom:8px;${isFuture&&!isCurrent?'opacity:0.5':''}`;
+
+    const badge = document.createElement('div');
+    badge.style.cssText = `width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;background:${isClaimed?'rgba(58,170,90,0.15)':'rgba(200,162,60,0.08)'};border:1px solid ${isClaimed?'rgba(58,170,90,0.3)':'rgba(200,162,60,0.15)'};color:${isClaimed?'#3aaa5a':'var(--muted)'};`;
+    badge.textContent = `W${w}`;
+
+    const info = document.createElement('div');
+    info.style.cssText = 'flex:1;';
+    info.innerHTML = `<div style="font-size:12px;font-weight:700;color:${isClaimed?'var(--muted)':'var(--text)'};">${prize.icon} ${prize.label}</div><div style="font-family:sans-serif;font-size:10px;color:var(--muted);margin-top:2px;">${isClaimed?'✅ Claimed':canClaim?'🎁 Ready to claim!':isCurrent?'📅 Current week':isFuture?'🔒 Locked':'⏳ Not yet completed'}</div>`;
+
+    row.appendChild(badge);
+    row.appendChild(info);
+
+    if (canClaim) {
+      const btn = document.createElement('button');
+      btn.style.cssText = 'padding:7px 14px;border-radius:7px;border:0;background:linear-gradient(135deg,#b8860b,#ffd700);color:#001018;font-weight:700;font-size:10px;font-family:\'Orbitron\',sans-serif;cursor:pointer;white-space:nowrap;';
+      btn.textContent = 'Claim!';
+      btn.onclick = () => { claimBattlePassReward(season, w).then(()=>renderBattlePassInline()); };
+      row.appendChild(btn);
+    } else if (isClaimed) {
+      const t = document.createElement('div');
+      t.textContent = '✅';
+      t.style.cssText = 'font-size:18px;flex-shrink:0;';
+      row.appendChild(t);
+    }
+
+    container.appendChild(row);
+  });
+}
 </script>
 
 <!-- ── AUDIO SYSTEM ── -->
@@ -6315,5 +6526,214 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </div>
 </div>
+
+<!-- ── PLACEMENT POPUP (Satellite / Champ elimination) ── -->
+<div id="placement-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.88);place-items:center;">
+  <div style="background:linear-gradient(135deg,#18140a,#0e0c07);border:1px solid rgba(200,162,60,0.3);border-radius:20px;padding:36px 28px;width:min(320px,90vw);text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center;box-shadow:0 20px 60px rgba(0,0,0,0.8);animation:task-pop .35s cubic-bezier(0.22,1,0.36,1);">
+    <div id="placement-emoji" style="font-size:56px;">🃏</div>
+    <div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--text);" id="placement-title">Tournament Over</div>
+    <div style="font-family:'Orbitron',sans-serif;font-size:28px;font-weight:700;background:linear-gradient(90deg,#ffd700,#ffaa00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;" id="placement-place">—</div>
+    <div style="font-family:sans-serif;font-size:13px;color:var(--muted);" id="placement-sub">Thanks for playing</div>
+    <button class="btn-primary" id="btn-placement-lobby" style="margin-top:4px;width:100%;">Return to Lobby</button>
+  </div>
+</div>
+
+<!-- ── BATTLE PASS SCREEN ── -->
+<div id="screen-battlepass" class="screen">
+  <div style="background:var(--bg);min-height:100%;padding:60px 16px 40px;">
+    <div style="width:min(520px,96vw);margin:0 auto;">
+      <button class="lobby-back" id="btn-back-battlepass">← BACK</button>
+
+      <!-- Season header -->
+      <div style="text-align:center;margin:16px 0 8px;">
+        <div style="font-size:32px;margin-bottom:8px;">🌞</div>
+        <div style="font-family:'Playfair Display',serif;font-size:22px;background:linear-gradient(90deg,#ffd700,#ffaa00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;" id="bp-season-name">SUMMER PASS</div>
+        <div style="font-family:sans-serif;font-size:12px;color:var(--muted);margin-top:4px;" id="bp-season-dates">Jun 16 – Sep 14, 2025</div>
+      </div>
+
+      <!-- Season progress bar -->
+      <div style="background:rgba(200,162,60,0.08);border:1px solid rgba(200,162,60,0.15);border-radius:12px;padding:14px 16px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-family:'Orbitron',sans-serif;font-size:10px;color:var(--muted);letter-spacing:1px;">SEASON PROGRESS</span>
+          <span style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--accent);" id="bp-weeks-done">0 / 12 weeks</span>
+        </div>
+        <div style="height:6px;border-radius:3px;background:rgba(255,255,255,0.07);overflow:hidden;">
+          <div id="bp-season-bar" style="height:100%;border-radius:3px;background:linear-gradient(90deg,#b8860b,#ffd700);transition:width 0.5s ease;width:0%;"></div>
+        </div>
+        <div style="font-family:sans-serif;font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6;">Complete all 3 daily tasks at least once during a week to unlock that week's reward. Prizes are claimable until the season ends.</div>
+      </div>
+
+      <!-- Week grid -->
+      <div id="bp-week-grid" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+      <!-- How it works -->
+      <div style="margin-top:24px;padding:14px 16px;background:rgba(200,162,60,0.04);border:1px solid rgba(200,162,60,0.1);border-radius:12px;">
+        <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:var(--accent);letter-spacing:1.5px;margin-bottom:8px;">HOW IT WORKS</div>
+        <div style="font-family:sans-serif;font-size:12px;color:var(--muted);line-height:1.7;">
+          Each week, complete all 3 of your daily tasks at least once to earn that week's Battle Pass reward. A new set of daily tasks rotates every 24 hours — you have all week to get each one done. Complete all 12 weeks for the full season bonus!
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  BATTLE PASS SYSTEM
+// ═══════════════════════════════════════════
+
+const BATTLE_PASS_SEASONS = [
+  {
+    id: 'summer_2025',
+    name: 'SUMMER PASS',
+    emoji: '🌞',
+    start: new Date('2025-06-16T00:00:00'),
+    end:   new Date('2025-09-14T23:59:59'),
+    weeks: 12,
+    prizes: [
+      { week:1,  chips:500,  label:'500 chips',          icon:'🪙' },
+      { week:2,  chips:600,  label:'600 chips',          icon:'🪙' },
+      { week:3,  chips:750,  label:'750 chips',          icon:'🪙' },
+      { week:4,  chips:0,    label:'Bronze Card Back',   icon:'🎴', cosmetic:'summer_bronze' },
+      { week:5,  chips:800,  label:'800 chips',          icon:'🪙' },
+      { week:6,  chips:900,  label:'900 chips',          icon:'🪙' },
+      { week:7,  chips:1000, label:'1,000 chips',        icon:'🪙' },
+      { week:8,  chips:0,    label:'Gold Avatar Frame',  icon:'✨', cosmetic:'summer_gold_frame' },
+      { week:9,  chips:1200, label:'1,200 chips',        icon:'🪙' },
+      { week:10, chips:1500, label:'1,500 chips',        icon:'🪙' },
+      { week:11, chips:2000, label:'2,000 chips',        icon:'🪙' },
+      { week:12, chips:0,    label:'Season Champion Badge', icon:'🏆', cosmetic:'summer_champion' },
+    ]
+  }
+];
+
+function getBattlePassSave() {
+  try { return JSON.parse(localStorage.getItem('pta_battlepass') || '{}'); } catch(e) { return {}; }
+}
+function saveBattlePass(data) {
+  localStorage.setItem('pta_battlepass', JSON.stringify(data));
+}
+
+function getCurrentSeason() {
+  const now = new Date();
+  return BATTLE_PASS_SEASONS.find(s => now >= s.start && now <= s.end) || BATTLE_PASS_SEASONS[0];
+}
+
+// Returns the ISO week number within a season (1-based)
+function getSeasonWeek(season, date) {
+  const d = date || new Date();
+  const msFromStart = d - season.start;
+  if (msFromStart < 0) return 0;
+  return Math.min(season.weeks, Math.floor(msFromStart / (7 * 86400000)) + 1);
+}
+
+// Record that all 3 daily tasks were completed for today — called from task system
+function recordBattlePassProgress() {
+  const season = getCurrentSeason();
+  if (!season) return;
+  const save = getBattlePassSave();
+  if (!save[season.id]) save[season.id] = { weeksCompleted: [], weeksClaimed: [] };
+  const currentWeek = getSeasonWeek(season);
+  if (currentWeek < 1 || currentWeek > season.weeks) return;
+  if (!save[season.id].weeksCompleted.includes(currentWeek)) {
+    save[season.id].weeksCompleted.push(currentWeek);
+    saveBattlePass(save);
+    showToast(`🌞 Battle Pass Week ${currentWeek} unlocked! Open your Pass to claim.`, '#ffd700', 4000);
+  }
+}
+window.recordBattlePassProgress = recordBattlePassProgress;
+
+async function claimBattlePassReward(season, weekNum) {
+  const save = getBattlePassSave();
+  const sd = save[season.id];
+  if (!sd || !sd.weeksCompleted.includes(weekNum)) return;
+  if (sd.weeksClaimed.includes(weekNum)) return;
+  sd.weeksClaimed.push(weekNum);
+  saveBattlePass(save);
+  const prize = season.prizes.find(p => p.week === weekNum);
+  if (!prize) return;
+  if (prize.chips > 0) {
+    await updateChipBalance(prize.chips);
+    showToast(`🌞 Week ${weekNum} reward claimed: +${prize.chips.toLocaleString()} chips!`, '#ffd700', 3500);
+  } else {
+    showToast(`🌞 Week ${weekNum} reward claimed: ${prize.label}!`, '#ffd700', 3500);
+  }
+  renderBattlePass();
+}
+
+function renderBattlePass() {
+  const season = getCurrentSeason();
+  const save = getBattlePassSave();
+  const sd = save[season.id] || { weeksCompleted: [], weeksClaimed: [] };
+  const currentWeek = getSeasonWeek(season);
+  const doneCount = sd.weeksCompleted.length;
+
+  document.getElementById('bp-season-name').textContent = season.name;
+  document.getElementById('bp-season-dates').textContent =
+    season.start.toLocaleDateString([], {month:'short', day:'numeric'}) + ' – ' +
+    season.end.toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'});
+  document.getElementById('bp-weeks-done').textContent = `${doneCount} / ${season.weeks} weeks`;
+  document.getElementById('bp-season-bar').style.width = Math.round((doneCount / season.weeks) * 100) + '%';
+
+  const grid = document.getElementById('bp-week-grid');
+  grid.innerHTML = '';
+
+  season.prizes.forEach(prize => {
+    const w = prize.week;
+    const isCompleted = sd.weeksCompleted.includes(w);
+    const isClaimed   = sd.weeksClaimed.includes(w);
+    const isCurrent   = w === currentWeek;
+    const isFuture    = w > currentWeek;
+    const canClaim    = isCompleted && !isClaimed;
+
+    let borderColor = 'rgba(200,162,60,0.1)';
+    if (isClaimed)    borderColor = 'rgba(58,170,90,0.4)';
+    else if (canClaim) borderColor = 'rgba(255,215,0,0.5)';
+    else if (isCurrent) borderColor = 'rgba(200,162,60,0.3)';
+
+    let bgColor = 'linear-gradient(135deg,#0e0c06,#090700)';
+    if (isClaimed)    bgColor = 'linear-gradient(135deg,#070e08,#050a06)';
+
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:1px solid ${borderColor};background:${bgColor};transition:border-color .2s;${isFuture?'opacity:0.5':''}`;
+
+    // Week badge
+    const badge = document.createElement('div');
+    badge.style.cssText = `width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;flex-shrink:0;background:${isClaimed?'rgba(58,170,90,0.2)':isCurrent?'rgba(200,162,60,0.15)':'rgba(200,162,60,0.06)'};border:1px solid ${isClaimed?'rgba(58,170,90,0.4)':isCurrent?'rgba(200,162,60,0.4)':'rgba(200,162,60,0.1)'};color:${isClaimed?'#3aaa5a':isCurrent?'var(--accent)':'var(--muted)'};`;
+    badge.textContent = `W${w}`;
+
+    // Prize info
+    const info = document.createElement('div');
+    info.style.cssText = 'flex:1;';
+    info.innerHTML = `
+      <div style="font-size:13px;font-weight:700;color:${isClaimed?'var(--muted)':'var(--text)'};margin-bottom:2px;">${prize.icon} ${prize.label}</div>
+      <div style="font-family:sans-serif;font-size:11px;color:var(--muted);">${isClaimed?'✅ Claimed':isCurrent?'📅 Current week':isFuture?'🔒 Locked':'Complete all 3 daily tasks'}</div>
+    `;
+
+    row.appendChild(badge);
+    row.appendChild(info);
+
+    if (canClaim) {
+      const btn = document.createElement('button');
+      btn.style.cssText = 'padding:8px 16px;border-radius:8px;border:0;background:linear-gradient(135deg,#b8860b,#ffd700);color:#001018;font-weight:700;font-size:11px;font-family:\'Orbitron\',sans-serif;cursor:pointer;white-space:nowrap;';
+      btn.textContent = 'Claim!';
+      btn.onclick = () => claimBattlePassReward(season, w);
+      row.appendChild(btn);
+    } else if (isClaimed) {
+      const tick = document.createElement('div');
+      tick.style.cssText = 'font-size:20px;flex-shrink:0;';
+      tick.textContent = '✅';
+      row.appendChild(tick);
+    } else if (!isFuture && !isCurrent) {
+      const lock = document.createElement('div');
+      lock.style.cssText = 'font-size:18px;flex-shrink:0;color:var(--muted);';
+      lock.textContent = '⏳';
+      row.appendChild(lock);
+    }
+
+    grid.appendChild(row);
+  });
+}
+</script>
 </body>
 </html>
