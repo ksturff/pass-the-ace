@@ -21,9 +21,11 @@ const RANK_VALUE = {2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,J:11,Q:12,K:13,A:1};
 const CHIPS_START = 3;
 const BOT_DELAY_MS = 1200;
 const MAX_PLAYERS_MICRO    = 10;
-const MAX_PLAYERS_DAILY    = 50;
+const MAX_PLAYERS_DAILY    = 500; // unlimited registrations — split into tables of 10
 const MAX_PLAYERS_SATURDAY = 200;
 const TOURNAMENT_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
+const FINAL_TABLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 min max wait for final table
+const TABLE_SIZE = 10;
 const BOT_NAMES = ['Alex','Sam','Jordan','Taylor','Morgan','Casey','Riley','Quinn','Avery','Blake'];
 const BOT_AVATARS = ['🐺','🦁','🐯','🦅','🐉','🦈','👾','🤖','💀','🦂'];
 
@@ -197,13 +199,18 @@ setInterval(() => {
 }, 10000);
 
 function startTournament(t) {
+  // ── DAILY: multi-table bracket ──
+  if (t.type === 'daily') {
+    startDailySatellite(t);
+    return;
+  }
+
+  // ── MICRO / SATURDAY: single table as before ──
   t.status = 'inProgress';
   t.placements = {};
-  t.eliminationOrder = []; // track order eliminated
+  t.eliminationOrder = [];
 
   const maxPlayers = maxPlayersForType(t.type);
-
-  // Fill empty seats with bots (micro only — daily/saturday need real players)
   const seats = [...t.players];
   if (t.type === 'micro') {
     let botIdx = 0;
@@ -220,14 +227,177 @@ function startTournament(t) {
   }
 
   seats.forEach(p => { p.chips = CHIPS_START; p.eliminated = false; p.card = null; });
-
   t.players.forEach(p => {
     io.to(p.id).emit('tournamentStarting', { tournamentId: t.id, tournamentType: t.type });
   });
-
   t.allPlayers = seats;
   t.gameState = null;
   startTournamentGame(t);
+}
+
+// ─────────────────────────────────────────
+//  DAILY SATELLITE — MULTI-TABLE BRACKET
+// ─────────────────────────────────────────
+function makeBotPlayer(tableId, botIdx) {
+  return {
+    id: `bot_${tableId}_${botIdx}`,
+    name: BOT_NAMES[botIdx % BOT_NAMES.length],
+    avatar: BOT_AVATARS[botIdx % BOT_AVATARS.length],
+    chips: CHIPS_START, eliminated: false, card: null,
+    seatIndex: botIdx, isBot: true
+  };
+}
+
+function startDailySatellite(t) {
+  t.status = 'inProgress';
+  t.phase = 'qualifying';
+  t.qualifyingTables = [];     // array of table tournament objects
+  t.finalTableWinners = [];    // real player objects who won their table
+  t.tablesFinished = 0;
+  t.finalTableStarted = false;
+  t.finalTableTimer = null;
+
+  const players = [...t.players];
+
+  // Shuffle players for random table assignment
+  for (let i = players.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [players[i], players[j]] = [players[j], players[i]];
+  }
+
+  // Split into tables of TABLE_SIZE, fill last table with bots if needed
+  const tables = [];
+  for (let i = 0; i < players.length; i += TABLE_SIZE) {
+    tables.push(players.slice(i, i + TABLE_SIZE));
+  }
+  if (tables.length === 0) {
+    // No real players — cancel
+    t.status = 'finished';
+    return;
+  }
+
+  console.log(`[Satellite ${t.id}] ${players.length} players → ${tables.length} qualifying tables`);
+
+  tables.forEach((tablePlayers, tableIdx) => {
+    const tableId = `${t.id}_table_${tableIdx}`;
+    const seats = [...tablePlayers];
+
+    // Fill with bots if needed
+    let botIdx = 0;
+    while (seats.length < TABLE_SIZE) {
+      seats.push(makeBotPlayer(tableId, botIdx++));
+    }
+    seats.forEach((p, i) => { p.chips = CHIPS_START; p.eliminated = false; p.card = null; p.seatIndex = i; });
+
+    const tableT = {
+      id: tableId,
+      type: 'daily_table',
+      parentId: t.id,
+      tableIdx,
+      allPlayers: seats,
+      players: tablePlayers, // real players only
+      gameState: null,
+      status: 'inProgress',
+      winners: [],
+      eliminationOrder: [],
+      placements: {},
+      isSas: false,
+    };
+
+    tournaments.set(tableId, tableT);
+    t.qualifyingTables.push(tableT);
+
+    // Notify real players at this table
+    tablePlayers.forEach(p => {
+      io.to(p.id).emit('tournamentStarting', {
+        tournamentId: tableId,
+        tournamentType: 'daily_table',
+        tableNumber: tableIdx + 1,
+        totalTables: tables.length,
+      });
+    });
+
+    startTournamentGame(tableT);
+  });
+
+  // Safety timeout — fire Final Table after 5 minutes regardless
+  t.finalTableTimer = setTimeout(() => {
+    if (!t.finalTableStarted) {
+      console.log(`[Satellite ${t.id}] Timeout — launching Final Table with ${t.finalTableWinners.length} winners`);
+      launchFinalTable(t);
+    }
+  }, FINAL_TABLE_TIMEOUT_MS);
+}
+
+function onQualifyingTableFinished(parentT, tableT, winner) {
+  parentT.tablesFinished++;
+  if (winner && !winner.isBot) {
+    parentT.finalTableWinners.push(winner);
+    console.log(`[Satellite ${parentT.id}] Table ${tableT.tableIdx + 1} done — ${winner.name} advances`);
+  } else {
+    console.log(`[Satellite ${parentT.id}] Table ${tableT.tableIdx + 1} done — bot won, no human advances`);
+  }
+
+  // All tables finished — launch Final Table immediately
+  if (parentT.tablesFinished >= parentT.qualifyingTables.length) {
+    if (parentT.finalTableTimer) clearTimeout(parentT.finalTableTimer);
+    launchFinalTable(parentT);
+  }
+}
+
+function launchFinalTable(parentT) {
+  if (parentT.finalTableStarted) return;
+  parentT.finalTableStarted = true;
+  parentT.phase = 'final';
+
+  const finalId = `${parentT.id}_final`;
+  const winners = [...parentT.finalTableWinners];
+
+  // Fill to TABLE_SIZE with bots
+  const seats = [...winners];
+  let botIdx = 0;
+  while (seats.length < TABLE_SIZE) {
+    seats.push(makeBotPlayer(finalId, botIdx++));
+  }
+  seats.forEach((p, i) => { p.chips = CHIPS_START; p.eliminated = false; p.card = null; p.seatIndex = i; });
+
+  const finalT = {
+    id: finalId,
+    type: 'daily_final',
+    parentId: parentT.id,
+    allPlayers: seats,
+    players: winners, // real players only
+    gameState: null,
+    status: 'inProgress',
+    winners: [],
+    eliminationOrder: [],
+    placements: {},
+    isSas: false,
+    isFinal: true,
+  };
+
+  tournaments.set(finalId, finalT);
+
+  console.log(`[Satellite ${parentT.id}] Launching Final Table with ${winners.length} real players`);
+
+  // Notify advancing players
+  winners.forEach(p => {
+    io.to(p.id).emit('advancingToFinal', {
+      tournamentId: finalId,
+      message: `You won your table! Advancing to the Final Table...`,
+    });
+  });
+
+  // Small delay so players see the advancing screen
+  setTimeout(() => {
+    winners.forEach(p => {
+      io.to(p.id).emit('tournamentStarting', {
+        tournamentId: finalId,
+        tournamentType: 'daily_final',
+      });
+    });
+    startTournamentGame(finalT);
+  }, 3000);
 }
 
 // ─────────────────────────────────────────
@@ -468,10 +638,40 @@ function endTournamentRound(t) {
       });
     }
 
+    // ── QUALIFYING TABLE: notify losers, signal parent satellite ──
+    if (t.type === 'daily_table') {
+      const parentT = t.parentId && tournaments.get(t.parentId);
+
+      humanPlayers.forEach(player => {
+        const playerPlacement = placements[player.id] || 99;
+        const isWinner = playerPlacement === 1 && !winner.isBot && winner.id === player.id;
+        if (isWinner) {
+          // Winner sees "advancing" screen — handled by onQualifyingTableFinished
+        } else {
+          // Losers get a game over with context
+          io.to(player.id).emit('gameOver', {
+            winner: { name: winner.name, id: winner.id },
+            isTournament: true,
+            tournamentType: 'daily_table',
+            placements,
+            sasPayouts: null,
+            earnedWeeklyTicket: false,
+            eliminated: true,
+            message: 'You didn\'t advance to the Final Table. Better luck next time!',
+          });
+        }
+      });
+
+      if (parentT) onQualifyingTableFinished(parentT, t, winner.isBot ? null : winner);
+      io.emit('tournamentList', getPublicTournaments());
+      return;
+    }
+
+    // ── FINAL TABLE: all real players earn a Saturday ticket ──
     t.allPlayers.filter(p => !p.isBot).forEach(player => {
       const playerPlacement = placements[player.id] || 99;
-      // Satellites: top 20 earn a weekly ticket
-      const earnedWeeklyTicket = t.type === 'daily' && playerPlacement <= 20;
+      const earnedWeeklyTicket = t.type === 'daily_final'; // ALL final table players earn a ticket
+      const earnedSaturdayTicket = t.type === 'saturday' && playerPlacement === 1;
       io.to(player.id).emit('gameOver', {
         winner: { name: winner.name, id: winner.id },
         isTournament: true,
@@ -481,6 +681,8 @@ function endTournamentRound(t) {
         sasPayouts,
         buyIn: t.buyIn || null,
         earnedWeeklyTicket,
+        earnedSaturdayTicket,
+        isFinalTable: t.isFinal || false,
       });
     });
     io.emit('tournamentList', getPublicTournaments());

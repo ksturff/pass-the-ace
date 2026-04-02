@@ -1953,7 +1953,7 @@
 <!-- ── TOURNAMENT WAITING ROOM ── -->
 <div id="screen-tournament-wait" class="screen">
   <div class="tw-wrap">
-    <div class="tw-title">TOURNAMENT STARTING IN</div>
+    <div class="tw-title" id="tw-title">TOURNAMENT STARTING IN</div>
     <div class="tw-countdown" id="tw-countdown">15:00</div>
     <div class="tw-desc" id="tw-desc">Waiting for players…</div>
     <div class="tw-players" id="tw-players"></div>
@@ -2628,7 +2628,8 @@ async function recordGameResult(won, placement=0, tournamentType=null) {
     await loadUserProfile(currentUser.uid);
 
     // ── Daily ticket: awarded after playing 5 games in a day (volume, not winning) ──
-    if (isSolo || (!isSolo && tournamentType !== 'daily' && tournamentType !== 'saturday')) {
+    const isTournamentMode = ['daily','saturday','daily_table','daily_final'].includes(tournamentType);
+    if (isSolo || (!isSolo && !isTournamentMode)) {
       const todayKey = `pta_daily_games_${new Date().toDateString()}`;
       const dailyGames = parseInt(localStorage.getItem(todayKey) || '0') + 1;
       localStorage.setItem(todayKey, dailyGames);
@@ -4170,8 +4171,6 @@ function initSocket(){
   });
   socket.on('gameOver',data=>{
     document.getElementById('round-result').classList.remove('show');
-    document.getElementById('over-winner').textContent=data.winner.name;
-    document.getElementById('game-over').classList.add('show');
     if(data.isTournament)myTournamentId=null;
     const iWon=data.winner.id===myId||data.winner.name===(userProfile?.displayName||'');
     const placement=data.placements?.[myId]??(iWon?1:0);
@@ -4180,10 +4179,35 @@ function initSocket(){
     [12,15,18,21].forEach(h=>window[`_satReg_${h}`]=false);
     [14,18,22].forEach(h=>window[`_dailyReg_${h}`]=false);
 
-    // Satellite top-20 weekly ticket
+    // Final table — all participants earn a weekly ticket
     if (data.earnedWeeklyTicket) {
       setTimeout(() => awardDailyTicket(), 1400);
     }
+    // Saturday championship win — earn saturday ticket
+    if (data.earnedSaturdayTicket) {
+      setTimeout(() => awardSaturdayTicket(), 1400);
+    }
+
+    // Qualifying table elimination — show message then return to lobby
+    if (tType === 'daily_table' && data.eliminated) {
+      document.getElementById('over-winner').textContent = data.winner.name;
+      document.getElementById('game-over').classList.add('show');
+      showToast(data.message || 'You didn\'t advance to the Final Table.', '#8a7a50', 4000);
+      recordGameResult(iWon, placement, tType);
+      return;
+    }
+
+    // Final table win screen
+    if (tType === 'daily_final') {
+      document.getElementById('over-winner').textContent = data.winner.name;
+      document.getElementById('game-over').classList.add('show');
+      showToast('🏆 Final Table complete — Weekly Ticket earned!', '#ffd700', 4000);
+      recordGameResult(iWon, placement, tType);
+      return;
+    }
+
+    document.getElementById('over-winner').textContent=data.winner.name;
+    document.getElementById('game-over').classList.add('show');
 
     // SAS payout — show rich results screen
     if(tType === 'sas' && data.sasPayouts && data.sasPayouts[myId] !== undefined) {
@@ -4195,6 +4219,26 @@ function initSocket(){
       recordGameResult(iWon, placement, tType);
     }
   });
+
+  // ── Advancing to Final Table ──
+  socket.on('advancingToFinal', ({ tournamentId, message }) => {
+    // Hide current game over screen if showing
+    document.getElementById('game-over').classList.remove('show');
+    document.getElementById('round-result').classList.remove('show');
+    // Update activeTournamentId ready for final table
+    socket.data = socket.data || {};
+    socket.emit('readyForTournament', { tournamentId });
+    // Show advancing screen
+    showToast(`🏆 ${message}`, '#ffd700', 4000);
+    // Show a waiting screen while final table assembles
+    const waitEl = document.getElementById('screen-tournament-wait');
+    if (waitEl) {
+      document.getElementById('tw-title') && (document.getElementById('tw-title').textContent = 'Advancing to Final Table');
+      document.getElementById('tw-sub') && (document.getElementById('tw-sub').textContent = 'Waiting for other tables to finish...');
+      showScreen('screen-tournament-wait');
+    }
+  });
+
   socket.on('roomCreated',data=>{myRoomCode=data.code;isHost=true;document.getElementById('waiting-code').textContent=data.code;updateWaitingRoom(data.players);showScreen('screen-waiting');});
   socket.on('joinedRoom',data=>{myRoomCode=data.code;isHost=false;document.getElementById('waiting-code').textContent=data.code;updateWaitingRoom(data.players);showScreen('screen-waiting');});
   socket.on('playerList',list=>updateWaitingRoom(list));
