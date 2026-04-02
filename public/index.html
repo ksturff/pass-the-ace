@@ -2400,6 +2400,19 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// ── Complete Google redirect sign-in (web + Capacitor) ──
+auth.getRedirectResult()
+  .then(result => {
+    if (result?.user) {
+      console.log('Redirect sign-in OK:', result.user.email);
+    }
+  })
+  .catch(e => {
+    if (e.code !== 'auth/no-auth-event') {
+      showAuthError('login-error', e.message);
+    }
+  });
+
 let currentUser = null;
 let userProfile = null;
 
