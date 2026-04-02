@@ -2400,19 +2400,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// ── Complete Google redirect sign-in (web + Capacitor) ──
-auth.getRedirectResult()
-  .then(result => {
-    if (result?.user) {
-      console.log('Redirect sign-in OK:', result.user.email);
-    }
-  })
-  .catch(e => {
-    if (e.code !== 'auth/no-auth-event') {
-      showAuthError('login-error', e.message);
-    }
-  });
-
 let currentUser = null;
 let userProfile = null;
 
@@ -3688,16 +3675,45 @@ function renderTournamentList(list){
 
   const myDailyTickets = userProfile?.dailyTickets ?? 0;
   const mySatTickets   = userProfile?.saturdayTickets ?? 0;
+  const nowMs = Date.now();
+  const sixHours = 6 * 60 * 60 * 1000;
+  const isTodaySaturday = new Date().getDay() === 6;
 
-  // ── SATELLITES — free entry, top 20 earn weekly championship ticket — 2pm, 6pm, 10pm every day ──
+  // ── Build satellite rows (upcoming within 6 hours) ──
+  const satelliteRows = [];
   const dailyHours = [14, 18, 22];
-  dailyHours.forEach((hr, idx) => {
-    const d = nextOccurrence(new Date().getDay(), hr);
-    // find next occurrence today or tomorrow
+  dailyHours.forEach((hr) => {
     const now2 = new Date();
     const todaySlot = new Date(now2); todaySlot.setHours(hr,0,0,0);
     const slotDate = now2 < todaySlot ? todaySlot : new Date(todaySlot.getTime() + 86400000);
     const ms = slotDate - now2;
+    if (ms > sixHours) return; // only show if within 6 hours
+    satelliteRows.push({ slotDate, ms, hr, type: 'satellite' });
+  });
+
+  // ── Build saturday rows (only on Saturdays, within 6 hours) ──
+  const satRows = [];
+  if (isTodaySaturday) {
+    const satHours = [12, 15, 18, 21];
+    satHours.forEach((hr) => {
+      const now2 = new Date();
+      const todaySlot = new Date(now2); todaySlot.setHours(hr,0,0,0);
+      if (now2 >= todaySlot) return; // already passed today
+      const ms = todaySlot - now2;
+      if (ms > sixHours) return; // only show if within 6 hours
+      satRows.push({ slotDate: todaySlot, ms, hr, type: 'saturday' });
+    });
+  }
+
+  // ── Combine all rows (satellites + saturdays + SAS) and sort by startTime ──
+  const extraRows = [
+    ...satelliteRows.map(r => ({ ...r, startTime: r.slotDate.getTime() })),
+    ...satRows.map(r => ({ ...r, startTime: r.slotDate.getTime() })),
+    ...filtered.map(t => ({ ...t, startTime: t.startTime, type: t.isSas ? 'sas' : 'other' }))
+  ].sort((a, b) => a.startTime - b.startTime);
+
+  // ── Render function for a satellite row ──
+  function renderSatelliteRow(hr, slotDate, ms) {
     const regId = `_dailyReg_${hr}`;
     const registered = window[regId] || false;
     const row = document.createElement('tr');
@@ -3720,7 +3736,6 @@ function renderTournamentList(list){
       } else {
         const name = userProfile?.displayName || '';
         if (!name) { showToast('Please complete your profile first', '#ff4d4f'); return; }
-        // Free entry — no ticket required
         const targetTime = slotDate.getTime();
         const match = currentTournamentList.find(t =>
           t.type === 'daily' &&
@@ -3738,30 +3753,16 @@ function renderTournamentList(list){
     row.addEventListener('click', e => {
       if (e.target.closest('button')) return;
       const match = currentTournamentList.find(t =>
-        t.type === 'daily' &&
-        Math.abs(t.startTime - slotDate.getTime()) < 60000
+        t.type === 'daily' && Math.abs(t.startTime - slotDate.getTime()) < 60000
       );
-      const fake = match || {
-        id: 'daily-' + hr + '-' + slotDate.getTime(),
-        startTime: slotDate.getTime(),
-        status: 'registering',
-        playerCount: 0,
-        maxPlayers: 10,
-        buyIn: 0,
-        isSas: false,
-        label: 'Daily',
-        type: 'daily'
-      };
+      const fake = match || { id: 'daily-'+hr+'-'+slotDate.getTime(), startTime: slotDate.getTime(), status: 'registering', playerCount: 0, maxPlayers: 10, buyIn: 0, isSas: false, label: 'Daily', type: 'daily' };
       showDailyOrSatModal(fake, 'daily', slotDate, myDailyTickets, hr);
     });
-    tbody.appendChild(row);
-  });
+    return row;
+  }
 
-  // ── SATURDAY CHAMPIONSHIPS — 12pm, 3pm, 6pm, 9pm ──
-  const satHours = [12, 15, 18, 21];
-  satHours.forEach((hr) => {
-    const slotDate = nextOccurrence(6, hr); // 6 = Saturday
-    const ms = slotDate - new Date();
+  // ── Render function for a saturday row ──
+  function renderSaturdayRow(hr, slotDate, ms) {
     const regId = `_satReg_${hr}`;
     const registered = window[regId] || false;
     const row = document.createElement('tr');
@@ -3785,9 +3786,7 @@ function renderTournamentList(list){
         tryEnterTicketTournament({type:'ticket', ticketType:'saturday'}, () => {
           const targetTime = slotDate.getTime();
           const match = currentTournamentList.find(t =>
-            t.type === 'saturday' &&
-            Math.abs(t.startTime - targetTime) < 60000 &&
-            t.status === 'registering'
+            t.type === 'saturday' && Math.abs(t.startTime - targetTime) < 60000 && t.status === 'registering'
           );
           if (!match) { showToast('No server tournament found for this slot yet', '#ff4d4f', 3000); return; }
           const name = userProfile?.displayName || 'Player';
@@ -3802,27 +3801,28 @@ function renderTournamentList(list){
     row.addEventListener('click', e => {
       if (e.target.closest('button')) return;
       const match = currentTournamentList.find(t =>
-        t.type === 'saturday' &&
-        Math.abs(t.startTime - slotDate.getTime()) < 60000
+        t.type === 'saturday' && Math.abs(t.startTime - slotDate.getTime()) < 60000
       );
-      const fake = match || {
-        id: 'sat-' + hr + '-' + slotDate.getTime(),
-        startTime: slotDate.getTime(),
-        status: 'registering',
-        playerCount: 0,
-        maxPlayers: 10,
-        buyIn: 0,
-        isSas: false,
-        label: 'Saturday Championship',
-        type: 'saturday'
-      };
+      const fake = match || { id: 'sat-'+hr+'-'+slotDate.getTime(), startTime: slotDate.getTime(), status: 'registering', playerCount: 0, maxPlayers: 10, buyIn: 0, isSas: false, label: 'Saturday Championship', type: 'saturday' };
       showDailyOrSatModal(fake, 'saturday', slotDate, mySatTickets, hr);
     });
-    tbody.appendChild(row);
-  });
+    return row;
+  }
 
   let autoScrolled=false;
-  filtered.forEach(t=>{
+  extraRows.forEach(item=>{
+    // Satellite row
+    if (item.type === 'satellite') {
+      tbody.appendChild(renderSatelliteRow(item.hr, item.slotDate, item.ms));
+      return;
+    }
+    // Saturday championship row
+    if (item.type === 'saturday') {
+      tbody.appendChild(renderSaturdayRow(item.hr, item.slotDate, item.ms));
+      return;
+    }
+    // Regular SAS / tournament row
+    const t = item;
     const isRegistered=myTournamentId===t.id;
     const isFull=t.playerCount>=t.maxPlayers;
     const isLive=t.status==='inProgress';
@@ -3884,9 +3884,8 @@ function renderTournamentList(list){
       autoScrolled=true;
       window._tournamentAutoScrolled=true;
       setTimeout(()=>tr.scrollIntoView({block:'center',behavior:'smooth'}),150);
-      // don't auto-open modal on load
     }
-  });
+  }); // end extraRows.forEach
   clearInterval(window._tCountdown);
   window._tCountdown=setInterval(()=>{
     const nowMs=Date.now();
