@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Pass the Ace — Stress Test Dashboard</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0b0d10;
+      color: #e8e0cc;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    h1 {
+      font-size: 18px;
+      letter-spacing: 3px;
+      color: #c8a23c;
+      margin-bottom: 4px;
+    }
+    .subtitle { font-size: 12px; color: #666; margin-bottom: 20px; letter-spacing: 1px; }
+
+    /* ── Server URL bar ── */
+    .url-bar {
+      display: flex; gap: 10px; align-items: center; margin-bottom: 20px;
+    }
+    .url-bar input {
+      flex: 1; padding: 8px 12px; border-radius: 8px;
+      border: 1px solid rgba(200,162,60,0.3);
+      background: #111316; color: #e8e0cc; font-size: 13px;
+    }
+    .url-bar button {
+      padding: 8px 18px; border-radius: 8px; border: 0;
+      background: linear-gradient(135deg, #b8860b, #ffd700);
+      color: #0a0800; font-weight: 700; font-size: 13px; cursor: pointer;
+    }
+    .url-bar button:hover { opacity: 0.85; }
+
+    /* ── Stat cards ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #0e0c06, #090700);
+      border: 1px solid rgba(200,162,60,0.15);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 32px; font-weight: 700;
+      background: linear-gradient(90deg, #ffd700, #ffaa00);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      line-height: 1;
+    }
+    .stat-label { font-size: 10px; color: #666; letter-spacing: 1.5px; margin-top: 6px; }
+
+    /* ── Phase badge ── */
+    .phase-badge {
+      display: inline-block; padding: 4px 12px; border-radius: 6px;
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+    .phase-idle      { background: rgba(255,255,255,0.05); color: #666; }
+    .phase-registering { background: rgba(200,162,60,0.15); color: #c8a23c; }
+    .phase-qualifying  { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .phase-final       { background: rgba(234,179,8,0.15);  color: #fbbf24; }
+    .phase-finished    { background: rgba(58,170,90,0.15);  color: #3aaa5a; }
+
+    /* ── Two column layout ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 16px;
+    }
+
+    /* ── Tables grid ── */
+    .tables-wrap { }
+    .tables-title { font-size: 11px; letter-spacing: 2px; color: #666; margin-bottom: 10px; }
+    .tables-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 8px;
+      max-height: 520px;
+      overflow-y: auto;
+    }
+    .table-card {
+      background: #0e0c06;
+      border: 1px solid rgba(200,162,60,0.1);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 11px;
+      transition: border-color 0.3s;
+    }
+    .table-card.active  { border-color: rgba(59,130,246,0.4); }
+    .table-card.done    { border-color: rgba(58,170,90,0.3); opacity: 0.6; }
+    .table-card.final   { border-color: rgba(255,215,0,0.5); background: linear-gradient(135deg,#14100a,#0e0c07); }
+    .tc-id    { color: #666; font-size: 9px; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tc-type  { font-weight: 700; font-size: 12px; margin-bottom: 6px; color: #e8e0cc; }
+    .tc-bar-wrap { height: 4px; background: rgba(255,255,255,0.07); border-radius: 2px; margin-bottom: 4px; overflow: hidden; }
+    .tc-bar   { height: 100%; border-radius: 2px; background: linear-gradient(90deg,#3b82f6,#60a5fa); transition: width 0.4s; }
+    .tc-bar.done-bar { background: linear-gradient(90deg,#2a7a40,#3aaa5a); }
+    .tc-counts { color: #888; font-size: 10px; }
+    .tc-winner { font-size: 10px; color: #ffd700; margin-top: 4px; }
+
+    /* ── Log panel ── */
+    .log-wrap { }
+    .log-title { font-size: 11px; letter-spacing: 2px; color: #666; margin-bottom: 10px; }
+    .log-box {
+      background: #060708;
+      border: 1px solid rgba(200,162,60,0.1);
+      border-radius: 10px;
+      padding: 12px;
+      height: 520px;
+      overflow-y: auto;
+      font-size: 11px;
+      font-family: monospace;
+      line-height: 1.6;
+      color: #888;
+    }
+    .log-box .log-line { border-bottom: 1px solid rgba(255,255,255,0.03); padding: 2px 0; }
+    .log-box .log-line.highlight { color: #c8a23c; }
+    .log-box .log-line.green  { color: #3aaa5a; }
+    .log-box .log-line.red    { color: #f87171; }
+    .log-box .log-line.blue   { color: #60a5fa; }
+
+    /* ── Tournament list ── */
+    .tlist-wrap { margin-bottom: 20px; }
+    .tlist-title { font-size: 11px; letter-spacing: 2px; color: #666; margin-bottom: 10px; }
+    .tlist-scroll { max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .t-row {
+      background: #0e0c06; border: 1px solid rgba(200,162,60,0.1);
+      border-radius: 8px; padding: 8px 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 11px;
+    }
+    .t-row.registering { border-color: rgba(200,162,60,0.3); }
+    .t-row.inProgress  { border-color: rgba(59,130,246,0.3); }
+    .t-row.finished    { opacity: 0.5; }
+    .t-id    { color: #888; font-size: 9px; }
+    .t-type  { font-weight: 700; color: #e8e0cc; }
+    .t-count { color: #c8a23c; font-family: monospace; }
+    .t-status { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 700; letter-spacing: 0.5px; }
+    .ts-registering { background: rgba(200,162,60,0.15); color: #c8a23c; }
+    .ts-inProgress  { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .ts-finished    { background: rgba(58,170,90,0.15); color: #3aaa5a; }
+  </style>
+</head>
+<body>
+
+<h1>PASS THE ACE</h1>
+<div class="subtitle">STRESS TEST DASHBOARD</div>
+
+<div class="url-bar">
+  <input id="serverUrl" type="text" value="http://localhost:3000" placeholder="Server URL"/>
+  <button onclick="connect()">Connect</button>
+</div>
+
+<!-- Phase -->
+<div id="phase-badge" class="phase-badge phase-idle">⏳ WAITING FOR CONNECTION</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card"><div class="stat-value" id="s-players">0</div><div class="stat-label">PLAYERS IN LOBBY</div></div>
+  <div class="stat-card"><div class="stat-value" id="s-tables">0</div><div class="stat-label">ACTIVE TABLES</div></div>
+  <div class="stat-card"><div class="stat-value" id="s-daily">0</div><div class="stat-label">DAILY REGISTERED</div></div>
+  <div class="stat-card"><div class="stat-value" id="s-finished">0</div><div class="stat-label">TABLES DONE</div></div>
+  <div class="stat-card"><div class="stat-value" id="s-final">—</div><div class="stat-label">FINAL TABLE</div></div>
+</div>
+
+<!-- Tournament list -->
+<div class="tlist-wrap">
+  <div class="tlist-title">UPCOMING TOURNAMENTS</div>
+  <div class="tlist-scroll" id="tlist"></div>
+</div>
+
+<!-- Main grid -->
+<div class="main-grid">
+  <div class="tables-wrap">
+    <div class="tables-title">QUALIFYING TABLES</div>
+    <div class="tables-grid" id="tables-grid"></div>
+  </div>
+  <div class="log-wrap">
+    <div class="log-title">EVENT LOG</div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+</div>
+
+<script>
+let socket = null;
+const tableData  = {};   // tableId -> { type, playerCount, eliminated, winner }
+const tData      = {};   // tournamentId -> tournament info
+
+function log(msg, cls = '') {
+  const box  = document.getElementById('log-box');
+  const line = document.createElement('div');
+  line.className = 'log-line ' + cls;
+  const ts = new Date().toLocaleTimeString();
+  line.textContent = `[${ts}] ${msg}`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+  // Keep log manageable
+  while (box.children.length > 300) box.removeChild(box.firstChild);
+}
+
+function connect() {
+  if (socket) { socket.disconnect(); socket = null; }
+  const url = document.getElementById('serverUrl').value.trim();
+  log(`Connecting to ${url}…`);
+  socket = io(url, { transports: ['websocket'] });
+
+  socket.on('connect', () => {
+    log('✅ Connected to server', 'green');
+    setPhaseBadge('registering', '📋 CONNECTED — WATCHING');
+  });
+
+  socket.on('disconnect', () => {
+    log('🔌 Disconnected', 'red');
+    setPhaseBadge('idle', '⏳ DISCONNECTED');
+  });
+
+  socket.on('tournamentList', (list) => {
+    list.forEach(t => { tData[t.id] = t; });
+    renderTournamentList(list);
+    updateDailyStats(list);
+  });
+
+  // We can't directly observe per-table events from the dashboard socket
+  // (those are emitted only to players), so we infer structure from tournamentList.
+  // The qualifying tables appear as tournaments with type 'daily_table'.
+  setInterval(() => {
+    if (socket?.connected) socket.emit('getTournaments');
+  }, 3000);
+}
+
+function renderTournamentList(list) {
+  const el = document.getElementById('tlist');
+  const now = Date.now();
+
+  // Filter to daily + daily_table + daily_final, sorted by startTime
+  const relevant = list
+    .filter(t => ['daily','daily_table','daily_final'].includes(t.type) || t.type === 'micro')
+    .sort((a, b) => a.startTime - b.startTime)
+    .slice(0, 20);
+
+  el.innerHTML = '';
+  relevant.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 't-row ' + (t.status || '');
+    const timeStr = new Date(t.startTime).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    const typeLabel = {
+      daily: '📅 DAILY',
+      daily_table: '🃏 TABLE',
+      daily_final: '🏆 FINAL',
+      micro: '⚡ MICRO',
+    }[t.type] || t.type.toUpperCase();
+
+    row.innerHTML = `
+      <div>
+        <div class="t-type">${typeLabel}</div>
+        <div class="t-id">${t.id.slice(0,28)}… · ${timeStr}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="t-count">${t.playerCount}${t.maxPlayers ? '/'+t.maxPlayers : ''}</div>
+        <div class="t-status ts-${t.status}">${(t.status||'').toUpperCase()}</div>
+      </div>
+    `;
+    el.appendChild(row);
+
+    // Track table-level data
+    if (t.type === 'daily_table' || t.type === 'daily_final') {
+      if (!tableData[t.id]) {
+        tableData[t.id] = { type: t.type, playerCount: t.playerCount || 10, eliminated: 0, winner: null, status: t.status };
+        const label = t.type === 'daily_final' ? '🏆 FINAL TABLE started!' : `🃏 Qualifying table started`;
+        log(label + ` → ${t.id.slice(-12)}`, t.type === 'daily_final' ? 'highlight' : '');
+      } else {
+        tableData[t.id].status = t.status;
+        if (t.status === 'finished' && !tableData[t.id].finished) {
+          tableData[t.id].finished = true;
+          log(`✅ Table finished: ${t.id.slice(-12)}`, 'green');
+        }
+      }
+    }
+  });
+
+  renderTablesGrid();
+  updateSummaryStats();
+}
+
+function renderTablesGrid() {
+  const grid = document.getElementById('tables-grid');
+  grid.innerHTML = '';
+
+  const entries = Object.entries(tableData).sort((a,b) => {
+    // Final table first
+    if (a[1].type === 'daily_final') return -1;
+    if (b[1].type === 'daily_final') return 1;
+    return a[0].localeCompare(b[0]);
+  });
+
+  entries.forEach(([id, td]) => {
+    const card = document.createElement('div');
+    const isDone   = td.status === 'finished';
+    const isFinal  = td.type === 'daily_final';
+    card.className = 'table-card ' + (isFinal ? 'final' : isDone ? 'done' : 'active');
+
+    const alive   = Math.max(0, td.playerCount - td.eliminated);
+    const pct     = td.playerCount > 0 ? Math.round((alive / td.playerCount) * 100) : 0;
+
+    card.innerHTML = `
+      <div class="tc-id">${id.slice(-16)}</div>
+      <div class="tc-type">${isFinal ? '🏆 FINAL TABLE' : '🃏 ' + (td.type||'TABLE').replace('daily_','').toUpperCase()}</div>
+      <div class="tc-bar-wrap"><div class="tc-bar ${isDone?'done-bar':''}" style="width:${pct}%"></div></div>
+      <div class="tc-counts">${alive} alive / ${td.playerCount} players</div>
+      ${td.winner ? `<div class="tc-winner">🥇 ${td.winner}</div>` : ''}
+      ${isDone && !td.winner ? '<div style="font-size:10px;color:#3aaa5a;margin-top:4px;">✅ Complete</div>' : ''}
+    `;
+    grid.appendChild(card);
+  });
+
+  if (entries.length === 0) {
+    grid.innerHTML = '<div style="color:#444;font-size:12px;padding:20px;">No tables yet — waiting for tournament to start…</div>';
+  }
+}
+
+function updateDailyStats(list) {
+  const daily = list.find(t => t.type === 'daily' && t.status !== 'finished');
+  if (daily) {
+    document.getElementById('s-daily').textContent = daily.playerCount;
+  }
+
+  const tables = list.filter(t => t.type === 'daily_table');
+  const active  = tables.filter(t => t.status === 'inProgress').length;
+  const done    = tables.filter(t => t.status === 'finished').length;
+  const finalT  = list.find(t => t.type === 'daily_final');
+
+  document.getElementById('s-tables').textContent   = active;
+  document.getElementById('s-finished').textContent = done;
+  document.getElementById('s-final').textContent    = finalT ? (finalT.status === 'inProgress' ? '🔥 LIVE' : '✅ Done') : '—';
+
+  // Phase
+  if (finalT?.status === 'inProgress') {
+    setPhaseBadge('final', '🏆 FINAL TABLE IN PROGRESS');
+  } else if (finalT?.status === 'finished') {
+    setPhaseBadge('finished', '✅ TOURNAMENT COMPLETE');
+  } else if (active > 0) {
+    setPhaseBadge('qualifying', `🃏 QUALIFYING — ${active} tables active`);
+  } else if (daily?.status === 'registering') {
+    setPhaseBadge('registering', `📋 REGISTERING — ${daily.playerCount} players`);
+  }
+}
+
+function updateSummaryStats() {
+  const allPlayers = Object.values(tableData).reduce((acc, t) => acc + t.playerCount, 0);
+  document.getElementById('s-players').textContent = allPlayers || '—';
+}
+
+function setPhaseBadge(phase, label) {
+  const el = document.getElementById('phase-badge');
+  el.className = 'phase-badge phase-' + phase;
+  el.textContent = label;
+}
+
+// Auto-connect on load
+window.onload = () => connect();
+</script>
+</body>
+</html>

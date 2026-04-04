@@ -248,41 +248,61 @@ function makeBotPlayer(tableId, botIdx) {
   };
 }
 
+// How many players advance from each table per round
+const ADVANCE_PER_TABLE = 2;
+// Final table size — must be all real players
+const FINAL_TABLE_SIZE = 10;
+
 function startDailySatellite(t) {
   t.status = 'inProgress';
   t.phase = 'qualifying';
-  t.qualifyingTables = [];     // array of table tournament objects
-  t.finalTableWinners = [];    // real player objects who won their table
-  t.tablesFinished = 0;
   t.finalTableStarted = false;
   t.finalTableTimer = null;
+  t.roundNumber = 1;
 
   const players = [...t.players];
+  if (players.length === 0) { t.status = 'finished'; return; }
 
-  // Shuffle players for random table assignment
+  console.log(`[Satellite ${t.id}] Starting with ${players.length} players`);
+  launchRound(t, players, t.roundNumber);
+}
+
+// Launch a round of tables for the given pool of real players
+function launchRound(parentT, players, roundNum) {
+  // Shuffle
   for (let i = players.length - 1; i > 0; i--) {
     const j = (Math.random() * (i + 1)) | 0;
     [players[i], players[j]] = [players[j], players[i]];
   }
 
-  // Split into tables of TABLE_SIZE, fill last table with bots if needed
+  // Split into tables of TABLE_SIZE
   const tables = [];
   for (let i = 0; i < players.length; i += TABLE_SIZE) {
     tables.push(players.slice(i, i + TABLE_SIZE));
   }
-  if (tables.length === 0) {
-    // No real players — cancel
-    t.status = 'finished';
-    return;
-  }
 
-  console.log(`[Satellite ${t.id}] ${players.length} players → ${tables.length} qualifying tables`);
+  const numTables = tables.length;
+
+  // If this round would naturally produce <= FINAL_TABLE_SIZE advancers with
+  // ADVANCE_PER_TABLE, use that. Otherwise calculate how many to advance per
+  // table so we land on exactly FINAL_TABLE_SIZE for the Final Table.
+  const naturalOutput = numTables * ADVANCE_PER_TABLE;
+  const advanceCount = naturalOutput <= FINAL_TABLE_SIZE
+    ? Math.ceil(FINAL_TABLE_SIZE / numTables)  // last collapse round — hit exactly 10
+    : ADVANCE_PER_TABLE;                        // normal round — advance 2 per table
+
+  console.log(`[Satellite ${parentT.id}] Round ${roundNum}: ${players.length} players → ${numTables} tables, advancing ${advanceCount} per table (target output: ${numTables * advanceCount})`);
+
+  parentT.qualifyingTables = [];
+  parentT.roundAdvancers = [];
+  parentT.tablesFinished = 0;
+  parentT.currentRound = roundNum;
 
   tables.forEach((tablePlayers, tableIdx) => {
-    const tableId = `${t.id}_table_${tableIdx}`;
+    const tableId = `${parentT.id}_r${roundNum}_t${tableIdx}`;
     const seats = [...tablePlayers];
 
-    // Fill with bots if needed
+    // Fill with bots so every table has TABLE_SIZE seats
     let botIdx = 0;
     while (seats.length < TABLE_SIZE) {
       seats.push(makeBotPlayer(tableId, botIdx++));
@@ -292,10 +312,12 @@ function startDailySatellite(t) {
     const tableT = {
       id: tableId,
       type: 'daily_table',
-      parentId: t.id,
+      parentId: parentT.id,
       tableIdx,
+      roundNum,
+      advanceCount,
       allPlayers: seats,
-      players: tablePlayers, // real players only
+      players: tablePlayers,
       gameState: null,
       status: 'inProgress',
       winners: [],
@@ -305,60 +327,75 @@ function startDailySatellite(t) {
     };
 
     tournaments.set(tableId, tableT);
-    t.qualifyingTables.push(tableT);
+    parentT.qualifyingTables.push(tableT);
 
-    // Notify real players at this table
     tablePlayers.forEach(p => {
       io.to(p.id).emit('tournamentStarting', {
         tournamentId: tableId,
         tournamentType: 'daily_table',
         tableNumber: tableIdx + 1,
-        totalTables: tables.length,
+        totalTables: numTables,
+        roundNumber: roundNum,
+        advanceCount,
       });
     });
 
     startTournamentGame(tableT);
   });
 
-  // Safety timeout — fire Final Table after 5 minutes regardless
-  t.finalTableTimer = setTimeout(() => {
-    if (!t.finalTableStarted) {
-      console.log(`[Satellite ${t.id}] Timeout — launching Final Table with ${t.finalTableWinners.length} winners`);
-      launchFinalTable(t);
+  // Safety timeout per round
+  if (parentT.finalTableTimer) clearTimeout(parentT.finalTableTimer);
+  parentT.finalTableTimer = setTimeout(() => {
+    if (!parentT.finalTableStarted) {
+      console.log(`[Satellite ${parentT.id}] Round ${roundNum} timeout — forcing collapse`);
+      collapseOrLaunchFinal(parentT);
     }
   }, FINAL_TABLE_TIMEOUT_MS);
 }
 
-function onQualifyingTableFinished(parentT, tableT, winner) {
+function onQualifyingTableFinished(parentT, tableT, advancers) {
   parentT.tablesFinished++;
-  if (winner && !winner.isBot) {
-    parentT.finalTableWinners.push(winner);
-    console.log(`[Satellite ${parentT.id}] Table ${tableT.tableIdx + 1} done — ${winner.name} advances`);
-  } else {
-    console.log(`[Satellite ${parentT.id}] Table ${tableT.tableIdx + 1} done — bot won, no human advances`);
-  }
 
-  // All tables finished — launch Final Table immediately
+  // advancers is an array of real players (up to ADVANCE_PER_TABLE) who survived
+  const realAdvancers = (advancers || []).filter(p => !p.isBot);
+  realAdvancers.forEach(p => parentT.roundAdvancers.push(p));
+
+  console.log(`[Satellite ${parentT.id}] Round ${tableT.roundNum} Table ${tableT.tableIdx + 1} done — ${realAdvancers.length} advance (${parentT.roundAdvancers.length} total so far)`);
+
   if (parentT.tablesFinished >= parentT.qualifyingTables.length) {
     if (parentT.finalTableTimer) clearTimeout(parentT.finalTableTimer);
-    launchFinalTable(parentT);
+    collapseOrLaunchFinal(parentT);
   }
 }
 
-function launchFinalTable(parentT) {
+function collapseOrLaunchFinal(parentT) {
+  if (parentT.finalTableStarted) return;
+
+  const advancers = [...parentT.roundAdvancers];
+  const nextRound = (parentT.currentRound || 1) + 1;
+
+  console.log(`[Satellite ${parentT.id}] Collapse check: ${advancers.length} advancers after round ${parentT.currentRound}`);
+
+  // If we have exactly FINAL_TABLE_SIZE or fewer real players, launch the Final Table
+  if (advancers.length <= FINAL_TABLE_SIZE) {
+    launchFinalTable(parentT, advancers);
+    return;
+  }
+
+  // Otherwise run another collapse round
+  parentT.roundNumber = nextRound;
+  launchRound(parentT, advancers, nextRound);
+}
+
+function launchFinalTable(parentT, advancers) {
   if (parentT.finalTableStarted) return;
   parentT.finalTableStarted = true;
   parentT.phase = 'final';
 
   const finalId = `${parentT.id}_final`;
-  const winners = [...parentT.finalTableWinners];
 
-  // Fill to TABLE_SIZE with bots
-  const seats = [...winners];
-  let botIdx = 0;
-  while (seats.length < TABLE_SIZE) {
-    seats.push(makeBotPlayer(finalId, botIdx++));
-  }
+  // Only real players — no bot fill for the Final Table
+  const seats = [...advancers];
   seats.forEach((p, i) => { p.chips = CHIPS_START; p.eliminated = false; p.card = null; p.seatIndex = i; });
 
   const finalT = {
@@ -366,7 +403,7 @@ function launchFinalTable(parentT) {
     type: 'daily_final',
     parentId: parentT.id,
     allPlayers: seats,
-    players: winners, // real players only
+    players: seats,
     gameState: null,
     status: 'inProgress',
     winners: [],
@@ -377,20 +414,17 @@ function launchFinalTable(parentT) {
   };
 
   tournaments.set(finalId, finalT);
+  console.log(`[Satellite ${parentT.id}] 🏆 Launching Final Table with ${seats.length} real players`);
 
-  console.log(`[Satellite ${parentT.id}] Launching Final Table with ${winners.length} real players`);
-
-  // Notify advancing players
-  winners.forEach(p => {
+  seats.forEach(p => {
     io.to(p.id).emit('advancingToFinal', {
       tournamentId: finalId,
-      message: `You won your table! Advancing to the Final Table...`,
+      message: `You advanced to the Final Table!`,
     });
   });
 
-  // Small delay so players see the advancing screen
   setTimeout(() => {
-    winners.forEach(p => {
+    seats.forEach(p => {
       io.to(p.id).emit('tournamentStarting', {
         tournamentId: finalId,
         tournamentType: 'daily_final',
@@ -641,14 +675,18 @@ function endTournamentRound(t) {
     // ── QUALIFYING TABLE: notify losers, signal parent satellite ──
     if (t.type === 'daily_table') {
       const parentT = t.parentId && tournaments.get(t.parentId);
+      const advanceCount = t.advanceCount || 1;
+
+      // Determine advancers: top N real players by placement (lowest placement number = best)
+      const advancers = humanPlayers
+        .filter(p => (placements[p.id] || 99) <= advanceCount)
+        .sort((a, b) => (placements[a.id] || 99) - (placements[b.id] || 99));
+
+      const advancerIds = new Set(advancers.map(p => p.id));
 
       humanPlayers.forEach(player => {
-        const playerPlacement = placements[player.id] || 99;
-        const isWinner = playerPlacement === 1 && !winner.isBot && winner.id === player.id;
-        if (isWinner) {
-          // Winner sees "advancing" screen — handled by onQualifyingTableFinished
-        } else {
-          // Losers get a game over with context
+        const isAdvancing = advancerIds.has(player.id);
+        if (!isAdvancing) {
           io.to(player.id).emit('gameOver', {
             winner: { name: winner.name, id: winner.id },
             isTournament: true,
@@ -657,12 +695,13 @@ function endTournamentRound(t) {
             sasPayouts: null,
             earnedWeeklyTicket: false,
             eliminated: true,
-            message: 'You didn\'t advance to the Final Table. Better luck next time!',
+            message: 'You didn\'t advance. Better luck next time!',
           });
         }
+        // Advancing players will get tournamentStarting from launchRound/launchFinalTable
       });
 
-      if (parentT) onQualifyingTableFinished(parentT, t, winner.isBot ? null : winner);
+      if (parentT) onQualifyingTableFinished(parentT, t, advancers);
       io.emit('tournamentList', getPublicTournaments());
       return;
     }
