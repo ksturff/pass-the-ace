@@ -346,14 +346,68 @@ function launchRound(parentT, players, roundNum) {
   // Safety timeout per round
   if (parentT.finalTableTimer) clearTimeout(parentT.finalTableTimer);
   parentT.finalTableTimer = setTimeout(() => {
-    if (!parentT.finalTableStarted) {
-      console.log(`[Satellite ${parentT.id}] Round ${roundNum} timeout — forcing collapse`);
-      collapseOrLaunchFinal(parentT);
-    }
+    if (parentT.finalTableStarted) return;
+    console.log(`[Satellite ${parentT.id}] Round ${roundNum} timeout — force-closing remaining tables`);
+
+    // Force-close any tables that haven't finished yet
+    parentT.qualifyingTables.forEach(tableT => {
+      if (tableT.status === 'inProgress') {
+        forceCloseTable(parentT, tableT);
+      }
+    });
+
+    // Now collapse with whoever advanced so far
+    collapseOrLaunchFinal(parentT);
   }, FINAL_TABLE_TIMEOUT_MS);
 }
 
+// Force-close a still-running table when the round timeout fires.
+// Takes the top advanceCount alive real players as advancers, eliminates the rest.
+function forceCloseTable(parentT, tableT) {
+  tableT.status = 'finished';
+  if (tableT.gameState) clearBotTimer(tableT.gameState);
+
+  const advanceCount = tableT.advanceCount || ADVANCE_PER_TABLE;
+  const alive = alivePlayers(tableT.allPlayers).filter(p => !p.isBot);
+  const allReal = tableT.allPlayers.filter(p => !p.isBot);
+
+  // Top advanceCount by chips remaining (most chips = best surviving position)
+  const sorted = alive.slice().sort((a, b) => b.chips - a.chips);
+  const advancers = sorted.slice(0, advanceCount);
+  const advancerIds = new Set(advancers.map(p => p.id));
+
+  console.log(`[ForceClose] Table ${tableT.id} — ${advancers.length} advance from ${alive.length} still alive`);
+
+  // Send gameOver to all real non-advancers
+  allReal.forEach(p => {
+    if (!advancerIds.has(p.id)) {
+      io.to(p.id).emit('gameOver', {
+        winner: { name: advancers[0]?.name || 'Unknown' },
+        isTournament: true,
+        tournamentType: 'daily_table',
+        placements: {},
+        eliminated: true,
+        message: "Time's up — the round has moved on. You didn't advance.",
+      });
+    }
+  });
+
+  // Register advancers with the parent (skip onQualifyingTableFinished to avoid double-count)
+  advancers.forEach(p => {
+    if (!p.isBot) parentT.roundAdvancers.push(p);
+  });
+  parentT.tablesFinished++;
+}
+
 function onQualifyingTableFinished(parentT, tableT, advancers) {
+  // If the round already collapsed via timeout, this table finished too late — ignore it safely
+  if (parentT.finalTableStarted) {
+    console.log(`[Satellite ${parentT.id}] Late finish from table ${tableT.id} — round already collapsed, ignoring`);
+    return;
+  }
+  // If this table was already force-closed by the timeout, don't double-count it
+  if (tableT.status === 'finished' && parentT.qualifyingTables.indexOf(tableT) === -1) return;
+
   parentT.tablesFinished++;
 
   // advancers is an array of real players (up to ADVANCE_PER_TABLE) who survived
