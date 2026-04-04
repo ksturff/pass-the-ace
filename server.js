@@ -768,14 +768,28 @@ function tournamentBotAct(t) {
 // ─────────────────────────────────────────
 //  SHARED BOT SCHEDULING
 // ─────────────────────────────────────────
+const HUMAN_TURN_TIMEOUT_MS = 15000; // 15 seconds before auto-acting for a frozen human
+
 function scheduleIfBot(gs, playerList, actFn) {
   const cur = playerList[gs.currentIndex];
-  if (!cur?.isBot) return;
+  if (!cur?.isBot) {
+    // Schedule a timeout for human players in case they freeze or disconnect
+    gs.humanTimer = setTimeout(() => {
+      const stillCur = playerList[gs.currentIndex];
+      if (stillCur && !stillCur.isBot && gs.phase === 'playing') {
+        console.log('[Timeout] ' + stillCur.name + ' took too long — auto-acting as bot');
+        stillCur.isBot = true; // convert to bot permanently
+        actFn();
+      }
+    }, HUMAN_TURN_TIMEOUT_MS);
+    return;
+  }
   gs.botTimer = setTimeout(() => actFn(), BOT_DELAY_MS);
 }
 
 function clearBotTimer(gs) {
-  if (gs?.botTimer) { clearTimeout(gs.botTimer); gs.botTimer = null; }
+  if (gs?.botTimer)   { clearTimeout(gs.botTimer);   gs.botTimer   = null; }
+  if (gs?.humanTimer) { clearTimeout(gs.humanTimer); gs.humanTimer = null; }
 }
 
 // ─────────────────────────────────────────
@@ -1002,7 +1016,15 @@ io.on('connection', socket => {
         if (room.gameState) {
           // Replace disconnected player with a bot mid-game
           const p = room.players.find(p => p.id === socket.id);
-          if (p) { p.isBot = true; p.name = p.name + ' (left)'; }
+          if (p) {
+            p.isBot = true;
+            p.name = p.name + ' (left)';
+            // If it was their turn, act immediately as bot
+            if (room.players[room.gameState.currentIndex]?.id === socket.id) {
+              clearBotTimer(room.gameState);
+              setTimeout(() => botAct(room), BOT_DELAY_MS);
+            }
+          }
         } else {
           room.players = room.players.filter(p => p.id !== socket.id);
           if (room.players.length === 0) rooms.delete(code);
@@ -1025,6 +1047,24 @@ io.on('connection', socket => {
       if (t && t.status === 'registering') {
         t.players = t.players.filter(p => p.id !== socket.id);
         io.emit('tournamentList', getPublicTournaments());
+      }
+    }
+
+    // ── Tournament mid-game (active table) ──
+    const activeTid = socket.data.activeTournamentId;
+    if (activeTid) {
+      const t = tournaments.get(activeTid);
+      if (t && t.gameState && t.status === 'inProgress') {
+        const p = t.allPlayers.find(p => p.id === socket.id);
+        if (p && !p.isBot) {
+          p.isBot = true;
+          p.name = p.name + ' (left)';
+          console.log('[Disconnect] ' + p.name + ' left tournament ' + activeTid + ' — converted to bot');
+          if (t.allPlayers[t.gameState.currentIndex]?.id === socket.id) {
+            clearBotTimer(t.gameState);
+            setTimeout(() => tournamentBotAct(t), BOT_DELAY_MS);
+          }
+        }
       }
     }
   });
