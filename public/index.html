@@ -4157,7 +4157,7 @@ function initSocket(){
     sessionStorage.removeItem('pta_reconnect_type');
   });
   socket.on('reconnected', (data) => {
-    showToast('You're back in the game!', '#3aaa5a', 3000);
+    showToast("You're back in the game!", '#3aaa5a', 3000);
     if (data.tournamentId) myActiveTournamentId = data.tournamentId;
     if (data.roomCode) myRoomCode = data.roomCode;
   });
