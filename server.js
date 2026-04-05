@@ -53,7 +53,9 @@ const RECONNECT_GRACE_MS = 30000; // 30 seconds to reconnect before converting t
 const reconnectMap = new Map();
 
 function reconnectKey(name, contextId) {
-  return name + '::' + contextId;
+  // Include name + contextId — names should be unique enough per game context
+  // but we sanitize to avoid any :: collisions in names
+  return name.replace(/::/g, '__') + '::' + contextId;
 }
 
 // Called when a player disconnects mid-game — hold their spot for 30s
@@ -409,6 +411,8 @@ function launchRound(parentT, players, roundNum) {
 // Force-close a still-running table when the round timeout fires.
 // Takes the top advanceCount alive real players as advancers, eliminates the rest.
 function forceCloseTable(parentT, tableT) {
+  if (tableT.forceClosed) return; // already handled
+  tableT.forceClosed = true;
   tableT.status = 'finished';
   if (tableT.gameState) clearBotTimer(tableT.gameState);
 
@@ -451,7 +455,7 @@ function onQualifyingTableFinished(parentT, tableT, advancers) {
     return;
   }
   // If this table was already force-closed by the timeout, don't double-count it
-  if (tableT.status === 'finished' && parentT.qualifyingTables.indexOf(tableT) === -1) return;
+  if (tableT.forceClosed) return;
 
   parentT.tablesFinished++;
 
@@ -469,6 +473,8 @@ function onQualifyingTableFinished(parentT, tableT, advancers) {
 
 function collapseOrLaunchFinal(parentT) {
   if (parentT.finalTableStarted) return;
+  if (parentT.collapsing) return; // prevent race between timeout and last table finishing simultaneously
+  parentT.collapsing = true;
 
   const advancers = [...parentT.roundAdvancers];
   const nextRound = (parentT.currentRound || 1) + 1;
@@ -483,6 +489,7 @@ function collapseOrLaunchFinal(parentT) {
 
   // Otherwise run another collapse round
   parentT.roundNumber = nextRound;
+  parentT.collapsing = false; // reset so next round can collapse again
   launchRound(parentT, advancers, nextRound);
 }
 
@@ -931,6 +938,12 @@ function notifyAwayStatus(roomOrT, playerList, player, status) {
   const msg = msgs[status] || '';
   realPlayers.forEach(p => {
     io.to(p.id).emit('playerAwayStatus', { playerId: player.id, playerName: player.name, status, message: msg });
+    // Also send updated player list so client can show sitting-out indicator
+    io.to(p.id).emit('playerStatusUpdate', {
+      playerId: player.id,
+      isSittingOut: player.isSittingOut || false,
+      isGhost: player.isGhost || false,
+    });
   });
 }
 
@@ -1413,7 +1426,7 @@ function startSasGame(q) {
     // Not enough real players, cancel
     q.status = 'cancelled';
     q.players.forEach(p => {
-      io.to(p.id).emit('sasQueueCancelled', { message: 'Not enough players joined. Your chips have been refunded.' });
+      io.to(p.id).emit('sasQueueCancelled', { message: 'Not enough players joined. Your chips have been refunded.', refundBuyIn: q.buyIn });
     });
     io.emit('sasQueues', getPublicSasQueues());
     return;
@@ -1458,6 +1471,15 @@ setInterval(() => {
   }
   io.emit('sasQueues', getPublicSasQueues());
 }, 5000);
+
+// Periodic cleanup of stale reconnect entries (safety net — timers should handle this)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of reconnectMap.entries()) {
+    // If the timer has somehow not fired after 2x grace period, clean up
+    if (!entry.timer) reconnectMap.delete(key);
+  }
+}, RECONNECT_GRACE_MS * 2);
 
 // Generate tournament schedule on startup
 ensureTournamentsExist();

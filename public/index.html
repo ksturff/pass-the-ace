@@ -4158,6 +4158,25 @@ function initSocket(){
     const colors = { away: '#f59e0b', sittingOut: '#f97316', left: '#6b7280' };
     showToast(message, colors[status] || '#f59e0b', 4000);
   });
+  socket.on('playerStatusUpdate', ({ playerId, isSittingOut, isGhost }) => {
+    // Update the player's visual indicator at the table if we're in a game
+    const seat = document.querySelector(`[data-player-id="${playerId}"]`);
+    if (!seat) return;
+    seat.classList.toggle('sitting-out', isSittingOut);
+    seat.classList.toggle('player-ghost', isGhost);
+    // Show a small sitting-out badge if applicable
+    let badge = seat.querySelector('.sitting-out-badge');
+    if (isSittingOut && !badge) {
+      badge = document.createElement('div');
+      badge.className = 'sitting-out-badge';
+      badge.textContent = '💤';
+      badge.style.cssText = 'position:absolute;top:-6px;right:-6px;font-size:14px;';
+      seat.style.position = 'relative';
+      seat.appendChild(badge);
+    } else if (!isSittingOut && badge) {
+      badge.remove();
+    }
+  });
   socket.on('tournamentList',list=>{
     const SAS_CYCLE=['tier50','tier250','tier500','tier1000'];
     const SAS_BUYIN={tier50:50,tier250:250,tier500:500,tier1000:1000};
@@ -5042,7 +5061,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     if (buyIn > 0) updateChipBalance(buyIn);
     showToast(reason || 'Chips refunded.', '#3aaa5a', 4000);
   });
-  socket.on('sasQueueCancelled', ({ message }) => {
+  socket.on('sasQueueCancelled', ({ message, refundBuyIn }) => {
+    if (refundBuyIn > 0) updateChipBalance(refundBuyIn);
     showToast(message || 'Queue cancelled — chips refunded.', '#ff4d4f', 4000);
     showScreen('screen-lobby');
   });
