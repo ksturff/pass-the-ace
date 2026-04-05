@@ -4104,7 +4104,8 @@ function renderLobbyRooms(rooms){
 
 // ── Socket ──
 function initSocket(){
-  socket=io({ reconnectionDelay: 1000, reconnectionAttempts: 10 });
+  const SERVER_URL = window.location.hostname === 'localhost' ? '' : 'https://pass-the-ace.onrender.com';
+  socket=io(SERVER_URL, { reconnectionDelay: 1000, reconnectionAttempts: 10 });
   socket.on('connect',()=>{
     myId=socket.id;
     // Clear any disconnect toast
