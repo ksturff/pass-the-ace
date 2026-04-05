@@ -5202,12 +5202,12 @@ document.addEventListener('DOMContentLoaded',()=>{
     Audio.initTableThemePicker && Audio.initTableThemePicker();
   });
   document.getElementById('btn-back-settings').addEventListener('click',()=>{
-    showScreen('screen-lobby');
+    showScreen(_previousScreen || 'screen-lobby');
     if(typeof updateTable==='function') setTimeout(()=>updateTable(),50);
   });
   document.getElementById('btn-back-settings').addEventListener('touchend',(e)=>{
     e.preventDefault();
-    showScreen('screen-lobby');
+    showScreen(_previousScreen || 'screen-lobby');
     if(typeof updateTable==='function') setTimeout(()=>updateTable(),50);
   });
   document.getElementById('btn-back-howto').addEventListener('click',()=>showScreen('screen-lobby'));
