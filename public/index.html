@@ -5006,6 +5006,8 @@ function acceptLegal() {
   localStorage.setItem('ptc_legal_accepted', '1');
   document.getElementById('legal-consent-overlay').classList.add('hidden');
 }
+window.acceptLegal = acceptLegal;
+window.closeLegal = closeLegal;
 
 function initLegal() {
   if (localStorage.getItem('ptc_legal_accepted')) {
