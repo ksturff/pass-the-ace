@@ -45,6 +45,51 @@ if (RENDER_URL) {
 }
 
 // ─────────────────────────────────────────
+//  RECONNECTION GRACE PERIOD
+// ─────────────────────────────────────────
+const RECONNECT_GRACE_MS = 30000; // 30 seconds to reconnect before converting to bot
+
+// Map of playerName+tableId -> { player, tableT/room, timer, type }
+const reconnectMap = new Map();
+
+function reconnectKey(name, contextId) {
+  return name + '::' + contextId;
+}
+
+// Called when a player disconnects mid-game — hold their spot for 30s
+function holdSpotForReconnect(player, contextId, type, contextObj) {
+  const key = reconnectKey(player.name, contextId);
+  // Clear any existing timer for this player
+  if (reconnectMap.has(key)) clearTimeout(reconnectMap.get(key).timer);
+
+  const timer = setTimeout(() => {
+    reconnectMap.delete(key);
+    // Grace period expired — permanently convert to bot
+    player.isBot = true;
+    player.isGhost = true;  // was a real player who disconnected — no payouts
+    player.name = player.name + ' (left)';
+    console.log('[Reconnect] Grace expired for ' + player.name + ' — converted to bot');
+    // Trigger bot act if it's their turn
+    if (type === 'tournament') {
+      const t = contextObj;
+      if (t.gameState && t.allPlayers[t.gameState.currentIndex]?.id === player.id) {
+        clearBotTimer(t.gameState);
+        setTimeout(() => tournamentBotAct(t), BOT_DELAY_MS);
+      }
+    } else if (type === 'room') {
+      const room = contextObj;
+      if (room.gameState && room.players[room.gameState.currentIndex]?.id === player.id) {
+        clearBotTimer(room.gameState);
+        setTimeout(() => botAct(room), BOT_DELAY_MS);
+      }
+    }
+  }, RECONNECT_GRACE_MS);
+
+  reconnectMap.set(key, { player, contextId, type, contextObj, timer });
+  console.log('[Reconnect] Holding spot for ' + player.name + ' in ' + contextId + ' for ' + (RECONNECT_GRACE_MS/1000) + 's');
+}
+
+// ─────────────────────────────────────────
 //  ROOMS (private multiplayer)
 // ─────────────────────────────────────────
 const rooms = new Map();
@@ -560,7 +605,7 @@ function startRound(room) {
   alivePlayers(room.players).forEach(p => { p.card = gs.deck.pop(); });
   gs.currentIndex = nextAliveIndex(room.players, gs.dealerIndex, 1);
   broadcastGameState(room.players, gs, room.code, false, true); // isNewRound=true
-  scheduleIfBot(gs, room.players, () => botAct(room));
+  scheduleIfBot(gs, room.players, () => botAct(room), room);
 }
 
 function endRound(room) {
@@ -601,10 +646,14 @@ function advanceTurn(room) {
   if (gs.turnsTaken >= alivePlayers(room.players).length) { endRound(room); return; }
   gs.currentIndex = nextAliveIndex(room.players, gs.currentIndex, 1);
   broadcastGameState(room.players, gs, room.code, false);
-  scheduleIfBot(gs, room.players, () => botAct(room));
+  scheduleIfBot(gs, room.players, () => botAct(room), room);
 }
 
-function handleKeep(room) { advanceTurn(room); }
+function handleKeep(room) {
+  const cur = room.players[room.gameState?.currentIndex];
+  resetTimeoutStrikes(cur);
+  advanceTurn(room);
+}
 
 function handlePass(room) {
   const gs = room.gameState;
@@ -658,7 +707,7 @@ function startTournamentRound(t) {
   alivePlayers(t.allPlayers).forEach(p => { p.card = gs.deck.pop(); });
   gs.currentIndex = nextAliveIndex(t.allPlayers, gs.dealerIndex, 1);
   broadcastGameState(t.allPlayers, gs, t.id, true, true); // isNewRound=true
-  scheduleIfBot(gs, t.allPlayers, () => tournamentBotAct(t));
+  scheduleIfBot(gs, t.allPlayers, () => tournamentBotAct(t), t);
 }
 
 function endTournamentRound(t) {
@@ -702,7 +751,7 @@ function endTournamentRound(t) {
     t.winners = [winner.name];
 
     // Build placements map: socketId -> finishing position
-    const humanPlayers = t.allPlayers.filter(p => !p.isBot);
+    const humanPlayers = t.allPlayers.filter(p => !p.isBot && !p.isGhost);
     const placements = {};
     placements[winner.id] = 1;
     const eliminated = (t.eliminationOrder || []).filter(id =>
@@ -713,16 +762,19 @@ function endTournamentRound(t) {
     });
 
     // SAS payout: 60% / 25% / 15% of full prize pool — no rake
+    // Ghost players (disconnected) receive nothing; their share rolls down to the next real player
     let sasPayouts = null;
     if (t.isSas) {
-      const prizePot = humanPlayers.length * t.buyIn;
+      const allHuman = t.allPlayers.filter(p => !p.isBot); // includes ghosts for pot calc
+      const prizePot = allHuman.length * t.buyIn;
       sasPayouts = {};
-      humanPlayers.forEach(p => {
-        const place = placements[p.id] || 99;
-        if (place === 1) sasPayouts[p.id] = Math.floor(prizePot * 0.60);
-        else if (place === 2) sasPayouts[p.id] = Math.floor(prizePot * 0.25);
-        else if (place === 3) sasPayouts[p.id] = Math.floor(prizePot * 0.15);
-        else sasPayouts[p.id] = 0;
+      // Sort real (non-ghost) human players by placement
+      const realByPlace = humanPlayers
+        .filter(p => !p.isGhost)
+        .sort((a, b) => (placements[a.id] || 99) - (placements[b.id] || 99));
+      const payoutRates = [0.60, 0.25, 0.15];
+      realByPlace.forEach((p, idx) => {
+        sasPayouts[p.id] = idx < payoutRates.length ? Math.floor(prizePot * payoutRates[idx]) : 0;
       });
     }
 
@@ -731,9 +783,9 @@ function endTournamentRound(t) {
       const parentT = t.parentId && tournaments.get(t.parentId);
       const advanceCount = t.advanceCount || 1;
 
-      // Determine advancers: top N real players by placement (lowest placement number = best)
+      // Determine advancers: top N real non-ghost players by placement
       const advancers = humanPlayers
-        .filter(p => (placements[p.id] || 99) <= advanceCount)
+        .filter(p => !p.isGhost && (placements[p.id] || 99) <= advanceCount)
         .sort((a, b) => (placements[a.id] || 99) - (placements[b.id] || 99));
 
       const advancerIds = new Set(advancers.map(p => p.id));
@@ -797,7 +849,7 @@ function advanceTournamentTurn(t) {
   if (gs.turnsTaken >= alivePlayers(t.allPlayers).length) { endTournamentRound(t); return; }
   gs.currentIndex = nextAliveIndex(t.allPlayers, gs.currentIndex, 1);
   broadcastGameState(t.allPlayers, gs, t.id, true);
-  scheduleIfBot(gs, t.allPlayers, () => tournamentBotAct(t));
+  scheduleIfBot(gs, t.allPlayers, () => tournamentBotAct(t), t);
 }
 
 function tournamentBotAct(t) {
@@ -822,23 +874,72 @@ function tournamentBotAct(t) {
 // ─────────────────────────────────────────
 //  SHARED BOT SCHEDULING
 // ─────────────────────────────────────────
-const HUMAN_TURN_TIMEOUT_MS = 15000; // 15 seconds before auto-acting for a frozen human
+const HUMAN_TURN_TIMEOUT_MS = 15000; // 15s to act before strike 1
+const MAX_TIMEOUT_STRIKES   = 3;      // strikes before permanent bot conversion
 
-function scheduleIfBot(gs, playerList, actFn) {
+function scheduleIfBot(gs, playerList, actFn, roomOrT) {
   const cur = playerList[gs.currentIndex];
+
+  // If sitting out, act immediately as bot without waiting
+  if (cur && !cur.isBot && cur.isSittingOut) {
+    gs.botTimer = setTimeout(() => actFn(), BOT_DELAY_MS);
+    return;
+  }
+
   if (!cur?.isBot) {
-    // Schedule a timeout for human players in case they freeze or disconnect
     gs.humanTimer = setTimeout(() => {
       const stillCur = playerList[gs.currentIndex];
-      if (stillCur && !stillCur.isBot && gs.phase === 'playing') {
-        console.log('[Timeout] ' + stillCur.name + ' took too long — auto-acting as bot');
-        stillCur.isBot = true; // convert to bot permanently
-        actFn();
+      if (!stillCur || stillCur.isBot || gs.phase !== 'playing') return;
+
+      stillCur.timeoutStrikes = (stillCur.timeoutStrikes || 0) + 1;
+      console.log('[Timeout] ' + stillCur.name + ' strike ' + stillCur.timeoutStrikes + '/' + MAX_TIMEOUT_STRIKES);
+
+      if (stillCur.timeoutStrikes >= MAX_TIMEOUT_STRIKES) {
+        // Strike 3 — convert to ghost bot permanently
+        stillCur.isBot   = true;
+        stillCur.isGhost = true;
+        stillCur.name    = stillCur.name + ' (left)';
+        console.log('[Timeout] ' + stillCur.name + ' permanently converted to bot');
+        // Notify table
+        if (roomOrT) notifyAwayStatus(roomOrT, playerList, stillCur, 'left');
+      } else if (stillCur.timeoutStrikes >= 2) {
+        // Strike 2 — mark sitting out, will be auto-skipped each turn
+        stillCur.isSittingOut = true;
+        console.log('[Timeout] ' + stillCur.name + ' marked sitting out');
+        if (roomOrT) notifyAwayStatus(roomOrT, playerList, stillCur, 'sittingOut');
+      } else {
+        // Strike 1 — auto-act this turn, warn the table
+        console.log('[Timeout] ' + stillCur.name + ' auto-acting (strike 1)');
+        if (roomOrT) notifyAwayStatus(roomOrT, playerList, stillCur, 'away');
       }
+
+      actFn();
     }, HUMAN_TURN_TIMEOUT_MS);
     return;
   }
   gs.botTimer = setTimeout(() => actFn(), BOT_DELAY_MS);
+}
+
+// Notify all real players at the table about an away/sitting-out/left player
+function notifyAwayStatus(roomOrT, playerList, player, status) {
+  const realPlayers = playerList.filter(p => !p.isBot);
+  const msgs = {
+    away:       '⏳ ' + player.name + ' is taking too long — auto-acting.',
+    sittingOut: '💤 ' + player.name + ' is sitting out and will be skipped.',
+    left:       '👻 ' + player.name + ' has been removed from the game.',
+  };
+  const msg = msgs[status] || '';
+  realPlayers.forEach(p => {
+    io.to(p.id).emit('playerAwayStatus', { playerId: player.id, playerName: player.name, status, message: msg });
+  });
+}
+
+// Call this when a player successfully acts — resets their timeout strikes
+function resetTimeoutStrikes(player) {
+  if (player && !player.isBot) {
+    player.timeoutStrikes = 0;
+    player.isSittingOut   = false;
+  }
 }
 
 function clearBotTimer(gs) {
@@ -973,6 +1074,7 @@ io.on('connection', socket => {
     const cur = t.allPlayers[t.gameState.currentIndex];
     if (cur?.id !== socket.id) return;
     clearBotTimer(t.gameState);
+    resetTimeoutStrikes(cur);
     advanceTournamentTurn(t);
   });
 
@@ -984,6 +1086,7 @@ io.on('connection', socket => {
     const cur = t.allPlayers[gs.currentIndex];
     if (cur?.id !== socket.id) return;
     clearBotTimer(gs);
+    resetTimeoutStrikes(cur);
     const toIdx = nextAliveIndex(t.allPlayers, gs.currentIndex, 1);
     const toP = t.allPlayers[toIdx];
     if (cur.card?.rank === 'K') { advanceTournamentTurn(t); return; }
@@ -1063,21 +1166,16 @@ io.on('connection', socket => {
   });
 
   socket.on('disconnect', () => {
+    // ── Private room ──
     const code = socket.data.roomCode;
     if (code) {
       const room = getRoom(code);
       if (room) {
         if (room.gameState) {
-          // Replace disconnected player with a bot mid-game
           const p = room.players.find(p => p.id === socket.id);
-          if (p) {
-            p.isBot = true;
-            p.name = p.name + ' (left)';
-            // If it was their turn, act immediately as bot
-            if (room.players[room.gameState.currentIndex]?.id === socket.id) {
-              clearBotTimer(room.gameState);
-              setTimeout(() => botAct(room), BOT_DELAY_MS);
-            }
+          if (p && !p.isBot) {
+            // Hold their spot — don't convert to bot yet
+            holdSpotForReconnect(p, code, 'room', room);
           }
         } else {
           room.players = room.players.filter(p => p.id !== socket.id);
@@ -1087,6 +1185,8 @@ io.on('connection', socket => {
         io.emit('lobbyUpdate', getLobbyRooms());
       }
     }
+
+    // ── SAS queue ──
     const sasId = socket.data.sasQueueId;
     if (sasId) {
       const q = sasQueues.get(sasId);
@@ -1095,6 +1195,8 @@ io.on('connection', socket => {
         io.emit('sasQueues', getPublicSasQueues());
       }
     }
+
+    // ── Tournament registration (not yet started) ──
     const tid = socket.data.tournamentId;
     if (tid) {
       const t = tournaments.get(tid);
@@ -1111,15 +1213,67 @@ io.on('connection', socket => {
       if (t && t.gameState && t.status === 'inProgress') {
         const p = t.allPlayers.find(p => p.id === socket.id);
         if (p && !p.isBot) {
-          p.isBot = true;
-          p.name = p.name + ' (left)';
-          console.log('[Disconnect] ' + p.name + ' left tournament ' + activeTid + ' — converted to bot');
-          if (t.allPlayers[t.gameState.currentIndex]?.id === socket.id) {
-            clearBotTimer(t.gameState);
-            setTimeout(() => tournamentBotAct(t), BOT_DELAY_MS);
-          }
+          // Hold their spot for 30 seconds before converting to bot
+          holdSpotForReconnect(p, activeTid, 'tournament', t);
         }
       }
+    }
+  });
+
+  // ── Reconnect: client sends their name + context ID to reclaim their spot ──
+  socket.on('reconnectPlayer', ({ name, contextId, contextType }) => {
+    const key = reconnectKey(name, contextId);
+    const entry = reconnectMap.get(key);
+    if (!entry) {
+      socket.emit('reconnectFailed', { message: 'Reconnect window expired or game not found.' });
+      return;
+    }
+
+    clearTimeout(entry.timer);
+    reconnectMap.delete(key);
+
+    const { player, type, contextObj } = entry;
+    const oldId = player.id;
+
+    // Swap socket ID on the player object
+    player.id = socket.id;
+
+    if (type === 'tournament') {
+      const t = contextObj;
+      socket.data.activeTournamentId = contextId;
+      socket.data.playerName = name;
+      socket.join(contextId);
+
+      // Send current game state to the reconnected player
+      if (t.gameState) {
+        const sanitized = t.allPlayers.map(p => ({
+          id: p.id, name: p.name, chips: p.chips,
+          eliminated: p.eliminated, seatIndex: p.seatIndex,
+          isBot: p.isBot, avatar: p.avatar,
+          card: (p.id === socket.id || p.card?.rank === 'K') ? p.card : (p.card ? 'hidden' : null)
+        }));
+        socket.emit('reconnected', { tournamentId: contextId });
+        socket.emit('gameState', {
+          players: sanitized,
+          currentIndex: t.gameState.currentIndex,
+          currentPlayerId: t.allPlayers[t.gameState.currentIndex]?.id,
+          phase: t.gameState.phase,
+          isTournament: true,
+          tournamentId: contextId,
+        });
+      }
+      console.log('[Reconnect] ' + name + ' reconnected to tournament ' + contextId);
+    } else if (type === 'room') {
+      const room = contextObj;
+      socket.data.roomCode = contextId;
+      socket.data.playerName = name;
+      socket.join(contextId);
+
+      if (room.gameState) {
+        socket.emit('reconnected', { roomCode: contextId });
+        broadcastGameState(room.players, room.gameState, contextId, false);
+      }
+      console.log('[Reconnect] ' + name + ' reconnected to room ' + contextId);
     }
   });
 });

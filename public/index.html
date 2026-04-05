@@ -3013,7 +3013,7 @@ let players=[], currentPlayerId=null, myTurn=false;
 let cardImages={}, assetsReady=false;
 let toastTimer=null, kingToastTimer=null;
 let soloPlayers=[], soloDealerIndex=0, soloCurrentIndex=0, soloTurnsTaken=0;
-let myTournamentId=null, tournamentCountdownInterval=null;
+let myTournamentId=null, myActiveTournamentId=null, tournamentCountdownInterval=null;
 let isTournamentGame=false;
 let _gameChipTotal=3; // 3 for SAS/solo, 2 for satellite/champ
 let gameTableBuilt=false; // true once we've built+dealt for the current game session
@@ -4113,14 +4113,49 @@ function initSocket(){
   });
   socket.on('disconnect',()=>{
     showToast('Connection lost — reconnecting…','#ff4d4f',8000);
+    // Save current game context so we can reclaim our spot on reconnect
+    if (myActiveTournamentId) {
+      sessionStorage.setItem('pta_reconnect_tid', myActiveTournamentId);
+      sessionStorage.setItem('pta_reconnect_name', userProfile?.displayName || '');
+      sessionStorage.setItem('pta_reconnect_type', 'tournament');
+    } else if (myRoomCode) {
+      sessionStorage.setItem('pta_reconnect_tid', myRoomCode);
+      sessionStorage.setItem('pta_reconnect_name', userProfile?.displayName || '');
+      sessionStorage.setItem('pta_reconnect_type', 'room');
+    }
   });
   socket.on('reconnect',()=>{
     showToast('Reconnected!','#3aaa5a',2500);
-    // Re-request lobby state
-    socket.emit('getTournaments');
+    // Try to reclaim our spot in the game
+    const savedId   = sessionStorage.getItem('pta_reconnect_tid');
+    const savedName = sessionStorage.getItem('pta_reconnect_name');
+    const savedType = sessionStorage.getItem('pta_reconnect_type');
+    if (savedId && savedName) {
+      socket.emit('reconnectPlayer', { name: savedName, contextId: savedId, contextType: savedType });
+      sessionStorage.removeItem('pta_reconnect_tid');
+      sessionStorage.removeItem('pta_reconnect_name');
+      sessionStorage.removeItem('pta_reconnect_type');
+    } else {
+      socket.emit('getTournaments');
+    }
   });
   socket.on('reconnect_failed',()=>{
     showToast('Could not reconnect. Please refresh.','#ff4d4f',10000);
+    sessionStorage.removeItem('pta_reconnect_tid');
+    sessionStorage.removeItem('pta_reconnect_name');
+    sessionStorage.removeItem('pta_reconnect_type');
+  });
+  socket.on('reconnected', (data) => {
+    showToast('You're back in the game!', '#3aaa5a', 3000);
+    if (data.tournamentId) myActiveTournamentId = data.tournamentId;
+    if (data.roomCode) myRoomCode = data.roomCode;
+  });
+  socket.on('reconnectFailed', ({ message }) => {
+    showToast(message || 'Could not rejoin game.', '#ff4d4f', 5000);
+  });
+  socket.on('playerAwayStatus', ({ playerName, status, message }) => {
+    const colors = { away: '#f59e0b', sittingOut: '#f97316', left: '#6b7280' };
+    showToast(message, colors[status] || '#f59e0b', 4000);
   });
   socket.on('tournamentList',list=>{
     const SAS_CYCLE=['tier50','tier250','tier500','tier1000'];
@@ -4140,6 +4175,7 @@ function initSocket(){
   });
   socket.on('tournamentStarting',data=>{
     // Server says our tournament is starting — go to game
+    myActiveTournamentId = data.tournamentId;
     socket.emit('readyForTournament',{tournamentId:data.tournamentId});
     clearInterval(tournamentCountdownInterval);
     if (ssCountdownInterval) clearInterval(ssCountdownInterval);
@@ -4215,6 +4251,7 @@ function initSocket(){
     }
   });
   socket.on('gameOver',data=>{
+    myActiveTournamentId = null;
     document.getElementById('round-result').classList.remove('show');
     if(data.isTournament)myTournamentId=null;
     const iWon=data.winner.id===myId||data.winner.name===(userProfile?.displayName||'');
