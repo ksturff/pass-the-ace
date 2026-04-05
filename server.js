@@ -101,6 +101,10 @@ function makeRoom(code, options = {}) {
 }
 function getRoom(code) { return rooms.get(code); }
 
+// Pending SAS refunds for players who disconnected mid-queue before the game started.
+// Keyed by playerName — delivered on their next getTournaments or connect.
+const pendingRefunds = new Map(); // playerName -> chipAmount
+
 // ─────────────────────────────────────────
 //  TOURNAMENTS
 // ─────────────────────────────────────────
@@ -282,6 +286,9 @@ function startTournament(t) {
   seats.forEach(p => { p.chips = CHIPS_START; p.eliminated = false; p.card = null; });
   t.players.forEach(p => {
     io.to(p.id).emit('tournamentStarting', { tournamentId: t.id, tournamentType: t.type });
+    // Set activeTournamentId server-side — micro tournaments skip the readyForTournament handshake
+    const playerSocket = io.sockets.sockets.get(p.id);
+    if (playerSocket) playerSocket.data.activeTournamentId = t.id;
   });
   t.allPlayers = seats;
   t.gameState = null;
@@ -987,6 +994,13 @@ io.on('connection', socket => {
   // ── Client requests tournament list explicitly
   socket.on('getTournaments', () => {
     socket.emit('tournamentList', getPublicTournaments());
+    // Deliver any pending SAS refund for this player
+    const name = socket.data.playerName;
+    if (name && pendingRefunds.has(name)) {
+      const buyIn = pendingRefunds.get(name);
+      pendingRefunds.delete(name);
+      socket.emit('sasQueueRefund', { buyIn, reason: 'You were disconnected from a queue before it started. Your chips have been refunded.' });
+    }
   });
 
   // ── Sit & Stay: join a queue
@@ -1006,6 +1020,7 @@ io.on('connection', socket => {
     q.players.push(player);
     socket.join(sasId);
     socket.data.sasQueueId = sasId;
+    socket.data.sasBuyIn = q.buyIn;
     socket.data.playerName = name;
     socket.data.playerAvatar = avatar;
 
@@ -1219,8 +1234,13 @@ io.on('connection', socket => {
       if (q && q.status === 'registering') {
         q.players = q.players.filter(p => p.id !== socket.id);
         io.emit('sasQueues', getPublicSasQueues());
-        // Refund the buy-in — player disconnected before game started
-        socket.emit('sasQueueRefund', { buyIn: q.buyIn, reason: 'You were disconnected from the queue. Your chips have been refunded.' });
+        // Socket is already dead — queue a refund to deliver on next connect
+        const playerName = socket.data.playerName;
+        const buyIn = socket.data.sasBuyIn || q.buyIn;
+        if (playerName && buyIn > 0) {
+          const existing = pendingRefunds.get(playerName) || 0;
+          pendingRefunds.set(playerName, existing + buyIn);
+        }
       }
     }
 
