@@ -3419,8 +3419,9 @@ function buildTable(){
 
     // HUD slot
     const slot=document.createElement('div');
-    slot.className='player-slot';
+    slot.className='player-slot' + (p.isSittingOut ? ' sitting-out' : '') + (p.isGhost ? ' player-ghost' : '');
     slot.id=`slot-${p.id}`;
+    slot.dataset.playerId = p.id;
     slot.style.left=pos.hud.left+'%';
     slot.style.top=pos.hud.top+'%';
     const inner=document.createElement('div');
@@ -3442,6 +3443,15 @@ function buildTable(){
     info.appendChild(name);info.appendChild(chips);
     if(isLeft){inner.style.flexDirection='row-reverse';inner.appendChild(info);inner.appendChild(avatar);}
     else{inner.appendChild(avatar);inner.appendChild(info);}
+    // Sitting-out badge
+    if (p.isSittingOut) {
+      const badge = document.createElement('div');
+      badge.className = 'sitting-out-badge';
+      badge.textContent = '💤';
+      badge.style.cssText = 'position:absolute;top:-6px;right:-6px;font-size:14px;pointer-events:none;';
+      slot.style.position = 'relative';
+      slot.appendChild(badge);
+    }
     slot.appendChild(inner);
     table.appendChild(slot);
   });

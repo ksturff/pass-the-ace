@@ -183,7 +183,13 @@ function ensureTournamentsExist() {
   // Clean up tournaments older than 24 hours
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
   for (const [id, t] of tournaments.entries()) {
-    if (t.startTime < cutoff) tournaments.delete(id);
+    // Top-level tournaments: clean by startTime
+    if (t.startTime && t.startTime < cutoff) { tournaments.delete(id); continue; }
+    // Sub-tables (daily_table, daily_final): clean if finished and parent is gone or also finished
+    if ((t.type === 'daily_table' || t.type === 'daily_final') && t.status === 'finished') {
+      const parent = t.parentId && tournaments.get(t.parentId);
+      if (!parent || parent.status === 'finished') tournaments.delete(id);
+    }
   }
 }
 
@@ -246,13 +252,13 @@ setInterval(() => {
 }, 10000);
 
 function startTournament(t) {
-  // ── DAILY: multi-table bracket ──
-  if (t.type === 'daily') {
+  // ── DAILY + SATURDAY: multi-table bracket ──
+  if (t.type === 'daily' || t.type === 'saturday') {
     startDailySatellite(t);
     return;
   }
 
-  // ── MICRO / SATURDAY: single table as before ──
+  // ── MICRO: single table ──
   t.status = 'inProgress';
   t.placements = {};
   t.eliminationOrder = [];
@@ -578,6 +584,8 @@ function broadcastGameState(playerList, gs, roomOrTournamentId, isTournament = f
       id: p.id, name: p.name, chips: p.chips,
       eliminated: p.eliminated, seatIndex: p.seatIndex,
       isBot: p.isBot, avatar: p.avatar,
+      isSittingOut: p.isSittingOut || false,
+      isGhost: p.isGhost || false,
       card: (p.id === player.id || p.card?.rank === 'K') ? p.card : (p.card ? 'hidden' : null)
     }));
     io.to(player.id).emit('gameState', {
@@ -1280,8 +1288,11 @@ io.on('connection', socket => {
       console.log('[Reconnect] ' + name + ' reconnected to tournament ' + contextId);
     } else if (type === 'room') {
       const room = contextObj;
+      // Restore all room-related socket data before rejoining
       socket.data.roomCode = contextId;
       socket.data.playerName = name;
+      // Leave any stale rooms first, then rejoin the correct one
+      socket.rooms.forEach(r => { if (r !== socket.id) socket.leave(r); });
       socket.join(contextId);
 
       if (room.gameState) {
