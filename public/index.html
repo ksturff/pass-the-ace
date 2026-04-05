@@ -2036,7 +2036,7 @@
     </div>
     <div class="howto-step">
       <div class="howto-num">🛰️</div>
-      <div class="howto-text"><strong>SATELLITES</strong> — Free entry tournaments running every 3 hours (midnight, 3am, 6am … 9pm). Up to 24 players per satellite. Top finishers earn a <strong style="color:#cd7f32;">🏆 Weekly Ticket</strong>. Starts with <strong style="color:#cd7f32;">2 chips</strong>.</div>
+      <div class="howto-text"><strong>SATELLITES</strong> — Free entry tournaments running every 3 hours (midnight, 3am, 6am … 9pm). Up to 500 players per satellite — split across multiple tables with the top players advancing to a Final Table. Top finishers earn a <strong style="color:#cd7f32;">🏆 Weekly Ticket</strong>. Starts with <strong style="color:#cd7f32;">2 chips</strong>.</div>
     </div>
     <div class="howto-step">
       <div class="howto-num">⭐</div>
@@ -2171,7 +2171,7 @@
   <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;background:radial-gradient(ellipse 120% 60% at 50% -5%,#1a1200 0%,#0a0800 55%);">
     <div id="ss-tier-badge" style="font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:3px;margin-bottom:8px;color:var(--accent);">SIT &amp; STAY</div>
     <div style="font-family:'Orbitron',sans-serif;font-size:16px;letter-spacing:3px;background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;">SIT &amp; STAY</div>
-    <div id="ss-buyin-label" style="font-family:sans-serif;font-size:13px;color:var(--muted);margin-bottom:28px;">150 chip buy-in</div>
+    <div id="ss-buyin-label" style="font-family:sans-serif;font-size:13px;color:var(--muted);margin-bottom:28px;">— chip buy-in</div>
 
     <!-- Player slots -->
     <div id="ss-seats" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:340px;margin-bottom:28px;"></div>
@@ -6622,7 +6622,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div style="text-align:center;margin:16px 0 8px;">
         <div style="font-size:32px;margin-bottom:8px;">🌞</div>
         <div style="font-family:'Playfair Display',serif;font-size:22px;background:linear-gradient(90deg,#ffd700,#ffaa00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;" id="bp-season-name">SUMMER PASS</div>
-        <div style="font-family:sans-serif;font-size:12px;color:var(--muted);margin-top:4px;" id="bp-season-dates">Jun 16 – Sep 14, 2025</div>
+        <div style="font-family:sans-serif;font-size:12px;color:var(--muted);margin-top:4px;" id="bp-season-dates">Jun 15 – Sep 13, 2026</div>
       </div>
 
       <!-- Season progress bar -->
@@ -6661,8 +6661,8 @@ const BATTLE_PASS_SEASONS = [
     id: 'summer_2025',
     name: 'SUMMER PASS',
     emoji: '🌞',
-    start: new Date('2025-06-16T00:00:00'),
-    end:   new Date('2025-09-14T23:59:59'),
+    start: new Date('2026-06-15T00:00:00'),
+    end:   new Date('2026-09-13T23:59:59'),
     weeks: 12,
     prizes: [
       { week:1,  chips:500,  label:'500 chips',          icon:'🪙' },
