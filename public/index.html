@@ -2524,16 +2524,8 @@ function tryEnterTicketTournament(tournamentData, onSuccess) {
       document.getElementById('no-saturday-ticket-modal').classList.add('show');
     }
   } else {
-    // Daily tournaments now cost chips instead of a ticket
-    const balance = userProfile?.chipBalance ?? 0;
-    if (balance >= 500) {
-      updateChipBalance(-500).then(() => {
-        showToast('-500 chips — Good luck! 🎟️', '#cd7f32', 2000);
-        onSuccess();
-      });
-    } else {
-      document.getElementById('no-ticket-modal').classList.add('show');
-    }
+    // Daily satellites are free entry
+    onSuccess();
   }
 }
 
@@ -2654,6 +2646,16 @@ function initAuth() {
 // ── Stats tracking ──
 // tournamentType: null=micro/regular, daily=Daily Tournament, saturday=Saturday Championship, 'jack' (Daily Tournament), 'weekly' (Saturday Championship)
 async function recordGameResult(won, placement=0, tournamentType=null) {
+  // Qualifying table eliminations don't earn chip payouts — only stats
+  if (tournamentType === 'daily_table' || tournamentType === 'saturday_table') {
+    if (!currentUser) return;
+    const updates = { gamesPlayed: (userProfile?.gamesPlayed || 0) + 1 };
+    if (won) updates.wins = (userProfile?.wins || 0) + 1;
+    await saveUserProfile(currentUser.uid, updates);
+    userProfile = { ...userProfile, ...updates };
+    updateNavBar();
+    return;
+  }
   if(won && typeof trackTaskProgress==='function') trackTaskProgress('win_game', 1);
   if (!currentUser) return;
   try {
@@ -2665,7 +2667,7 @@ async function recordGameResult(won, placement=0, tournamentType=null) {
     await loadUserProfile(currentUser.uid);
 
     // ── Daily ticket: awarded after playing 5 games in a day (volume, not winning) ──
-    const isTournamentMode = ['daily','saturday','daily_table','daily_final'].includes(tournamentType);
+    const isTournamentMode = ['daily','saturday','daily_table','daily_final','saturday_table','saturday_final','sas'].includes(tournamentType);
     if (isSolo || (!isSolo && !isTournamentMode)) {
       const todayKey = `pta_daily_games_${new Date().toDateString()}`;
       const dailyGames = parseInt(localStorage.getItem(todayKey) || '0') + 1;
@@ -3980,7 +3982,7 @@ function showDailyOrSatModal(t, type, slotDate, ticketsOwned, hr) {
   document.getElementById('t-info-id').textContent = shortGameId(t.id);
   document.getElementById('t-info-start').textContent = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + (isSat ? ' · Saturday' : '');
   document.getElementById('t-info-status').textContent = isRegistered ? '✅ Registered' : 'Registering';
-  document.getElementById('t-info-buyin').textContent = isDaily ? '500 chips' : '🏆 Sat Ticket';
+  document.getElementById('t-info-buyin').textContent = isDaily ? 'FREE' : '🏆 Sat Ticket';
   document.getElementById('t-info-prize').textContent = isDaily ? '🏆 Sat Ticket' : '🏆 Trophy + Coins';
   document.getElementById('t-info-players').textContent = isRegistered ? 'You are registered' : `${ticketsOwned} ticket${ticketsOwned !== 1 ? 's' : ''} owned`;
 
@@ -3990,7 +3992,7 @@ function showDailyOrSatModal(t, type, slotDate, ticketsOwned, hr) {
     actionBtn.style.background = 'rgba(255,77,79,0.85)';
     actionBtn.disabled = false;
   } else {
-    actionBtn.textContent = isDaily ? 'Enter with Daily Ticket' : 'Enter with Sat Ticket';
+    actionBtn.textContent = isDaily ? 'Enter Free' : 'Enter with Sat Ticket';
     actionBtn.style.background = '';
     actionBtn.disabled = false;
   }
@@ -4218,7 +4220,7 @@ function initSocket(){
     isTournamentGame=!!state.isTournament;
     // Determine chip total for display (satellite/champ = 2, everything else = 3)
     const tTypeNow = state.tournamentType || '';
-    _gameChipTotal = (tTypeNow === 'satellite' || tTypeNow === 'daily' || tTypeNow === 'saturday') ? 2 : 3;
+    _gameChipTotal = (tTypeNow === 'satellite' || tTypeNow === 'daily' || tTypeNow === 'saturday' || tTypeNow === 'daily_table' || tTypeNow === 'daily_final' || tTypeNow === 'saturday_table' || tTypeNow === 'saturday_final') ? 2 : 3;
     // Infer from actual player chip counts on first state if server doesn't send type
     if (!tTypeNow && state.players && state.players.length > 0) {
       const maxChips = Math.max(...state.players.map(p => p.chips || 0));
@@ -4301,7 +4303,7 @@ function initSocket(){
     }
 
     // Qualifying table elimination — show message then return to lobby
-    if (tType === 'daily_table' && data.eliminated) {
+    if ((tType === 'daily_table' || tType === 'saturday_table') && data.eliminated) {
       document.getElementById('over-winner').textContent = data.winner.name;
       document.getElementById('game-over').classList.add('show');
       showToast(data.message || 'You didn\'t advance to the Final Table.', '#8a7a50', 4000);
@@ -4310,7 +4312,7 @@ function initSocket(){
     }
 
     // Final table win screen
-    if (tType === 'daily_final') {
+    if (tType === 'daily_final' || tType === 'saturday_final') {
       document.getElementById('over-winner').textContent = data.winner.name;
       document.getElementById('game-over').classList.add('show');
       showToast('🏆 Final Table complete — Weekly Ticket earned!', '#ffd700', 4000);
@@ -4365,7 +4367,7 @@ function initSocket(){
     const waitEl = document.getElementById('screen-tournament-wait');
     if (waitEl) {
       document.getElementById('tw-title') && (document.getElementById('tw-title').textContent = 'Advancing to Final Table');
-      document.getElementById('tw-sub') && (document.getElementById('tw-sub').textContent = 'Waiting for other tables to finish...');
+      document.getElementById('tw-desc') && (document.getElementById('tw-desc').textContent = 'Waiting for other tables to finish...');
       showScreen('screen-tournament-wait');
     }
   });

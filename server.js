@@ -22,7 +22,7 @@ const CHIPS_START = 3;
 const BOT_DELAY_MS = 1200;
 const MAX_PLAYERS_MICRO    = 10;
 const MAX_PLAYERS_DAILY    = 500; // unlimited registrations — split into tables of 10
-const MAX_PLAYERS_SATURDAY = 200;
+const MAX_PLAYERS_SATURDAY = 500;
 const TOURNAMENT_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
 const FINAL_TABLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 min max wait for final table
 const TABLE_SIZE = 10;
@@ -305,6 +305,9 @@ function makeBotPlayer(tableId, botIdx) {
 const ADVANCE_PER_TABLE = 2;
 // Final table size — must be all real players
 const FINAL_TABLE_SIZE = 10;
+// Chip counts by tournament type
+const CHIPS_BY_TYPE = { micro: 3, sas: 3, room: 3, daily: 2, daily_table: 2, daily_final: 2, saturday: 2, saturday_table: 2, saturday_final: 2 };
+function chipsForType(type) { return CHIPS_BY_TYPE[type] || CHIPS_START; }
 
 function startDailySatellite(t) {
   t.status = 'inProgress';
@@ -360,11 +363,12 @@ function launchRound(parentT, players, roundNum) {
     while (seats.length < TABLE_SIZE) {
       seats.push(makeBotPlayer(tableId, botIdx++));
     }
-    seats.forEach((p, i) => { p.chips = CHIPS_START; p.eliminated = false; p.card = null; p.seatIndex = i; });
+    const chipCount = chipsForType(parentT.type === 'saturday' ? 'saturday' : 'daily');
+    seats.forEach((p, i) => { p.chips = chipCount; p.eliminated = false; p.card = null; p.seatIndex = i; });
 
     const tableT = {
       id: tableId,
-      type: 'daily_table',
+      type: parentT.type === 'saturday' ? 'saturday_table' : 'daily_table',
       parentId: parentT.id,
       tableIdx,
       roundNum,
@@ -508,7 +512,8 @@ function launchFinalTable(parentT, advancers) {
 
   // Only real players — no bot fill for the Final Table
   const seats = [...advancers];
-  seats.forEach((p, i) => { p.chips = CHIPS_START; p.eliminated = false; p.card = null; p.seatIndex = i; });
+  const finalChips = chipsForType(parentT.type === 'saturday' ? 'saturday_final' : 'daily_final');
+  seats.forEach((p, i) => { p.chips = finalChips; p.eliminated = false; p.card = null; p.seatIndex = i; });
 
   const finalT = {
     id: finalId,
@@ -794,7 +799,7 @@ function endTournamentRound(t) {
     }
 
     // ── QUALIFYING TABLE: notify losers, signal parent satellite ──
-    if (t.type === 'daily_table') {
+    if (t.type === 'daily_table' || t.type === 'saturday_table') {
       const parentT = t.parentId && tournaments.get(t.parentId);
       const advanceCount = t.advanceCount || 1;
 
