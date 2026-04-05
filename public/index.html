@@ -5037,6 +5037,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     sasQueuesData = queues || [];
   });
 
+  socket.on('sasQueueRefund', ({ buyIn, reason }) => {
+    if (buyIn > 0) updateChipBalance(buyIn);
+    showToast(reason || 'Chips refunded.', '#3aaa5a', 4000);
+  });
   socket.on('sasQueueCancelled', ({ message }) => {
     showToast(message || 'Queue cancelled — chips refunded.', '#ff4d4f', 4000);
     showScreen('screen-lobby');

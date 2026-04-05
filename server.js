@@ -1193,6 +1193,8 @@ io.on('connection', socket => {
       if (q && q.status === 'registering') {
         q.players = q.players.filter(p => p.id !== socket.id);
         io.emit('sasQueues', getPublicSasQueues());
+        // Refund the buy-in — player disconnected before game started
+        socket.emit('sasQueueRefund', { buyIn: q.buyIn, reason: 'You were disconnected from the queue. Your chips have been refunded.' });
       }
     }
 
