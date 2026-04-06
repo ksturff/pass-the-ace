@@ -224,7 +224,7 @@ function getPublicTournaments() {
       buyIn: q.buyIn,
       botFill: q.botFill,
       playerCount: q.players.length,
-      maxPlayers: 10,
+      maxPlayers: 8,
       status: q.status,
       winners: [],
       isSas: true,
@@ -304,7 +304,7 @@ function makeBotPlayer(tableId, botIdx) {
 // How many players advance from each table per round
 const ADVANCE_PER_TABLE = 2;
 // Final table size — must be all real players
-const FINAL_TABLE_SIZE = 10;
+const FINAL_TABLE_SIZE = 8;
 // Chip counts by tournament type
 const CHIPS_BY_TYPE = { micro: 3, sas: 3, room: 3, daily: 2, daily_table: 2, daily_final: 2, saturday: 2, saturday_table: 2, saturday_final: 2 };
 function chipsForType(type) { return CHIPS_BY_TYPE[type] || CHIPS_START; }
@@ -832,45 +832,11 @@ function endTournamentRound(t) {
       return;
     }
 
-    // ── Chip payouts by placement ──
-    // micro:         1st=100, 2nd=60, 3rd=30, 4th+=10
-    // daily_final:   1st=1500, 2nd=800, 3rd=500, 4th-10th=200, 11th-25th=100, rest=25
-    // saturday/final: 1st=10000, 2nd=5000, 3rd=2500, 4th-10th=1000, rest=250
-    const chipPayouts = {};
-    if (!t.isSas) {
-      humanPlayers.filter(p => !p.isGhost).forEach(p => {
-        const pos = placements[p.id] || 99;
-        let chips = 0;
-        if (t.type === 'micro') {
-          if (pos === 1) chips = 100;
-          else if (pos === 2) chips = 60;
-          else if (pos === 3) chips = 30;
-          else chips = 10;
-        } else if (t.type === 'daily_final') {
-          if (pos === 1) chips = 1500;
-          else if (pos === 2) chips = 800;
-          else if (pos === 3) chips = 500;
-          else if (pos <= 10) chips = 200;
-          else if (pos <= 25) chips = 100;
-          else chips = 25;
-        } else if (t.type === 'saturday' || t.type === 'saturday_final') {
-          if (pos === 1) chips = 10000;
-          else if (pos === 2) chips = 5000;
-          else if (pos === 3) chips = 2500;
-          else if (pos <= 10) chips = 1000;
-          else chips = 250;
-        }
-        chipPayouts[p.id] = chips;
-      });
-    }
-
-    // ── Emit gameOver to all real players ──
+    // ── FINAL TABLE: all real players earn a Saturday ticket ──
     t.allPlayers.filter(p => !p.isBot).forEach(player => {
       const playerPlacement = placements[player.id] || 99;
-      // micro 1st → daily ticket; daily_final 1st → weekly ticket; saturday 1st → trophy
-      const earnedDailyTicket   = t.type === 'micro' && playerPlacement === 1;
-      const earnedWeeklyTicket  = t.type === 'daily_final' && playerPlacement === 1;
-      const earnedSaturdayTicket = (t.type === 'saturday' || t.type === 'saturday_final') && playerPlacement === 1;
+      const earnedWeeklyTicket = t.type === 'daily_final'; // ALL final table players earn a ticket
+      const earnedSaturdayTicket = t.type === 'saturday' && playerPlacement === 1;
       io.to(player.id).emit('gameOver', {
         winner: { name: winner.name, id: winner.id },
         isTournament: true,
@@ -878,9 +844,7 @@ function endTournamentRound(t) {
         tier: t.tier || null,
         placements,
         sasPayouts,
-        chipPayouts,
         buyIn: t.buyIn || null,
-        earnedDailyTicket,
         earnedWeeklyTicket,
         earnedSaturdayTicket,
         isFinalTable: t.isFinal || false,
@@ -1032,7 +996,7 @@ io.on('connection', socket => {
     if (!q) { socket.emit('error', 'Queue not found.'); return; }
     if (q.status !== 'registering') { socket.emit('error', 'This game has already started.'); return; }
     if (q.players.find(p => p.id === socket.id)) { socket.emit('error', 'Already in this queue.'); return; }
-    if (q.players.length >= 10) { socket.emit('error', 'Queue is full.'); return; }
+    if (q.players.length >= 8) { socket.emit('error', 'Queue is full.'); return; }
 
     const player = {
       id: socket.id, name, avatar: avatar || '🎭',
@@ -1097,11 +1061,8 @@ io.on('connection', socket => {
     if (t.players.find(p => p.id === socket.id)) { socket.emit('error', 'Already registered.'); return; }
 
     // Ticket-gated tournaments: client already spent the ticket via Firestore
-    // Daily satellites require a daily ticket
+    // Satellites (daily type) are free — no ticket check needed
     // Saturday championships require a saturday ticket
-    if (t.type === 'daily' && ticketType !== 'daily') {
-      socket.emit('error', 'Daily Ticket required.'); return;
-    }
     if (t.type === 'saturday' && ticketType !== 'saturday') {
       socket.emit('error', 'Saturday Ticket required.'); return;
     }
@@ -1453,7 +1414,7 @@ function getPublicSasQueues() {
       buyIn: q.buyIn,
       startTime: q.startTime,
       playerCount: q.players.length,
-      maxPlayers: 10,
+      maxPlayers: 8,
       status: q.status,
       botFill: q.botFill,
     }));
@@ -1467,7 +1428,7 @@ function startSasGame(q) {
   const seats = [...q.players];
   if (q.botFill) {
     let botIdx = 0;
-    while (seats.length < 10) {
+    while (seats.length < 8) {
       seats.push({
         id: `bot_${q.id}_${botIdx}`,
         name: BOT_NAMES[botIdx % BOT_NAMES.length],
