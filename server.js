@@ -25,7 +25,7 @@ const MAX_PLAYERS_DAILY    = 500; // unlimited registrations — split into tabl
 const MAX_PLAYERS_SATURDAY = 500;
 const TOURNAMENT_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
 const FINAL_TABLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 min max wait for final table
-const TABLE_SIZE = 10;
+const TABLE_SIZE = 8;
 const BOT_NAMES = ['Alex','Sam','Jordan','Taylor','Morgan','Casey','Riley','Quinn','Avery','Blake'];
 const BOT_AVATARS = ['🐺','🦁','🐯','🦅','🐉','🦈','👾','🤖','💀','🦂'];
 
@@ -100,10 +100,6 @@ function makeRoom(code, options = {}) {
   return { code, players: [], gameState: null, options, type: 'room' };
 }
 function getRoom(code) { return rooms.get(code); }
-
-// Pending SAS refunds for players who disconnected mid-queue before the game started.
-// Keyed by playerName — delivered on their next getTournaments or connect.
-const pendingRefunds = new Map(); // playerName -> chipAmount
 
 // ─────────────────────────────────────────
 //  TOURNAMENTS
@@ -286,9 +282,6 @@ function startTournament(t) {
   seats.forEach(p => { p.chips = CHIPS_START; p.eliminated = false; p.card = null; });
   t.players.forEach(p => {
     io.to(p.id).emit('tournamentStarting', { tournamentId: t.id, tournamentType: t.type });
-    // Set activeTournamentId server-side — micro tournaments skip the readyForTournament handshake
-    const playerSocket = io.sockets.sockets.get(p.id);
-    if (playerSocket) playerSocket.data.activeTournamentId = t.id;
   });
   t.allPlayers = seats;
   t.gameState = null;
@@ -839,11 +832,45 @@ function endTournamentRound(t) {
       return;
     }
 
-    // ── FINAL TABLE: all real players earn a Saturday ticket ──
+    // ── Chip payouts by placement ──
+    // micro:         1st=100, 2nd=60, 3rd=30, 4th+=10
+    // daily_final:   1st=1500, 2nd=800, 3rd=500, 4th-10th=200, 11th-25th=100, rest=25
+    // saturday/final: 1st=10000, 2nd=5000, 3rd=2500, 4th-10th=1000, rest=250
+    const chipPayouts = {};
+    if (!t.isSas) {
+      humanPlayers.filter(p => !p.isGhost).forEach(p => {
+        const pos = placements[p.id] || 99;
+        let chips = 0;
+        if (t.type === 'micro') {
+          if (pos === 1) chips = 100;
+          else if (pos === 2) chips = 60;
+          else if (pos === 3) chips = 30;
+          else chips = 10;
+        } else if (t.type === 'daily_final') {
+          if (pos === 1) chips = 1500;
+          else if (pos === 2) chips = 800;
+          else if (pos === 3) chips = 500;
+          else if (pos <= 10) chips = 200;
+          else if (pos <= 25) chips = 100;
+          else chips = 25;
+        } else if (t.type === 'saturday' || t.type === 'saturday_final') {
+          if (pos === 1) chips = 10000;
+          else if (pos === 2) chips = 5000;
+          else if (pos === 3) chips = 2500;
+          else if (pos <= 10) chips = 1000;
+          else chips = 250;
+        }
+        chipPayouts[p.id] = chips;
+      });
+    }
+
+    // ── Emit gameOver to all real players ──
     t.allPlayers.filter(p => !p.isBot).forEach(player => {
       const playerPlacement = placements[player.id] || 99;
-      const earnedWeeklyTicket = t.type === 'daily_final'; // ALL final table players earn a ticket
-      const earnedSaturdayTicket = t.type === 'saturday' && playerPlacement === 1;
+      // micro 1st → daily ticket; daily_final 1st → weekly ticket; saturday 1st → trophy
+      const earnedDailyTicket   = t.type === 'micro' && playerPlacement === 1;
+      const earnedWeeklyTicket  = t.type === 'daily_final' && playerPlacement === 1;
+      const earnedSaturdayTicket = (t.type === 'saturday' || t.type === 'saturday_final') && playerPlacement === 1;
       io.to(player.id).emit('gameOver', {
         winner: { name: winner.name, id: winner.id },
         isTournament: true,
@@ -851,7 +878,9 @@ function endTournamentRound(t) {
         tier: t.tier || null,
         placements,
         sasPayouts,
+        chipPayouts,
         buyIn: t.buyIn || null,
+        earnedDailyTicket,
         earnedWeeklyTicket,
         earnedSaturdayTicket,
         isFinalTable: t.isFinal || false,
@@ -994,13 +1023,6 @@ io.on('connection', socket => {
   // ── Client requests tournament list explicitly
   socket.on('getTournaments', () => {
     socket.emit('tournamentList', getPublicTournaments());
-    // Deliver any pending SAS refund for this player
-    const name = socket.data.playerName;
-    if (name && pendingRefunds.has(name)) {
-      const buyIn = pendingRefunds.get(name);
-      pendingRefunds.delete(name);
-      socket.emit('sasQueueRefund', { buyIn, reason: 'You were disconnected from a queue before it started. Your chips have been refunded.' });
-    }
   });
 
   // ── Sit & Stay: join a queue
@@ -1020,7 +1042,6 @@ io.on('connection', socket => {
     q.players.push(player);
     socket.join(sasId);
     socket.data.sasQueueId = sasId;
-    socket.data.sasBuyIn = q.buyIn;
     socket.data.playerName = name;
     socket.data.playerAvatar = avatar;
 
@@ -1076,8 +1097,11 @@ io.on('connection', socket => {
     if (t.players.find(p => p.id === socket.id)) { socket.emit('error', 'Already registered.'); return; }
 
     // Ticket-gated tournaments: client already spent the ticket via Firestore
-    // Satellites (daily type) are free — no ticket check needed
+    // Daily satellites require a daily ticket
     // Saturday championships require a saturday ticket
+    if (t.type === 'daily' && ticketType !== 'daily') {
+      socket.emit('error', 'Daily Ticket required.'); return;
+    }
     if (t.type === 'saturday' && ticketType !== 'saturday') {
       socket.emit('error', 'Saturday Ticket required.'); return;
     }
@@ -1234,13 +1258,8 @@ io.on('connection', socket => {
       if (q && q.status === 'registering') {
         q.players = q.players.filter(p => p.id !== socket.id);
         io.emit('sasQueues', getPublicSasQueues());
-        // Socket is already dead — queue a refund to deliver on next connect
-        const playerName = socket.data.playerName;
-        const buyIn = socket.data.sasBuyIn || q.buyIn;
-        if (playerName && buyIn > 0) {
-          const existing = pendingRefunds.get(playerName) || 0;
-          pendingRefunds.set(playerName, existing + buyIn);
-        }
+        // Refund the buy-in — player disconnected before game started
+        socket.emit('sasQueueRefund', { buyIn: q.buyIn, reason: 'You were disconnected from the queue. Your chips have been refunded.' });
       }
     }
 
