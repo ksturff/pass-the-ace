@@ -3370,22 +3370,8 @@ function getSeatPositions(n){
     68,   // seat 9: bottom-right corner — was 54, shifted up toward right edge
   ];
 
-  // Custom angle overrides for 8-player layout.
-  // Default even spacing: 90, 135, 180, 225, 270, 315, 0, 45
-  // Pull corners (1,3,5,7) closer to edges; spread side pairs (2&4, 6&8) apart.
-  const customAngles8=[
-    90,   // seat 0: human (bottom centre)
-    118,  // seat 1: bottom-left corner — was 135, pulled toward left edge
-    162,  // seat 2: left side — was 180, spread upward
-    218,  // seat 3: top-left corner — was 225, pulled toward top
-    270,  // seat 4: top centre
-    322,  // seat 5: top-right corner — was 315, pulled toward top
-    18,   // seat 6: right side — was 0, spread downward
-    62,   // seat 7: bottom-right corner — was 45, pulled toward right edge
-  ];
-
   for(let i=0;i<n;i++){
-    const baseDeg=n===10?customAngles10[i]:n===8?customAngles8[i]:(90+i*360/n);
+    const baseDeg=n===10?customAngles10[i]:(90+i*360/n);
     const angle=baseDeg*Math.PI/180;
     positions.push({
       hud:{
