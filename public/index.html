@@ -1454,6 +1454,73 @@
     .daily-bonus-icon { font-size:64px; animation:bonusBounce 0.7s cubic-bezier(0.22,1,0.36,1); display:block; margin-bottom:8px; }
     @keyframes streakGlow { 0%,100%{text-shadow:0 0 8px #ffd700} 50%{text-shadow:0 0 24px #ffd700,0 0 40px #ffaa00} }
     .streak-badge { font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:2px; color:#ffd700; animation:streakGlow 1.5s ease-in-out infinite; }
+
+    /* ── King flip ── */
+    @keyframes kingFlipIn {
+      0%   { transform: rotateY(90deg) scale(0.8); opacity:0; }
+      60%  { transform: rotateY(-12deg) scale(1.08); opacity:1; }
+      100% { transform: rotateY(0deg) scale(1); opacity:1; }
+    }
+    .king-flip-card {
+      position:absolute; z-index:60; pointer-events:none;
+      border-radius:4px; box-shadow:0 0 0 2px #ffd700, 0 0 24px rgba(255,215,0,0.7);
+      animation:kingFlipIn 0.45s cubic-bezier(0.22,1,0.36,1) forwards;
+      transform-style:preserve-3d;
+    }
+
+    /* ── Turn ping ── */
+    @keyframes turnPing {
+      0%   { transform:translate(-50%,-50%) scale(1);   opacity:0.8; }
+      100% { transform:translate(-50%,-50%) scale(2.2); opacity:0; }
+    }
+    .turn-ping {
+      position:absolute; width:44px; height:44px; border-radius:50%;
+      border:2px solid rgba(200,162,60,0.9); pointer-events:none; z-index:5;
+      animation:turnPing 0.55s cubic-bezier(0.22,1,0.36,1) forwards;
+      left:50%; top:50%;
+    }
+
+    /* ── Loser flash ── */
+    @keyframes loserFlash {
+      0%,100% { box-shadow:none; }
+      30%     { box-shadow:0 0 0 3px rgba(255,60,60,0.9), 0 0 20px rgba(255,60,60,0.5); }
+      60%     { box-shadow:0 0 0 2px rgba(255,60,60,0.5); }
+    }
+    .loser-flash { animation:loserFlash 0.7s ease-out; }
+
+    /* ── Final Table advance overlay ── */
+    #final-advance-overlay {
+      position:fixed; inset:0; z-index:200; display:none; place-items:center;
+      background:rgba(0,0,0,0.92);
+    }
+    #final-advance-overlay.show { display:grid; }
+    @keyframes finalAdvanceIn {
+      0%   { opacity:0; transform:scale(0.75) translateY(32px); }
+      65%  { opacity:1; transform:scale(1.04) translateY(-4px); }
+      100% { opacity:1; transform:scale(1) translateY(0); }
+    }
+    .final-advance-box {
+      text-align:center; padding:40px 36px;
+      background:linear-gradient(135deg,#18140a,#0d0b05);
+      border:1px solid rgba(200,162,60,0.4); border-radius:24px;
+      width:min(340px,90vw);
+      animation:finalAdvanceIn 0.6s cubic-bezier(0.22,1,0.36,1);
+      box-shadow:0 0 60px rgba(200,162,60,0.2), 0 20px 60px rgba(0,0,0,0.8);
+    }
+    @keyframes trophySpin {
+      0%   { transform:scale(0) rotate(-180deg); opacity:0; }
+      70%  { transform:scale(1.2) rotate(12deg); opacity:1; }
+      100% { transform:scale(1) rotate(0deg); opacity:1; }
+    }
+    .final-advance-trophy { font-size:72px; display:block; margin-bottom:16px; animation:trophySpin 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s both; }
+    .final-advance-title { font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:4px; color:var(--muted); margin-bottom:10px; }
+    .final-advance-headline { font-family:'Playfair Display',serif; font-size:28px; color:#ffd700; margin-bottom:8px; line-height:1.2; }
+    .final-advance-sub { font-family:sans-serif; font-size:13px; color:var(--muted); line-height:1.5; }
+
+    /* ── Gold sparkle canvas ── */
+    #sparkle-canvas {
+      position:fixed; inset:0; z-index:199; pointer-events:none; display:none;
+    }
   </style>
 </head>
 <body>
@@ -2285,6 +2352,19 @@
   </div>
 </div>
 
+<!-- ── FINAL TABLE ADVANCE OVERLAY ── -->
+<div id="final-advance-overlay">
+  <div class="final-advance-box">
+    <span class="final-advance-trophy">🏆</span>
+    <div class="final-advance-title">YOU ADVANCED</div>
+    <div class="final-advance-headline">Final Table!</div>
+    <div class="final-advance-sub" id="final-advance-sub">Get ready — the Final Table is assembling…</div>
+  </div>
+</div>
+
+<!-- ── GOLD SPARKLE CANVAS ── -->
+<canvas id="sparkle-canvas"></canvas>
+
 <!-- ── ROUND RESULT ── -->
 <div id="round-result">
   <div class="result-box">
@@ -2689,6 +2769,8 @@ async function recordGameResult(won, placement=0, tournamentType=null) {
       await updateChipBalance(payout);
       if (won) {
         showToast(`You won! +${payout} chips 🏆`, '#ffd700', 3000);
+        launchGoldSparkles(2500);
+        haptic([60,40,80,40,200]);
       }
       else showToast('+50 chips for playing', '#8a7a50', 2000);
     } else {
@@ -3019,6 +3101,7 @@ let myAvatar=AVATARS[0];
 let selectedSeatsLobby=6, selectedSeatsSolo=6;
 let socket, myId=null, myRoomCode=null, isHost=false, isSolo=false;
 let players=[], currentPlayerId=null, myTurn=false;
+const revealedKingIds = new Set();
 let cardImages={}, assetsReady=false;
 let toastTimer=null, kingToastTimer=null;
 let soloPlayers=[], soloDealerIndex=0, soloCurrentIndex=0, soloTurnsTaken=0;
@@ -3082,6 +3165,141 @@ function showEliminationOverlay(name){
   ov.classList.add('show');
   clearTimeout(_elimTimer);
   _elimTimer=setTimeout(()=>ov.classList.remove('show'),2200);
+}
+
+// ── Gold sparkle celebration ──
+function launchGoldSparkles(durationMs=3000){
+  const canvas=document.getElementById('sparkle-canvas');
+  if(!canvas)return;
+  canvas.style.display='block';
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+  const ctx=canvas.getContext('2d');
+  const particles=[];
+  const COLORS=['#ffd700','#ffaa00','#ffe566','#c8a23c','#fff0a0','#f0c040'];
+  const SHAPES=['circle','diamond','star'];
+  function makeParticle(){
+    const angle=Math.random()*Math.PI*2;
+    const speed=2+Math.random()*5;
+    return {
+      x: canvas.width*(0.2+Math.random()*0.6),
+      y: canvas.height*0.4,
+      vx: Math.cos(angle)*speed,
+      vy: Math.sin(angle)*speed - 4 - Math.random()*4,
+      size: 4+Math.random()*8,
+      color: COLORS[Math.floor(Math.random()*COLORS.length)],
+      shape: SHAPES[Math.floor(Math.random()*SHAPES.length)],
+      alpha: 1,
+      rot: Math.random()*Math.PI*2,
+      rotV: (Math.random()-0.5)*0.2,
+      gravity: 0.12+Math.random()*0.06,
+    };
+  }
+  let spawned=0; const maxParticles=120;
+  let spawnInterval=setInterval(()=>{
+    for(let i=0;i<6;i++) if(spawned<maxParticles){particles.push(makeParticle());spawned++;}
+    if(spawned>=maxParticles) clearInterval(spawnInterval);
+  },50);
+  function drawStar(ctx,x,y,r,rot){
+    ctx.beginPath();
+    for(let i=0;i<5;i++){
+      const a=rot+i*Math.PI*2/5-Math.PI/2;
+      const b=rot+(i+0.5)*Math.PI*2/5-Math.PI/2;
+      if(i===0) ctx.moveTo(x+Math.cos(a)*r,y+Math.sin(a)*r);
+      else ctx.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r);
+      ctx.lineTo(x+Math.cos(b)*(r*0.4),y+Math.sin(b)*(r*0.4));
+    }
+    ctx.closePath();
+  }
+  const start=Date.now();
+  function frame(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.vy+=p.gravity;
+      p.rot+=p.rotV; p.alpha-=0.008;
+      if(p.alpha<=0)return;
+      ctx.save(); ctx.globalAlpha=p.alpha; ctx.fillStyle=p.color;
+      ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+      if(p.shape==='circle'){ctx.beginPath();ctx.arc(0,0,p.size/2,0,Math.PI*2);ctx.fill();}
+      else if(p.shape==='diamond'){ctx.beginPath();ctx.moveTo(0,-p.size/2);ctx.lineTo(p.size/3,0);ctx.lineTo(0,p.size/2);ctx.lineTo(-p.size/3,0);ctx.closePath();ctx.fill();}
+      else{drawStar(ctx,0,0,p.size/2,0);ctx.fill();}
+      ctx.restore();
+    });
+    if(Date.now()-start<durationMs || particles.some(p=>p.alpha>0)){
+      requestAnimationFrame(frame);
+    } else {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      canvas.style.display='none';
+      clearInterval(spawnInterval);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+// ── Final Table advance overlay ──
+let _finalAdvTimer=null;
+function showFinalAdvance(subText){
+  haptic([60,40,120,40,200]);
+  const ov=document.getElementById('final-advance-overlay');
+  const sub=document.getElementById('final-advance-sub');
+  if(sub) sub.textContent=subText||'Get ready — the Final Table is assembling…';
+  ov.classList.add('show');
+  launchGoldSparkles(2500);
+  clearTimeout(_finalAdvTimer);
+  _finalAdvTimer=setTimeout(()=>ov.classList.remove('show'),4000);
+}
+
+// ── Turn ping on newly active player ──
+function animateTurnPing(playerId){
+  if(playerId===myId) return; // no ping on own slot
+  const slot=document.getElementById(`slot-${playerId}`);
+  if(!slot) return;
+  const ping=document.createElement('div');
+  ping.className='turn-ping';
+  slot.style.position='relative';
+  slot.appendChild(ping);
+  ping.addEventListener('animationend',()=>ping.remove(),{once:true});
+}
+
+// ── Loser flash on player slot ──
+function animateLoserFlash(playerId){
+  const isMe=playerId===myId;
+  const el=isMe
+    ? document.getElementById('my-card-display')
+    : document.getElementById(`slot-${playerId}`);
+  if(!el) return;
+  el.classList.remove('loser-flash');
+  void el.offsetWidth;
+  el.classList.add('loser-flash');
+  el.addEventListener('animationend',()=>el.classList.remove('loser-flash'),{once:true});
+}
+
+// ── King flip reveal ──
+function animateKingFlip(playerId, card){
+  const table=document.getElementById('game-table');
+  if(!table) return;
+  const wrap=document.getElementById(`cardwrap-${playerId}`);
+  if(!wrap) return;
+  const tableRect=table.getBoundingClientRect();
+  const wrapRect=wrap.getBoundingClientRect();
+  const x=wrapRect.left-tableRect.left+wrapRect.width/2;
+  const y=wrapRect.top-tableRect.top+wrapRect.height/2;
+  const w=40, h=58;
+  const flipEl=document.createElement('canvas');
+  flipEl.className='king-flip-card';
+  flipEl.width=w; flipEl.height=h;
+  flipEl.style.cssText=`width:${w}px;height:${h}px;left:${x-w/2}px;top:${y-h/2}px;`;
+  const ctx=flipEl.getContext('2d');
+  if(card && cardImages){
+    const key=cardKey(card);
+    const img=cardImages[key];
+    if(img&&img.complete&&img.naturalWidth>0) ctx.drawImage(img,0,0,w,h);
+    else drawCardFallback(ctx,card,w/2,h/2,w,h,true);
+  } else {
+    drawCardFallback(ctx,{rank:'K',suit:'S'},w/2,h/2,w,h,true);
+  }
+  table.appendChild(flipEl);
+  setTimeout(()=>flipEl.remove(), 2400);
 }
 
 // ── Chip shake on a player slot ──
@@ -3608,7 +3826,7 @@ function updateTable(revealAll=false){
       cctx.clearRect(0,0,cw,ch);
       if(p.card&&!p.eliminated){
         const isHidden=p.card==='hidden';
-        const faceUp=revealAll||(!isHidden&&p.card?.rank==='K');
+        const faceUp=revealAll||(!isHidden&&revealedKingIds.has(p.id));
         const key=faceUp?cardKey(p.card):'back';
         if(faceUp){
           const img=cardImages[key];
@@ -4262,13 +4480,33 @@ function initSocket(){
         });
       });
     } else if(state.isNewRound){
-      // New round starting — animate deal
+      // New round starting — clear revealed kings and animate deal
+      revealedKingIds.clear();
       animateDealCards(()=>updateTable());
     } else {
+      // Turn ping on newly active player
+      const newCur = state.currentPlayerId;
+      if(newCur && newCur !== myId) animateTurnPing(newCur);
       updateTable();
     }
   });
-  socket.on('kingBlocked',()=>showKingToast());
+  socket.on('kingBlocked',({ blockerId, blockerCard })=>{
+    showKingToast();
+    if(blockerId){
+      // Inject real card so updateTable can show it
+      const bp=players.find(p=>p.id===blockerId);
+      if(bp&&blockerCard) bp.card=blockerCard;
+      revealedKingIds.add(blockerId);
+      animateKingFlip(blockerId, blockerCard);
+      updateTable();
+      setTimeout(()=>{
+        revealedKingIds.delete(blockerId);
+        const bp2=players.find(p=>p.id===blockerId);
+        if(bp2) bp2.card='hidden';
+        updateTable();
+      },2400);
+    }
+  });
   socket.on('cardPassed',data=>{
     // Animate the card moving from one player to another
     const {fromId, toId} = data;
@@ -4292,7 +4530,7 @@ function initSocket(){
     losers.forEach((loser,i)=>{
       const p=players.find(p=>p.name===loser.name);
       if(!p)return;
-      setTimeout(()=>animateChipLoss(p.id), 400+i*200);
+      setTimeout(()=>{ animateLoserFlash(p.id); animateChipLoss(p.id); }, 300+i*200);
       if(p.eliminated) setTimeout(()=>showEliminationOverlay(p.name), 700+i*200);
     });
     showRoundResult(data);
@@ -4363,6 +4601,7 @@ function initSocket(){
 
     document.getElementById('over-winner').textContent=data.winner.name;
     document.getElementById('game-over').classList.add('show');
+    if(iWon) { launchGoldSparkles(3500); haptic([60,40,80,40,200,80,300]); }
 
     // SAS payout — show rich results screen
     if(tType === 'sas' && data.sasPayouts && data.sasPayouts[myId] !== undefined) {
@@ -4383,15 +4622,17 @@ function initSocket(){
     // Update activeTournamentId ready for final table
     socket.data = socket.data || {};
     socket.emit('readyForTournament', { tournamentId });
-    // Show advancing screen
-    showToast(`🏆 ${message}`, '#ffd700', 4000);
-    // Show a waiting screen while final table assembles
-    const waitEl = document.getElementById('screen-tournament-wait');
-    if (waitEl) {
-      document.getElementById('tw-title') && (document.getElementById('tw-title').textContent = 'Advancing to Final Table');
-      document.getElementById('tw-desc') && (document.getElementById('tw-desc').textContent = 'Waiting for other tables to finish...');
-      showScreen('screen-tournament-wait');
-    }
+    // Show dramatic final table advance overlay
+    showFinalAdvance(message || 'You made it to the Final Table!');
+    // Then transition to waiting screen after overlay fades
+    setTimeout(()=>{
+      const waitEl = document.getElementById('screen-tournament-wait');
+      if (waitEl) {
+        document.getElementById('tw-title') && (document.getElementById('tw-title').textContent = 'Advancing to Final Table');
+        document.getElementById('tw-desc') && (document.getElementById('tw-desc').textContent = 'Waiting for other tables to finish…');
+        showScreen('screen-tournament-wait');
+      }
+    }, 2000);
   });
 
   socket.on('roomCreated',data=>{myRoomCode=data.code;isHost=true;document.getElementById('waiting-code').textContent=data.code;updateWaitingRoom(data.players);showScreen('screen-waiting');});
