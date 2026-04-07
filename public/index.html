@@ -3059,6 +3059,37 @@ function showScreen(id) {
 }
 function showToast(msg,color='#fff',ms=3000){const el=document.getElementById('toast');el.textContent=msg;el.style.color=color;el.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display='none',ms);}
 function showKingToast(){const el=document.getElementById('king-toast');el.style.display='block';clearTimeout(kingToastTimer);kingToastTimer=setTimeout(()=>el.style.display='none',2200);}
+
+function flipKingReveal(playerId){
+  let wrap,canvas;
+  if(playerId===myId){canvas=document.getElementById('my-card-canvas');wrap=canvas?canvas.parentElement:null;}
+  else{wrap=document.getElementById('cardwrap-'+playerId);canvas=wrap?wrap.querySelector('canvas'):null;}
+  if(!wrap||!canvas)return;
+  const list=isSolo?soloPlayers:players;
+  const p=list.find(pl=>pl.id===playerId);
+  if(!p||!p.card)return;
+  wrap.style.perspective='200px';
+  const w=canvas.offsetWidth||36,h=canvas.offsetHeight||52;
+  canvas.style.transition='transform 0.22s ease-in';
+  canvas.style.transform='rotateY(90deg)';
+  setTimeout(()=>{
+    const ctx=canvas.getContext('2d');
+    drawCardFallback(ctx,p.card,w/2,h/2,w,h,true);
+    canvas.style.transition='transform 0.22s ease-out';
+    canvas.style.transform='rotateY(0deg)';
+  },220);
+  setTimeout(()=>{
+    canvas.style.transition='transform 0.22s ease-in';
+    canvas.style.transform='rotateY(90deg)';
+    setTimeout(()=>{
+      const ctx=canvas.getContext('2d');
+      drawCardFallback(ctx,null,w/2,h/2,w,h,false);
+      canvas.style.transition='transform 0.22s ease-out';
+      canvas.style.transform='rotateY(0deg)';
+      setTimeout(()=>{canvas.style.transition='';canvas.style.transform='';wrap.style.perspective='';},250);
+    },220);
+  },1850);
+}
 function cardKey(card){if(!card||card==='hidden')return 'back';const r=typeof card.rank==='number'?card.rank:RANK_NAME[card.rank];return `${r}_of_${SUIT_NAME[card.suit]}`;}
 
 function premiumChips(chips,danger,total=3){
@@ -3548,27 +3579,54 @@ function animateCardPass(fromId, toId, onDone){
   if(!from||!to){if(onDone)onDone();return;}
 
   const w=36, h=52;
+  const isMyPass=(fromId===myId);
+  // If the human is passing, find their card so we can show it face-up
+  const list=isSolo?soloPlayers:players;
+  const fromP=list.find(p=>p.id===fromId);
+  const cardData=isMyPass&&fromP?.card?fromP.card:null;
+
   const fly=document.createElement('div');
-  // Start at FROM position — same pattern as deal animation
   fly.style.cssText=`position:absolute;width:${w}px;height:${h}px;
     left:${from.x}px;top:${from.y}px;
     transform:translate(-50%,-50%);
     z-index:50;pointer-events:none;border-radius:3px;
+    perspective:200px;
     box-shadow:0 0 0 2px var(--accent),0 4px 12px rgba(0,0,0,0.8);overflow:hidden;`;
   const fc=document.createElement('canvas');
   fc.width=w;fc.height=h;fc.style.cssText=`width:${w}px;height:${h}px;display:block;`;
   const fcCtx2=fc.getContext('2d');
-  drawCardFallback(fcCtx2,null,w/2,h/2,w,h,false);
+  // Draw face-up if human is passing so you can see your card fly, otherwise face-down
+  drawCardFallback(fcCtx2,cardData,w/2,h/2,w,h,isMyPass&&!!cardData);
   fly.appendChild(fc);
   table.appendChild(fly);
 
-  // Translate from FROM to TO, exactly like the deal animation does
   const dx=to.x-from.x, dy=to.y-from.y;
-  setTimeout(()=>{
-    fly.style.transition='transform 0.6s cubic-bezier(0.22,1,0.36,1)';
-    fly.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-    setTimeout(()=>{fly.remove();if(onDone)onDone();},650);
-  }, 16);
+  const duration=600;
+
+  // If human passing: flip to face-down at the midpoint of the travel
+  if(isMyPass&&cardData){
+    setTimeout(()=>{
+      fly.style.transition=`transform ${duration}ms cubic-bezier(0.22,1,0.36,1)`;
+      fly.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    },16);
+    // Flip card face-down halfway through travel
+    setTimeout(()=>{
+      fc.style.transition='transform 0.15s ease-in';
+      fc.style.transform='rotateY(90deg)';
+      setTimeout(()=>{
+        drawCardFallback(fcCtx2,null,w/2,h/2,w,h,false);
+        fc.style.transition='transform 0.15s ease-out';
+        fc.style.transform='rotateY(0deg)';
+      },150);
+    }, duration/2 - 75);
+    setTimeout(()=>{fly.remove();if(onDone)onDone();},duration+50);
+  } else {
+    setTimeout(()=>{
+      fly.style.transition=`transform ${duration}ms cubic-bezier(0.22,1,0.36,1)`;
+      fly.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+      setTimeout(()=>{fly.remove();if(onDone)onDone();},duration+50);
+    }, 16);
+  }
 }
 
 function updateTable(revealAll=false){
@@ -4254,7 +4312,7 @@ function initSocket(){
       updateTable();
     }
   });
-  socket.on('kingBlocked',()=>showKingToast());
+  socket.on('kingBlocked',(data)=>{showKingToast();const toId=data&&data.toId?data.toId:(players.find(p=>p.id===currentPlayerId)?.id);if(toId)flipKingReveal(toId);});
   socket.on('cardPassed',data=>{
     // Animate the card moving from one player to another
     const {fromId, toId} = data;
@@ -4433,7 +4491,7 @@ function soloPass(){
   const fromP=soloPlayers[soloCurrentIndex];
   const toIdx=soloNextAlive(soloCurrentIndex,1);
   const toP=soloPlayers[toIdx];
-  if(toP?.card?.rank==='K'){showKingToast();soloKeep();return;}
+  if(toP?.card?.rank==='K'){showKingToast();flipKingReveal(toP.id);soloKeep();return;}
   if(fromP?.card?.rank==='K'){soloKeep();return;}
   if(fromP?.card?.rank==='A'&&typeof trackTaskProgress==='function') trackTaskProgress('pass_aces', 1);
   const isLastPlayer=(soloTurnsTaken+1)>=soloAlive().length;
